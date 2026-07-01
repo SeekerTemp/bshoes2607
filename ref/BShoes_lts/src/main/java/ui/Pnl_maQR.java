@@ -1,0 +1,165 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
+ */
+package ui;
+
+import daoipml.DaoImpl_HoaDon;
+import java.awt.*;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import javax.swing.*;
+import poly.cafe.util.XDialog;
+/**
+ *
+ * @author Nguyen Trung Nghia
+ */
+public class Pnl_maQR extends javax.swing.JPanel {
+        private JLabel lblQR;
+    private JLabel lblBank, lblAccount, lblName, lblMoney, lblContent;
+    private JButton btn_xacNhan;
+    DaoImpl_HoaDon repoHD = new DaoImpl_HoaDon();
+    private int idHoaDon;
+    private Pnl_6_qlHoaDon parentPanel;
+    
+
+    private static final String BANK_CODE = "vietcombank";
+    private static final String ACCOUNT_NO = "1036632436";
+    private static final String ACCOUNT_NAME = "NGUYEN TRUNG NGHIA";
+
+    private static final String TEMPLATE_URL ="https://img.vietqr.io/image/%s-%s-compact2.png?amount=%d&addInfo=%s";
+
+
+    public Pnl_maQR(BigDecimal tongTien, String maHD,int idHoaDon,Pnl_6_qlHoaDon parent) {
+        this.parentPanel = parent;
+        this.idHoaDon=idHoaDon;
+        initUI();
+        loadQR(tongTien, maHD);
+    }
+    private void initUI() {
+        setLayout(new BorderLayout());
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+
+        lblQR = new JLabel("Đang tạo QR...", SwingConstants.CENTER);
+        lblBank = new JLabel();
+        lblAccount = new JLabel();
+        lblName = new JLabel();
+        lblMoney = new JLabel();
+        lblContent = new JLabel();
+
+        btn_xacNhan = new JButton("Đã chuyển khoản");
+        btn_xacNhan.setFont(new Font("Arial", Font.BOLD, 14));
+        btn_xacNhan.setBackground(Color.GREEN.darker());
+        btn_xacNhan.setForeground(Color.WHITE);
+
+        btn_xacNhan.addActionListener(e -> xacNhanThanhToan());
+
+        Font f14 = new Font("Arial", Font.PLAIN, 14);
+        Font f16 = new Font("Arial", Font.BOLD, 16);
+
+        lblQR.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblBank.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblAccount.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblName.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblMoney.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblContent.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btn_xacNhan.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        lblBank.setFont(f14);
+        lblAccount.setFont(f14);
+        lblName.setFont(f14);
+        lblMoney.setFont(f16);
+        lblContent.setFont(f14);
+
+        panel.add(Box.createVerticalStrut(10));
+        panel.add(lblQR);
+        panel.add(Box.createVerticalStrut(15));
+        panel.add(lblBank);
+        panel.add(lblAccount);
+        panel.add(lblName);
+        panel.add(Box.createVerticalStrut(10));
+        panel.add(lblMoney);
+        panel.add(lblContent);
+        panel.add(Box.createVerticalStrut(20));
+        panel.add(btn_xacNhan);
+
+        add(panel, BorderLayout.CENTER);
+    }
+
+    private void loadQR(BigDecimal tongTien, String maHD) {
+        try {
+            long amount = tongTien.longValue();
+            String addInfo = "Thanh toan hoa don " + maHD;
+            String encoded = URLEncoder.encode(addInfo, StandardCharsets.UTF_8);
+
+            String urlStr = String.format(TEMPLATE_URL, BANK_CODE, ACCOUNT_NO, amount, encoded);
+            System.out.println("QR URL = " + urlStr);
+
+            URL imgURL = new URL(urlStr);
+            ImageIcon icon = new ImageIcon(imgURL);
+
+            Image img = icon.getImage().getScaledInstance(260, 260, Image.SCALE_SMOOTH);
+            lblQR.setIcon(new ImageIcon(img));
+            lblQR.setText("");
+
+            lblBank.setText("Ngân hàng: VietComBank");
+            lblAccount.setText("Số TK: " + ACCOUNT_NO);
+            lblName.setText("Chủ TK: " + ACCOUNT_NAME);
+            lblMoney.setText("Số tiền: " + amount + " VND");
+            lblContent.setText("Nội dung: " + addInfo);
+
+        } catch (Exception e) {
+            lblQR.setText("Lỗi tạo QR");
+            e.printStackTrace();
+        }
+    }
+
+    private void xacNhanThanhToan() {
+        repoHD.updateTrangThaiThanhToan(idHoaDon);
+
+        XDialog.autoClose("Thanh toán thành công!",800);
+
+
+        Window w = SwingUtilities.getWindowAncestor(this);
+
+
+        if (w instanceof JDialog) {
+            ((JDialog) w).dispose();
+        }
+
+
+        if (parentPanel != null) {
+            parentPanel.fillToTableHoaDon();
+            parentPanel.fillToTableGioHang();
+            parentPanel.fillToTable();
+        }
+    }
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
+        this.setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 432, Short.MAX_VALUE)
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 373, Short.MAX_VALUE)
+        );
+    }// </editor-fold>//GEN-END:initComponents
+
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    // End of variables declaration//GEN-END:variables
+}

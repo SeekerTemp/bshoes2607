@@ -1,0 +1,110 @@
+//Daily reminder
+# Start a new task
+git checkout main
+git pull
+git checkout -b feature/my-task
+
+# Continue an existing branch
+git checkout feature/my-task
+git pull
+
+# After teammate merged to main. Get newest change from main to merge
+git checkout main
+git pull
+git checkout feature/my-task
+git merge main
+
+
+//===A. First init===
+//A1. Initialize Git
+git init
+git add .
+
+//A2. commit
+git commit -m "message: Initial commit"
+
+//A3.Connect to GitHub
+git config --global user.name "SeekerTemp"
+git config --global user.email "gm.bac.3d@gmail.com"
+git remote add origin https://github.com/SeekerTemp/MyProjext.git
+//verify
+git remote -v
+
+//A3.1 Select branch
+git branch -M main
+git push -u origin main
+//A3.2 changing branch. Select branch if not corrected branch or change branch
+git branch -M feature-group/branch-name
+git branch //check current branch after changed
+//A3.3 Delete the branch (optional)
+//Local delete
+git branch -d feature-group/branch-name
+//Remote delete
+git push origin --delete feature-group/branch-name
+//A3.4 Review code, merge back into main, get update content locally
+git checkout main
+git pull
+git merge feature-group/branch-name
+git push
+
+
+//===B.Daily Workflow after code change===
+git checkout feature-group/branch-name
+git add .
+git commit -m "message: local commit"
+git push
+
+
+//===C.Branches work on new device/new teammember===
+git clone https://github.com/YourName/MyProject.git //C1. Work on diference device/team. Branch new project
+git checkout -b feature-group/branch-name //C2.1 create branches to test feature.
+git checkout feature-group/branch-name //C2.2 get branch if project existing
+
+//C3. Get all update before changing any thing
+git fetch origin //Get change from all branch
+git checkout feature-group/branch-name
+git pull
+git pull origin feature-group/branch-name //Get change from specific branch
+
+//C4. Work and commit to new branch
+git add .
+git commit -m "message: update note"
+git push -u origin feature-group/branch-name
+
+
+
+//D. Continue Working on branch feature, pull latest main before push change to make sure latest version & no conflict
+//D1.1. Go back to main
+git checkout main
+//D1.2. Get the latest changes from GitHub
+git pull
+//D1.3. Switch back to your feature branch
+git checkout feature/shop
+//D1.4. Bring main's changes into your branch
+git merge main
+
+//or short continuing
+git checkout feature-group/branch-name
+//D2.1. Downloads the latest changes from GitHub
+git fetch origin
+//D2.2.merges the newest remote main into your feature branch.
+git merge origin/main
+
+
+//===COMPLETE WORKFLOW===
+1. Pull latest main
+2. Create feature branch
+3. Work
+4. Push branch
+5. Create Pull Request
+6. Merge to main(PO Review)
+7. Everyone pulls latest main
+
+//===RULE OF THUMB===
+1. Starting a new branch: main → pull → create branch
+2. Updating an existing branch: fetch → merge origin/main
+
+3. Always use consitent main:
+git checkout main //Switch to main
+git fetch origin //Download latest remote info
+git reset --hard origin/main //HARD RESET local main to remote main
