@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: layout(~{::title}, ~{::section}, 'login')}">
+<head><title>Đăng nhập — BShoes</title></head>
+<body>
+<section>
+    <div id="app" class="d-flex justify-content-center align-items-center" style="min-height:70vh">
+        <div class="card shadow-sm" style="width:360px">
+            <div class="card-body">
+                <h4 class="text-center mb-3" style="color:var(--bs-green)">Đăng nhập</h4>
+                <div class="mb-3">
+                    <label class="form-label">Tài khoản</label>
+                    <input class="form-control" v-model="taiKhoan" placeholder="admin">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Mật khẩu</label>
+                    <input type="password" class="form-control" v-model="matKhau">
+                </div>
+                <button class="btn w-100 text-white" style="background:var(--bs-green)" @click="dangNhap">Đăng nhập</button>
+                <p class="text-muted small mt-3 mb-0">Demo: vai trò ADMIN vào thẳng màn hình Thống kê.</p>
+                <p v-if="thongBao" class="text-danger small mt-2">[[ thongBao ]]</p>
+            </div>
+        </div>
+    </div>
+</section>
+<script>
+Vue.createApp({
+    delimiters: ['[[', ']]'],
+    data() { return { taiKhoan: '', matKhau: '', thongBao: '' }; },
+    methods: {
+        dangNhap() {
+            if (!this.taiKhoan || !this.matKhau) { this.thongBao = 'Nhập tài khoản và mật khẩu.'; return; }
+            window.location.href = '/';   // demo: go to dashboard
+        }
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
