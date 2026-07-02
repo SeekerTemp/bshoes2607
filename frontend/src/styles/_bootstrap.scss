@@ -1,0 +1,10 @@
+// Override Bootstrap Sass variables BEFORE importing Bootstrap.
+$primary: #0B895A;
+$success: #198754;
+$warning: #f0ad4e;
+$danger:  #dc3545;
+$info:    #0dcaf0;
+$border-radius: 8px;
+$font-family-sans-serif: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+@import "bootstrap/scss/bootstrap";
