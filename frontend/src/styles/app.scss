@@ -2,4 +2,57 @@
 @import "./bootstrap";
 @import "bootstrap-icons/font/bootstrap-icons.css";
 
-body { margin: 0; background: var(--c-bg); color: var(--c-text); font-family: var(--font-base); }
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--font-base);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #C7CED6 transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: #C7CED6;
+  border-radius: var(--radius-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #A9B3BE;
+}
+
+/* Shared form focus ring + label styling */
+.form-control,
+.form-select {
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--c-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.form-label {
+  font-weight: 600;
+  font-size: .85rem;
+  color: var(--c-text);
+}
+
+/* Utility helpers */
+.text-primary-brand { color: var(--c-primary) !important; }
+.bg-surface { background: var(--c-surface) !important; }

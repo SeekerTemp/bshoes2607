@@ -17,8 +17,8 @@ onBeforeUnmount(() => modal?.dispose())
 <template>
   <div class="modal fade" tabindex="-1" ref="el">
     <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
+      <div class="modal-content app-modal-content">
+        <div class="modal-header app-modal-header">
           <h5 class="modal-title">{{ title }}</h5>
           <button type="button" class="btn-close" @click="emit('update:open', false)"></button>
         </div>
@@ -28,3 +28,14 @@ onBeforeUnmount(() => modal?.dispose())
     </div>
   </div>
 </template>
+
+<style scoped>
+.app-modal-content {
+  border: none;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+.app-modal-header {
+  border-bottom: 1px solid var(--c-border);
+}
+</style>
