@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: layout(~{::title}, ~{::section}, 'lichsu')}">
+<head><title>Lịch sử hoá đơn — BShoes</title></head>
+<body>
+<section>
+    <div id="app">
+        <h4 class="mb-3">Lịch sử hoá đơn</h4>
+        <div class="d-flex gap-2 mb-3">
+            <input class="form-control" style="max-width:280px" v-model="tuKhoa" placeholder="Tìm mã HĐ / khách...">
+            <select class="form-select" style="max-width:200px" v-model="locTrangThai">
+                <option value="">-- Trạng thái --</option>
+                <option>Chờ</option><option>Thành công</option><option>Huỷ</option>
+            </select>
+        </div>
+        <table class="table table-hover bg-white align-middle">
+            <thead><tr><th>Mã HĐ</th><th>Khách</th><th>Nhân viên</th><th>Ngày tạo</th><th class="text-end">Tổng tiền</th><th>Trạng thái</th><th></th></tr></thead>
+            <tbody>
+                <tr v-for="h in ketQua" :key="h.id">
+                    <td>{{ h.ma }}</td><td>{{ h.khach }}</td><td>{{ h.nhanVien }}</td><td>{{ h.ngayTao }}</td>
+                    <td class="text-end">{{ vnd(h.tongTien) }}</td>
+                    <td><span class="badge" :class="badge(h.trangThai)">{{ h.trangThai }}</span></td>
+                    <td class="text-end"><button class="btn btn-sm btn-outline-secondary" @click="xem(h)">Chi tiết</button></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="modal fade" ref="modalEl" tabindex="-1">
+            <div class="modal-dialog modal-lg"><div class="modal-content" v-if="chon">
+                <div class="modal-header"><h5 class="modal-title">Hoá đơn {{ chon.ma }}</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <p class="mb-1"><b>Khách:</b> {{ chon.khach }} — <b>NV:</b> {{ chon.nhanVien }} — <b>Ngày:</b> {{ chon.ngayTao }}</p>
+                    <table class="table table-sm">
+                        <thead><tr><th>Sản phẩm</th><th class="text-end">SL</th><th class="text-end">Đơn giá</th><th class="text-end">Thành tiền</th></tr></thead>
+                        <tbody>
+                            <tr v-for="d in chon.chiTiet" :key="d.ten">
+                                <td>{{ d.ten }}</td><td class="text-end">{{ d.soLuong }}</td>
+                                <td class="text-end">{{ vnd(d.donGia) }}</td><td class="text-end">{{ vnd(d.donGia*d.soLuong) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="text-end fs-5">Tổng: <b style="color:var(--bs-green)">{{ vnd(chon.tongTien) }}</b></div>
+                </div>
+            </div></div>
+        </div>
+    </div>
+</section>
+<script>
+Vue.createApp({
+    data() { return {
+        tuKhoa: '', locTrangThai: '', chon: null, modal: null,
+        rows: [
+            { id:1, ma:'HD1', khach:'Nguyễn Văn A', nhanVien:'admin', ngayTao:'2026-07-01', tongTien:2000000, trangThai:'Thành công',
+              chiTiet:[{ten:'Nike Air Zoom (Đen/42)', soLuong:1, donGia:2000000}] },
+            { id:2, ma:'HD2', khach:'Khách lẻ', nhanVien:'hoangbh', ngayTao:'2026-07-01', tongTien:3700000, trangThai:'Chờ',
+              chiTiet:[{ten:'Adidas Ultraboost (Trắng/40)', soLuong:1, donGia:2500000},{ten:'Converse Classic (Đỏ/39)', soLuong:1, donGia:1200000}] },
+            { id:3, ma:'HD3', khach:'Trần Thị B', nhanVien:'vungan', ngayTao:'2026-06-30', tongTien:1200000, trangThai:'Huỷ',
+              chiTiet:[{ten:'Converse Classic (Đỏ/39)', soLuong:1, donGia:1200000}] },
+        ]
+    }; },
+    computed: {
+        ketQua() { const k = this.tuKhoa.toLowerCase();
+            return this.rows.filter(r => (r.ma.toLowerCase().includes(k) || r.khach.toLowerCase().includes(k))
+                && (!this.locTrangThai || r.trangThai === this.locTrangThai)); }
+    },
+    mounted() { this.modal = new bootstrap.Modal(this.$refs.modalEl); },
+    methods: {
+        vnd(n){ return (n||0).toLocaleString('vi-VN') + ' ₫'; },
+        badge(t){ return t==='Thành công'?'bg-success':(t==='Chờ'?'bg-warning text-dark':'bg-danger'); },
+        xem(h){ this.chon = h; this.modal.show(); }
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
