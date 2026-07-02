@@ -4,11 +4,13 @@ import com.vn.test.bshoes.entity.NhanVien;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.util.List;
 
+@Repository
 public interface NhanVienRepository extends JpaRepository<NhanVien, Integer> {
 
     @Query(value = "SELECT id_nhan_vien,ma_nhan_vien, ten_nhan_vien, cccd, email, so_dien_thoai, gioi_tinh, dia_chi,ngay_sinh FROM nhan_vien where trang_thai_xoa = 0", nativeQuery = true)

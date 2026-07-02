@@ -4,11 +4,13 @@ import com.vn.test.bshoes.entity.SanPhamChiTiet_ql;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
 
+@Repository
 public interface SanPhamChiTietQlRepository extends JpaRepository<SanPhamChiTiet_ql, Integer> {
 
     @Query(value = "SELECT spct.id_san_pham_chi_tiet, spct.id_san_pham, spct.id_kich_co, spct.id_mau_sac, spct.ma_san_pham_chi_tiet, spct.so_luong_ton, spct.don_gia, spct.ngay_tao, spct.ngay_cap_nhat, spct.nguoi_tao, spct.nguoi_cap_nhat, spct.trang_thai, sp.ten_san_pham, sp.ma_san_pham FROM san_pham_chi_tiet spct LEFT JOIN san_pham sp ON sp.id_san_pham = spct.id_san_pham WHERE spct.trang_thai_xoa = 0", nativeQuery = true)

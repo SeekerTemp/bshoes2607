@@ -1,68 +1,47 @@
 package com.vn.test.bshoes.entity;
 
-/**
- *
- * @author DELL
- *///6. ThuongHieu
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Nationalized;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+@Getter
+@Setter
+@Entity
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "thuong_hieu", schema = "dbo")
 public class ThuongHieu {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_thuong_hieu", nullable = false)
+    private Integer id;
 
-    private int id_thuong_hieu;
-    private String ma_thuong_hieu;
-    private String ten_thuong_hieu;
-    private String mo_ta;
-    private boolean trang_thai;
-//constructor
+    @Column(name = "ma_thuong_hieu", length = 20)
+    private String maThuongHieu;
 
-    public ThuongHieu() {
-    }
+    @Nationalized
+    @Column(name = "ten_thuong_hieu", length = 100)
+    private String tenThuongHieu;
 
-    public ThuongHieu(int id_thuong_hieu, String ma_thuong_hieu, String ten_thuong_hieu, String mo_ta, boolean trang_thai) {
-        this.id_thuong_hieu = id_thuong_hieu;
-        this.ma_thuong_hieu = ma_thuong_hieu;
-        this.ten_thuong_hieu = ten_thuong_hieu;
-        this.mo_ta = mo_ta;
-        this.trang_thai = trang_thai;
-    }
-    // Getters & Setters
+    @Nationalized
+    @Column(name = "mo_ta")
+    private String moTa;
 
-    public int getId_thuong_hieu() {
-        return id_thuong_hieu;
-    }
+    @Column(name = "trang_thai")
+    private Boolean trangThai;
 
-    public void setId_thuong_hieu(int id_thuong_hieu) {
-        this.id_thuong_hieu = id_thuong_hieu;
-    }
+    @ColumnDefault("0")
+    @Column(name = "trang_thai_xoa")
+    private Boolean trangThaiXoa;
 
-    public String getMa_thuong_hieu() {
-        return ma_thuong_hieu;
-    }
-
-    public void setMa_thuong_hieu(String ma_thuong_hieu) {
-        this.ma_thuong_hieu = ma_thuong_hieu;
-    }
-
-    public String getTen_thuong_hieu() {
-        return ten_thuong_hieu;
-    }
-
-    public void setTen_thuong_hieu(String ten_thuong_hieu) {
-        this.ten_thuong_hieu = ten_thuong_hieu;
-    }
-
-    public String getMo_ta() {
-        return mo_ta;
-    }
-
-    public void setMo_ta(String mo_ta) {
-        this.mo_ta = mo_ta;
-    }
-
-    public boolean isTrang_thai() {
-        return trang_thai;
-    }
-
-    public void setTrang_thai(boolean trang_thai) {
-        this.trang_thai = trang_thai;
-    }
+    @OneToMany(mappedBy = "idThuongHieu")
+    private Set<SanPham> sanPhams = new LinkedHashSet<>();
 
 }

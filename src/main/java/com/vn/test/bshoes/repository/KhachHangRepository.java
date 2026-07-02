@@ -4,8 +4,10 @@ import com.vn.test.bshoes.entity.KhachHang;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+@Repository
 public interface KhachHangRepository extends JpaRepository<KhachHang, Integer> {
 
     @Query(value = "select id_khach_hang,ma_khach_hang,ten_khach_hang,gioi_tinh,so_dien_thoai,dia_chi,email,trang_thai,nguoi_tao_ma,nguoi_cap_nhat from khach_hang where trang_thai_xoa = 0", nativeQuery = true)

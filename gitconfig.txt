@@ -26,7 +26,7 @@ git commit -m "message: Initial commit"
 //A3.Connect to GitHub
 git config --global user.name "SeekerTemp"
 git config --global user.email "gm.bac.3d@gmail.com"
-git remote add origin https://github.com/SeekerTemp/MyProjext.git
+git remote add origin https://github.com/SeekerTemp/bshoes2607.git
 //verify
 git remote -v
 

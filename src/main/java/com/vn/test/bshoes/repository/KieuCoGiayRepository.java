@@ -4,8 +4,10 @@ import com.vn.test.bshoes.entity.KieuCoGiay;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+@Repository
 public interface KieuCoGiayRepository extends JpaRepository<KieuCoGiay, Integer> {
 
     @Query(value = "select * from kieu_co_giay where ten_co_giay = ?1", nativeQuery = true)

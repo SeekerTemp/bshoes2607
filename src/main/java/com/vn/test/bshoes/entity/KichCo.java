@@ -1,58 +1,43 @@
 package com.vn.test.bshoes.entity;
 
-/**
- *
- * @author DELL
- *///9.KichCo
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Nationalized;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+@Getter
+@Setter
+@Entity
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "kich_co", schema = "dbo")
 public class KichCo {
-    private int id_kich_co;
-    private String ma_kich_co;
-    private String ten_kich_co;
-    private boolean trang_thai;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_kich_co", nullable = false)
+    private Integer id;
 
-    //Constructor
+    @Column(name = "ma_kich_co", length = 20)
+    private String maKichCo;
 
-    public KichCo() {
-    }
+    @Nationalized
+    @Column(name = "ten_kich_co", length = 50)
+    private String tenKichCo;
 
-    public KichCo(int id_kich_co, String ma_kich_co, String ten_kich_co, boolean trang_thai) {
-        this.id_kich_co = id_kich_co;
-        this.ma_kich_co = ma_kich_co;
-        this.ten_kich_co = ten_kich_co;
-        this.trang_thai = trang_thai;
-    }
-    // Getters & Setters
+    @Column(name = "trang_thai")
+    private Boolean trangThai;
 
-    public int getId_kich_co() {
-        return id_kich_co;
-    }
+    @ColumnDefault("0")
+    @Column(name = "trang_thai_xoa")
+    private Boolean trangThaiXoa;
 
-    public void setId_kich_co(int id_kich_co) {
-        this.id_kich_co = id_kich_co;
-    }
-
-    public String getMa_kich_co() {
-        return ma_kich_co;
-    }
-
-    public void setMa_kich_co(String ma_kich_co) {
-        this.ma_kich_co = ma_kich_co;
-    }
-
-    public String getTen_kich_co() {
-        return ten_kich_co;
-    }
-
-    public void setTen_kich_co(String ten_kich_co) {
-        this.ten_kich_co = ten_kich_co;
-    }
-
-    public boolean isTrang_thai() {
-        return trang_thai;
-    }
-
-    public void setTrang_thai(boolean trang_thai) {
-        this.trang_thai = trang_thai;
-    }
+    @OneToMany(mappedBy = "idKichCo")
+    private Set<com.vn.test.bshoes.entity.SanPhamChiTiet> sanPhamChiTiets = new LinkedHashSet<>();
 
 }

@@ -3,9 +3,11 @@ package com.vn.test.bshoes.repository;
 import com.vn.test.bshoes.entity.LichSuHoaDon;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public interface LichSuHoaDonRepository extends JpaRepository<LichSuHoaDon, Integer> {
 
     @Query(value = "select * from lich_su_hoa_don where trang_thai = 1", nativeQuery = true)

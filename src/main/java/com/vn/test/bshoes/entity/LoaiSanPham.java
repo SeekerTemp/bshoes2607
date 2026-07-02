@@ -1,73 +1,47 @@
 package com.vn.test.bshoes.entity;
 
-/**
- *
- * @author DELL
- *///1. LoaiSanPham
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Nationalized;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+@Getter
+@Setter
+@Entity
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "loai_san_pham", schema = "dbo")
 public class LoaiSanPham {
-    private int id_loai_san_pham;
-    private String ma_loai_san_pham;
-    private String ten_loai_san_pham;
-    private String mo_ta;
-    private Boolean trang_thai_xoa;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_loai_san_pham", nullable = false)
+    private Integer id;
 
-    public LoaiSanPham() {
-    }
+    @Column(name = "ma_loai_san_pham", length = 20)
+    private String maLoaiSanPham;
 
-    public LoaiSanPham(String ma_loai_san_pham, String ten_loai_san_pham, String mo_ta, Boolean trang_thai_xoa) {
-        this.ma_loai_san_pham = ma_loai_san_pham;
-        this.ten_loai_san_pham = ten_loai_san_pham;
-        this.mo_ta = mo_ta;
-        this.trang_thai_xoa = trang_thai_xoa;
-    }
+    @Nationalized
+    @Column(name = "ten_loai_san_pham", length = 100)
+    private String tenLoaiSanPham;
 
-    public LoaiSanPham(int id_loai_san_pham, String ma_loai_san_pham, String ten_loai_san_pham, String mo_ta, Boolean trang_thai_xoa) {
-        this.id_loai_san_pham = id_loai_san_pham;
-        this.ma_loai_san_pham = ma_loai_san_pham;
-        this.ten_loai_san_pham = ten_loai_san_pham;
-        this.mo_ta = mo_ta;
-        this.trang_thai_xoa = trang_thai_xoa;
-    }
+    @Nationalized
+    @Column(name = "mo_ta")
+    private String moTa;
 
-    public int getId_loai_san_pham() {
-        return id_loai_san_pham;
-    }
+    @Column(name = "trang_thai")
+    private Boolean trangThai;
 
-    public void setId_loai_san_pham(int id_loai_san_pham) {
-        this.id_loai_san_pham = id_loai_san_pham;
-    }
+    @ColumnDefault("0")
+    @Column(name = "trang_thai_xoa")
+    private Boolean trangThaiXoa;
 
-    public String getMa_loai_san_pham() {
-        return ma_loai_san_pham;
-    }
-
-    public void setMa_loai_san_pham(String ma_loai_san_pham) {
-        this.ma_loai_san_pham = ma_loai_san_pham;
-    }
-
-    public String getTen_loai_san_pham() {
-        return ten_loai_san_pham;
-    }
-
-    public void setTen_loai_san_pham(String ten_loai_san_pham) {
-        this.ten_loai_san_pham = ten_loai_san_pham;
-    }
-
-    public String getMo_ta() {
-        return mo_ta;
-    }
-
-    public void setMo_ta(String mo_ta) {
-        this.mo_ta = mo_ta;
-    }
-
-    public Boolean getTrang_thai_xoa() {
-        return trang_thai_xoa != null ? trang_thai_xoa : false;
-    }
-
-    public void setTrang_thai_xoa(Boolean trang_thai_xoa) {
-        this.trang_thai_xoa = trang_thai_xoa;
-    }
-
+    @OneToMany(mappedBy = "idLoaiSanPham")
+    private Set<com.vn.test.bshoes.entity.SanPham> sanPhams = new LinkedHashSet<>();
 
 }

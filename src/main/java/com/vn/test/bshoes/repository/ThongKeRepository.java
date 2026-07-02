@@ -5,11 +5,13 @@ import com.vn.test.bshoes.entity.ThongKeDoanhThu;
 import com.vn.test.bshoes.entity.ThongKeSanPham;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import java.sql.Date;
 import java.util.List;
 
 // NOTE: reporting repository. Native aggregation queries return DTO types (ThongKeDoanhThu/ThongKeSanPham); these require a @SqlResultSetMapping or projection to map at runtime — deferred until entities/ORM are finalized (accepted: won't run yet).
+@Repository
 public interface ThongKeRepository extends JpaRepository<HoaDon, Integer> {
 
     @Query(value = "SELECT DAY(hd.ngay_tao_ma) AS thang, COUNT(DISTINCT hd.id_hoa_don) AS soDon, COUNT(DISTINCT CASE WHEN hd.trang_thai = 1 THEN hd.id_hoa_don END) AS donThanhCong, COUNT(DISTINCT CASE WHEN hd.trang_thai = 2 THEN hd.id_hoa_don END) AS donHuy, SUM(hd.tong_tien_phai_tra) AS tongDoanhThu FROM hoa_don hd JOIN hoa_don_chi_tiet hdct ON hd.id_hoa_don = hdct.id_hoa_don WHERE CAST(hd.ngay_tao_ma AS DATE) = CAST(GETDATE() AS DATE) AND loai_hoa_don = 1 GROUP BY DAY(hd.ngay_tao_ma)", nativeQuery = true)

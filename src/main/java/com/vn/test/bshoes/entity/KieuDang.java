@@ -1,58 +1,43 @@
 package com.vn.test.bshoes.entity;
 
-/**
- *
- * @author DELL
- *///3. KieuDang
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Nationalized;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+@Getter
+@Setter
+@Entity
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "kieu_dang", schema = "dbo")
 public class KieuDang {
-    private int id_kieu_dang;
-    private String ma_kieu_dang;
-    private String ten_kieu_dang;
-    private boolean trang_thai;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_kieu_dang", nullable = false)
+    private Integer id;
 
-    //constructor
+    @Column(name = "ma_kieu_dang", length = 20)
+    private String maKieuDang;
 
-    public KieuDang() {
-    }
+    @Nationalized
+    @Column(name = "ten_kieu_dang", length = 100)
+    private String tenKieuDang;
 
-    public KieuDang(int id_kieu_dang, String ma_kieu_dang, String ten_kieu_dang, boolean trang_thai) {
-        this.id_kieu_dang = id_kieu_dang;
-        this.ma_kieu_dang = ma_kieu_dang;
-        this.ten_kieu_dang = ten_kieu_dang;
-        this.trang_thai = trang_thai;
-    }
-    //Getter n Setter
+    @Column(name = "trang_thai")
+    private Boolean trangThai;
 
-    public int getId_kieu_dang() {
-        return id_kieu_dang;
-    }
+    @ColumnDefault("0")
+    @Column(name = "trang_thai_xoa")
+    private Boolean trangThaiXoa;
 
-    public void setId_kieu_dang(int id_kieu_dang) {
-        this.id_kieu_dang = id_kieu_dang;
-    }
-
-    public String getMa_kieu_dang() {
-        return ma_kieu_dang;
-    }
-
-    public void setMa_kieu_dang(String ma_kieu_dang) {
-        this.ma_kieu_dang = ma_kieu_dang;
-    }
-
-    public String getTen_kieu_dang() {
-        return ten_kieu_dang;
-    }
-
-    public void setTen_kieu_dang(String ten_kieu_dang) {
-        this.ten_kieu_dang = ten_kieu_dang;
-    }
-
-    public boolean isTrang_thai() {
-        return trang_thai;
-    }
-
-    public void setTrang_thai(boolean trang_thai) {
-        this.trang_thai = trang_thai;
-    }
+    @OneToMany(mappedBy = "idKieuDang")
+    private Set<com.vn.test.bshoes.entity.SanPham> sanPhams = new LinkedHashSet<>();
 
 }

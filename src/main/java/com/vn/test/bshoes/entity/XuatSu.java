@@ -16,19 +16,23 @@ import java.util.Set;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "chat_lieu", schema = "dbo")
-public class ChatLieu {
+@Table(name = "xuat_su", schema = "dbo")
+public class XuatSu {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_chat_lieu", nullable = false)
+    @Column(name = "id_xuat_su", nullable = false)
     private Integer id;
 
-    @Column(name = "ma_chat_lieu", length = 20)
-    private String maChatLieu;
+    @Column(name = "ma_xuat_su", length = 20)
+    private String maXuatSu;
 
     @Nationalized
-    @Column(name = "ten_chat_lieu", length = 100)
-    private String tenChatLieu;
+    @Column(name = "ten_xuat_su", length = 100)
+    private String tenXuatSu;
+
+    @Nationalized
+    @Column(name = "mo_ta")
+    private String moTa;
 
     @Column(name = "trang_thai")
     private Boolean trangThai;
@@ -37,7 +41,7 @@ public class ChatLieu {
     @Column(name = "trang_thai_xoa")
     private Boolean trangThaiXoa;
 
-    @OneToMany(mappedBy = "idChatLieu")
-    private Set<com.vn.test.bshoes.entity.SanPham> sanPhams = new LinkedHashSet<>();
+    @OneToMany(mappedBy = "idXuatSu")
+    private Set<SanPham> sanPhams = new LinkedHashSet<>();
 
 }

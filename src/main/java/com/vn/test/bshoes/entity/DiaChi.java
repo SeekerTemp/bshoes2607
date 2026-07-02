@@ -1,26 +1,68 @@
 package com.vn.test.bshoes.entity;
 
-import java.sql.Timestamp;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Nationalized;
 
-/**
- *
- * @author DELL
- *///15.DiaChi
+import java.time.Instant;
+
+@Getter
+@Setter
+@Entity
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "dia_chi", schema = "dbo")
 public class DiaChi {
-    private int id_dia_chi;
-    private int id_khach_hang;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_dia_chi", nullable = false)
+    private Integer id;
 
-    private String dia_chi_mac_dinh;
-    private String thanh_pho;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_khach_hang")
+    private com.vn.test.bshoes.entity.KhachHang idKhachHang;
+
+    @Nationalized
+    @Column(name = "dia_chi_mac_dinh")
+    private String diaChiMacDinh;
+
+    @Nationalized
+    @Column(name = "thanh_pho", length = 50)
+    private String thanhPho;
+
+    @Nationalized
+    @Column(name = "phuong", length = 50)
     private String phuong;
-    private String dia_chi_them;
 
-    private String nguoi_tao;
-    private String nguoi_cap_nhat;
+    @Nationalized
+    @Column(name = "dia_chi_them")
+    private String diaChiThem;
 
-    private Timestamp ngay_tao;
-    private Timestamp ngay_cap_nhat;
-    private boolean trang_thai;
+    @Nationalized
+    @Column(name = "nguoi_tao", length = 50)
+    private String nguoiTao;
 
-    // Getters & Setters
+    @Nationalized
+    @Column(name = "nguoi_cap_nhat", length = 50)
+    private String nguoiCapNhat;
+
+    @ColumnDefault("getdate()")
+    @Column(name = "ngay_tao")
+    private Instant ngayTao;
+
+    @ColumnDefault("getdate()")
+    @Column(name = "ngay_cap_nhat")
+    private Instant ngayCapNhat;
+
+    @Column(name = "trang_thai")
+    private Boolean trangThai;
+
+    @ColumnDefault("0")
+    @Column(name = "trang_thai_xoa")
+    private Boolean trangThaiXoa;
+
 }

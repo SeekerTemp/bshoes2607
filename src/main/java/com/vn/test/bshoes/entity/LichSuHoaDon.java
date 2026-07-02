@@ -1,125 +1,64 @@
 package com.vn.test.bshoes.entity;
 
-import java.sql.Timestamp;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Nationalized;
 
-/**
- *
- * @author DELL
- *///19.LichSuHoaDon
+import java.time.Instant;
+
+@Getter
+@Setter
+@Entity
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "lich_su_hoa_don", schema = "dbo")
 public class LichSuHoaDon {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Integer id;
 
-    private int id;
-    private int id_nhan_vien;
-    private int id_hoa_don;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_nhan_vien")
+    private com.vn.test.bshoes.entity.NhanVien idNhanVien;
 
-    private String ghi_chu;
-    private Timestamp thoi_gian_thay_doi;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_hoa_don")
+    private HoaDon idHoaDon;
 
-    private String nguoi_tao_ma;
-    private String nguoi_cap_nhat;
+    @Nationalized
+    @Column(name = "ghi_chu")
+    private String ghiChu;
 
-    private Timestamp ngay_tao_ma;
-    private Timestamp ngay_cap_nhat;
+    @ColumnDefault("getdate()")
+    @Column(name = "thoi_gian_thay_doi")
+    private Instant thoiGianThayDoi;
 
-    private boolean trang_thai;
-    //Constructor
+    @Nationalized
+    @Column(name = "nguoi_tao_ma", length = 50)
+    private String nguoiTaoMa;
 
-    public LichSuHoaDon() {
-    }
+    @Nationalized
+    @Column(name = "nguoi_cap_nhat", length = 50)
+    private String nguoiCapNhat;
 
-    public LichSuHoaDon(int id, int id_nhan_vien, int id_hoa_don, String ghi_chu, Timestamp thoi_gian_thay_doi, String nguoi_tao_ma, String nguoi_cap_nhat, Timestamp ngay_tao_ma, Timestamp ngay_cap_nhat, boolean trang_thai) {
-        this.id = id;
-        this.id_nhan_vien = id_nhan_vien;
-        this.id_hoa_don = id_hoa_don;
-        this.ghi_chu = ghi_chu;
-        this.thoi_gian_thay_doi = thoi_gian_thay_doi;
-        this.nguoi_tao_ma = nguoi_tao_ma;
-        this.nguoi_cap_nhat = nguoi_cap_nhat;
-        this.ngay_tao_ma = ngay_tao_ma;
-        this.ngay_cap_nhat = ngay_cap_nhat;
-        this.trang_thai = trang_thai;
-    }
+    @ColumnDefault("getdate()")
+    @Column(name = "ngay_tao_ma")
+    private Instant ngayTaoMa;
 
-    //getters and settes
+    @ColumnDefault("getdate()")
+    @Column(name = "ngay_cap_nhat")
+    private Instant ngayCapNhat;
 
-    public int getId() {
-        return id;
-    }
+    @Column(name = "trang_thai")
+    private Boolean trangThai;
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public int getId_nhan_vien() {
-        return id_nhan_vien;
-    }
-
-    public void setId_nhan_vien(int id_nhan_vien) {
-        this.id_nhan_vien = id_nhan_vien;
-    }
-
-    public int getId_hoa_don() {
-        return id_hoa_don;
-    }
-
-    public void setId_hoa_don(int id_hoa_don) {
-        this.id_hoa_don = id_hoa_don;
-    }
-
-    public String getGhi_chu() {
-        return ghi_chu;
-    }
-
-    public void setGhi_chu(String ghi_chu) {
-        this.ghi_chu = ghi_chu;
-    }
-
-    public Timestamp getThoi_gian_thay_doi() {
-        return thoi_gian_thay_doi;
-    }
-
-    public void setThoi_gian_thay_doi(Timestamp thoi_gian_thay_doi) {
-        this.thoi_gian_thay_doi = thoi_gian_thay_doi;
-    }
-
-    public String getNguoi_tao_ma() {
-        return nguoi_tao_ma;
-    }
-
-    public void setNguoi_tao_ma(String nguoi_tao_ma) {
-        this.nguoi_tao_ma = nguoi_tao_ma;
-    }
-
-    public String getNguoi_cap_nhat() {
-        return nguoi_cap_nhat;
-    }
-
-    public void setNguoi_cap_nhat(String nguoi_cap_nhat) {
-        this.nguoi_cap_nhat = nguoi_cap_nhat;
-    }
-
-    public Timestamp getNgay_tao_ma() {
-        return ngay_tao_ma;
-    }
-
-    public void setNgay_tao_ma(Timestamp ngay_tao_ma) {
-        this.ngay_tao_ma = ngay_tao_ma;
-    }
-
-    public Timestamp getNgay_cap_nhat() {
-        return ngay_cap_nhat;
-    }
-
-    public void setNgay_cap_nhat(Timestamp ngay_cap_nhat) {
-        this.ngay_cap_nhat = ngay_cap_nhat;
-    }
-
-    public boolean isTrang_thai() {
-        return trang_thai;
-    }
-
-    public void setTrang_thai(boolean trang_thai) {
-        this.trang_thai = trang_thai;
-    }
+    @ColumnDefault("0")
+    @Column(name = "trang_thai_xoa")
+    private Boolean trangThaiXoa;
 
 }

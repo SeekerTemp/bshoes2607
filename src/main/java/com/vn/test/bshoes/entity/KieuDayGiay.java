@@ -1,58 +1,43 @@
 package com.vn.test.bshoes.entity;
 
-/**
- *
- * @author DELL
- *///5. KieuDayGiay
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Nationalized;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+@Getter
+@Setter
+@Entity
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "kieu_day_giay", schema = "dbo")
 public class KieuDayGiay {
-    private int id_kieu_day_giay;
-    private String ma_day_giay;
-    private String ten_day_giay;
-    private boolean trang_thai;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_kieu_day_giay", nullable = false)
+    private Integer id;
 
-    //constructor
+    @Column(name = "ma_day_giay", length = 20)
+    private String maDayGiay;
 
-    public KieuDayGiay() {
-    }
+    @Nationalized
+    @Column(name = "ten_day_giay", length = 100)
+    private String tenDayGiay;
 
-    public KieuDayGiay(int id_kieu_day_giay, String ma_day_giay, String ten_day_giay, boolean trang_thai) {
-        this.id_kieu_day_giay = id_kieu_day_giay;
-        this.ma_day_giay = ma_day_giay;
-        this.ten_day_giay = ten_day_giay;
-        this.trang_thai = trang_thai;
-    }
-    // Getters & Setters
+    @Column(name = "trang_thai")
+    private Boolean trangThai;
 
-    public int getId_kieu_day_giay() {
-        return id_kieu_day_giay;
-    }
+    @ColumnDefault("0")
+    @Column(name = "trang_thai_xoa")
+    private Boolean trangThaiXoa;
 
-    public void setId_kieu_day_giay(int id_kieu_day_giay) {
-        this.id_kieu_day_giay = id_kieu_day_giay;
-    }
-
-    public String getMa_day_giay() {
-        return ma_day_giay;
-    }
-
-    public void setMa_day_giay(String ma_day_giay) {
-        this.ma_day_giay = ma_day_giay;
-    }
-
-    public String getTen_day_giay() {
-        return ten_day_giay;
-    }
-
-    public void setTen_day_giay(String ten_day_giay) {
-        this.ten_day_giay = ten_day_giay;
-    }
-
-    public boolean isTrang_thai() {
-        return trang_thai;
-    }
-
-    public void setTrang_thai(boolean trang_thai) {
-        this.trang_thai = trang_thai;
-    }
+    @OneToMany(mappedBy = "idKieuDayGiay")
+    private Set<com.vn.test.bshoes.entity.SanPham> sanPhams = new LinkedHashSet<>();
 
 }

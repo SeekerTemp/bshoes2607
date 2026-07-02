@@ -4,8 +4,10 @@ import com.vn.test.bshoes.entity.LoaiSanPham;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+@Repository
 public interface LoaiSanPhamRepository extends JpaRepository<LoaiSanPham, Integer> {
 
     @Query(value = "select * from loai_san_pham where ten_loai_san_pham = ?1", nativeQuery = true)

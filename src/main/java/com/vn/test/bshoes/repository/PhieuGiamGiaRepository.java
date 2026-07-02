@@ -4,12 +4,14 @@ import com.vn.test.bshoes.entity.PhieuGiamGia;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
 
+@Repository
 public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Integer> {
 
     @Query(value = "select id_phieu_giam_gia,ma_phieu_giam,ten_phieu_giam,loai_giam_gia,gia_tri_giam,don_toi_thieu,giam_toi_da,so_luong,thoi_gian_bat_dau,thoi_gian_ket_thuc,trang_thai from phieu_giam_gia where trang_thai_xoa = 0", nativeQuery = true)

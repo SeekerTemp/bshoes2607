@@ -4,10 +4,12 @@ import com.vn.test.bshoes.entity.SanPhamChiTiet;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Repository
 public interface SanPhamChiTietRepository extends JpaRepository<SanPhamChiTiet, Integer> {
 
     @Query(value = "SELECT * FROM san_pham_chi_tiet WHERE trang_thai = 1 AND so_luong_ton > 0", nativeQuery = true)

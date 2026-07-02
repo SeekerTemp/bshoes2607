@@ -4,8 +4,10 @@ import com.vn.test.bshoes.entity.ThuongHieu;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+@Repository
 public interface ThuongHieuRepository extends JpaRepository<ThuongHieu, Integer> {
 
     @Query(value = "select * from thuong_hieu where ten_thuong_hieu = ?1", nativeQuery = true)

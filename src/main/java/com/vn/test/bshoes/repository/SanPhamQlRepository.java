@@ -4,10 +4,12 @@ import com.vn.test.bshoes.entity.SanPham_ql;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Repository
 public interface SanPhamQlRepository extends JpaRepository<SanPham_ql, Integer> {
 
     @Query(value = "SELECT san_pham.id_san_pham, san_pham.ma_san_pham, loai_san_pham.id_loai_san_pham, san_pham.ten_san_pham, san_pham.id_chat_lieu, san_pham.id_kieu_dang, san_pham.id_kieu_co_giay, san_pham.id_kieu_day_giay, san_pham.id_thuong_hieu, san_pham.id_xuat_su, san_pham.mo_ta, san_pham.trang_thai FROM loai_san_pham INNER JOIN san_pham ON loai_san_pham.id_loai_san_pham = san_pham.id_loai_san_pham WHERE san_pham.trang_thai_xoa = 0", nativeQuery = true)
