@@ -18,14 +18,13 @@
                 </div>
                 <button class="btn w-100 text-white" style="background:var(--bs-green)" @click="dangNhap">Đăng nhập</button>
                 <p class="text-muted small mt-3 mb-0">Demo: vai trò ADMIN vào thẳng màn hình Thống kê.</p>
-                <p v-if="thongBao" class="text-danger small mt-2">[[ thongBao ]]</p>
+                <p v-if="thongBao" class="text-danger small mt-2">{{ thongBao }}</p>
             </div>
         </div>
     </div>
 </section>
 <script>
 Vue.createApp({
-    delimiters: ['[[', ']]'],
     data() { return { taiKhoan: '', matKhau: '', thongBao: '' }; },
     methods: {
         dangNhap() {

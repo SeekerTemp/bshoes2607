@@ -14,8 +14,8 @@
 
 ## Conventions used by every screen
 
-- **Delimiters:** Thymeleaf processes only `th:*` attributes; Vue keeps its default `{{ }}` mustaches. They do not collide.
-- **Vue load:** `https://unpkg.com/vue@3/dist/vue.global.prod.js` (global `Vue`). Each page ends with an inline `<script>` calling `Vue.createApp({ delimiters: ['[[', ']]'], data() {...}, methods: {...} }).mount('#app')`. **We deliberately set Vue delimiters to `[[ ]]`** to avoid any ambiguity with Thymeleaf and to make the demo copy-paste-safe. Use `[[ expr ]]` in markup.
+- **Delimiters:** Vue uses its **default `{{ }}` mustaches** (no custom `delimiters` option). Thymeleaf 3.x's inline-expression syntax is `[` `[ ]` `]` / `[( )]` — so `{{ }}` does NOT collide with Thymeleaf and passes through untouched to the browser for Vue to interpolate. (Do NOT use double-square-bracket delimiters for Vue: Thymeleaf would try to evaluate them server-side and crash the page.)
+- **Vue load:** `https://unpkg.com/vue@3/dist/vue.global.prod.js` (global `Vue`). Each page ends with an inline `<script>` calling `Vue.createApp({ data() {...}, methods: {...} }).mount('#app')`. Use `{{ expr }}` in markup.
 - **Bootstrap:** CSS + `bootstrap.bundle.min.js` from jsDelivr (needed for modals/dropdowns).
 - **Money/format:** mock data uses plain numbers; format inline with a `vnd` method (`n.toLocaleString('vi-VN')`).
 - **Every page** is a Thymeleaf template that replaces the layout fragment and supplies `title`, `section` (content), and an `active` nav key.
@@ -207,14 +207,13 @@ git commit -m "feat: add shared Thymeleaf layout fragment and green theme CSS"
                 </div>
                 <button class="btn w-100 text-white" style="background:var(--bs-green)" @click="dangNhap">Đăng nhập</button>
                 <p class="text-muted small mt-3 mb-0">Demo: vai trò ADMIN vào thẳng màn hình Thống kê.</p>
-                <p v-if="thongBao" class="text-danger small mt-2">[[ thongBao ]]</p>
+                <p v-if="thongBao" class="text-danger small mt-2">{{ thongBao }}</p>
             </div>
         </div>
     </div>
 </section>
 <script>
 Vue.createApp({
-    delimiters: ['[[', ']]'],
     data() { return { taiKhoan: '', matKhau: '', thongBao: '' }; },
     methods: {
         dangNhap() {
@@ -263,8 +262,8 @@ Content from `ThongKeDoanhThu` (thang, soSanPhamBan, tongDoanhThu, donCho, soDon
         <div class="row g-3 mb-4">
             <div class="col" v-for="c in cards" :key="c.label">
                 <div class="card card-stat shadow-sm"><div class="card-body">
-                    <div class="text-muted small">[[ c.label ]]</div>
-                    <div class="fs-4 fw-bold">[[ c.value ]]</div>
+                    <div class="text-muted small">{{ c.label }}</div>
+                    <div class="fs-4 fw-bold">{{ c.value }}</div>
                 </div></div>
             </div>
         </div>
@@ -276,10 +275,10 @@ Content from `ThongKeDoanhThu` (thang, soSanPhamBan, tongDoanhThu, donCho, soDon
             </tr></thead>
             <tbody>
                 <tr v-for="p in sanPham" :key="p.maSP">
-                    <td>[[ p.maSP ]]</td><td>[[ p.tenSP ]]</td><td>[[ p.loaiSP ]]</td>
-                    <td>[[ p.chatLieu ]]</td><td>[[ p.mauSac ]]</td><td>[[ p.kichThuoc ]]</td>
-                    <td class="text-end">[[ p.soLuongTon ]]</td><td class="text-end">[[ p.soLuongBan ]]</td>
-                    <td class="text-end">[[ vnd(p.doanhThu) ]]</td>
+                    <td>{{ p.maSP }}</td><td>{{ p.tenSP }}</td><td>{{ p.loaiSP }}</td>
+                    <td>{{ p.chatLieu }}</td><td>{{ p.mauSac }}</td><td>{{ p.kichThuoc }}</td>
+                    <td class="text-end">{{ p.soLuongTon }}</td><td class="text-end">{{ p.soLuongBan }}</td>
+                    <td class="text-end">{{ vnd(p.doanhThu) }}</td>
                 </tr>
             </tbody>
         </table>
@@ -287,7 +286,6 @@ Content from `ThongKeDoanhThu` (thang, soSanPhamBan, tongDoanhThu, donCho, soDon
 </section>
 <script>
 Vue.createApp({
-    delimiters: ['[[', ']]'],
     data() { return {
         cards: [
             { label: 'Doanh thu tháng', value: '128.500.000 ₫' },
@@ -356,13 +354,13 @@ Fields from `PhieuGiamGia`: ma_phieu_giam, ten_phieu_giam, loai_giam_gia (0=%,1=
             </tr></thead>
             <tbody>
                 <tr v-for="p in ketQua" :key="p.id">
-                    <td>[[ p.ma ]]</td><td>[[ p.ten ]]</td>
-                    <td>[[ p.loai === 0 ? '% ' : 'Tiền' ]]</td>
-                    <td class="text-end">[[ p.loai === 0 ? p.giaTri + '%' : vnd(p.giaTri) ]]</td>
-                    <td class="text-end">[[ vnd(p.donToiThieu) ]]</td>
-                    <td class="text-end">[[ p.soLuong ]]</td>
-                    <td>[[ p.batDau ]]</td><td>[[ p.ketThuc ]]</td>
-                    <td><span class="badge" :class="p.trangThai ? 'bg-success' : 'bg-secondary'">[[ p.trangThai ? 'Hoạt động' : 'Ngừng' ]]</span></td>
+                    <td>{{ p.ma }}</td><td>{{ p.ten }}</td>
+                    <td>{{ p.loai === 0 ? '% ' : 'Tiền' }}</td>
+                    <td class="text-end">{{ p.loai === 0 ? p.giaTri + '%' : vnd(p.giaTri) }}</td>
+                    <td class="text-end">{{ vnd(p.donToiThieu) }}</td>
+                    <td class="text-end">{{ p.soLuong }}</td>
+                    <td>{{ p.batDau }}</td><td>{{ p.ketThuc }}</td>
+                    <td><span class="badge" :class="p.trangThai ? 'bg-success' : 'bg-secondary'">{{ p.trangThai ? 'Hoạt động' : 'Ngừng' }}</span></td>
                     <td class="text-end">
                         <button class="btn btn-sm btn-outline-secondary" @click="moSua(p)">Sửa</button>
                         <button class="btn btn-sm btn-outline-danger" @click="xoa(p)">Xoá</button>
@@ -375,7 +373,7 @@ Fields from `PhieuGiamGia`: ma_phieu_giam, ten_phieu_giam, loai_giam_gia (0=%,1=
         <!-- Modal add/edit -->
         <div class="modal fade" ref="modalEl" tabindex="-1">
             <div class="modal-dialog"><div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title">[[ form.id ? 'Sửa' : 'Thêm' ]] phiếu giảm giá</h5>
+                <div class="modal-header"><h5 class="modal-title">{{ form.id ? 'Sửa' : 'Thêm' }} phiếu giảm giá</h5>
                     <button class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <div class="mb-2"><label class="form-label">Tên</label><input class="form-control" v-model="form.ten"></div>
@@ -405,7 +403,6 @@ Fields from `PhieuGiamGia`: ma_phieu_giam, ten_phieu_giam, loai_giam_gia (0=%,1=
 </section>
 <script>
 Vue.createApp({
-    delimiters: ['[[', ']]'],
     data() { return {
         tuKhoa: '', modal: null, seq: 3,
         form: { id: null, ma: '', ten: '', loai: 0, giaTri: 0, donToiThieu: 0, giamToiDa: 0, soLuong: 0, batDau: '', ketThuc: '', trangThai: true },
@@ -539,7 +536,7 @@ This screen is richer than the basic CRUD pattern: a product master list plus a 
             <input class="form-control" style="max-width:280px" v-model="tuKhoa" placeholder="Tìm mã / tên...">
             <select class="form-select" style="max-width:200px" v-model="locThuongHieu">
                 <option value="">-- Thương hiệu --</option>
-                <option v-for="t in thuongHieu" :key="t" :value="t">[[ t ]]</option>
+                <option v-for="t in thuongHieu" :key="t" :value="t">{{ t }}</option>
             </select>
         </div>
         <div class="row g-3">
@@ -548,8 +545,8 @@ This screen is richer than the basic CRUD pattern: a product master list plus a 
                     <thead><tr><th>Mã</th><th>Tên</th><th>Thương hiệu</th><th>Chất liệu</th><th class="text-end">Giá</th><th></th></tr></thead>
                     <tbody>
                         <tr v-for="p in ketQua" :key="p.id" :class="{'table-success': p.id === chon?.id}" @click="chonSP(p)" style="cursor:pointer">
-                            <td>[[ p.ma ]]</td><td>[[ p.ten ]]</td><td>[[ p.thuongHieu ]]</td><td>[[ p.chatLieu ]]</td>
-                            <td class="text-end">[[ vnd(p.gia) ]]</td>
+                            <td>{{ p.ma }}</td><td>{{ p.ten }}</td><td>{{ p.thuongHieu }}</td><td>{{ p.chatLieu }}</td>
+                            <td class="text-end">{{ vnd(p.gia) }}</td>
                             <td class="text-end"><button class="btn btn-sm btn-outline-secondary" @click.stop="moSua(p)">Sửa</button></td>
                         </tr>
                     </tbody>
@@ -559,12 +556,12 @@ This screen is richer than the basic CRUD pattern: a product master list plus a 
                 <div class="card"><div class="card-body">
                     <h6 v-if="!chon" class="text-muted">Chọn 1 sản phẩm để xem biến thể</h6>
                     <div v-else>
-                        <h6 class="mb-2">Biến thể: [[ chon.ten ]]</h6>
+                        <h6 class="mb-2">Biến thể: {{ chon.ten }}</h6>
                         <table class="table table-sm">
                             <thead><tr><th>Màu</th><th>Size</th><th class="text-end">Tồn</th><th class="text-end">Đơn giá</th></tr></thead>
                             <tbody>
                                 <tr v-for="v in chon.bienThe" :key="v.ma">
-                                    <td>[[ v.mau ]]</td><td>[[ v.size ]]</td><td class="text-end">[[ v.ton ]]</td><td class="text-end">[[ vnd(v.gia) ]]</td>
+                                    <td>{{ v.mau }}</td><td>{{ v.size }}</td><td class="text-end">{{ v.ton }}</td><td class="text-end">{{ vnd(v.gia) }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -575,15 +572,15 @@ This screen is richer than the basic CRUD pattern: a product master list plus a 
 
         <div class="modal fade" ref="modalEl" tabindex="-1">
             <div class="modal-dialog"><div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title">[[ form.id ? 'Sửa' : 'Thêm' ]] sản phẩm</h5>
+                <div class="modal-header"><h5 class="modal-title">{{ form.id ? 'Sửa' : 'Thêm' }} sản phẩm</h5>
                     <button class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <div class="mb-2"><label class="form-label">Tên</label><input class="form-control" v-model="form.ten"></div>
                     <div class="row">
                         <div class="col mb-2"><label class="form-label">Thương hiệu</label>
-                            <select class="form-select" v-model="form.thuongHieu"><option v-for="t in thuongHieu" :key="t">[[ t ]]</option></select></div>
+                            <select class="form-select" v-model="form.thuongHieu"><option v-for="t in thuongHieu" :key="t">{{ t }}</option></select></div>
                         <div class="col mb-2"><label class="form-label">Chất liệu</label>
-                            <select class="form-select" v-model="form.chatLieu"><option v-for="c in chatLieu" :key="c">[[ c ]]</option></select></div>
+                            <select class="form-select" v-model="form.chatLieu"><option v-for="c in chatLieu" :key="c">{{ c }}</option></select></div>
                     </div>
                     <div class="mb-2"><label class="form-label">Giá</label><input type="number" class="form-control" v-model.number="form.gia"></div>
                     <div class="mb-2"><label class="form-label">Mô tả</label><textarea class="form-control" v-model="form.moTa"></textarea></div>
@@ -598,7 +595,6 @@ This screen is richer than the basic CRUD pattern: a product master list plus a 
 </section>
 <script>
 Vue.createApp({
-    delimiters: ['[[', ']]'],
     data() { return {
         tuKhoa: '', locThuongHieu: '', chon: null, modal: null, seq: 3,
         thuongHieu: ['Nike','Adidas','Converse'], chatLieu: ['Vải','Da','Canvas','Primeknit'],
@@ -673,10 +669,10 @@ POS layout from `Pnl_6_qlHoaDon`: left = product picker, right = current invoice
                 <div class="row g-2">
                     <div class="col-6" v-for="p in ketQua" :key="p.id">
                         <div class="card h-100"><div class="card-body p-2">
-                            <div class="fw-bold">[[ p.ten ]]</div>
-                            <div class="small text-muted">[[ p.mau ]] • Size [[ p.size ]] • Tồn [[ p.ton ]]</div>
+                            <div class="fw-bold">{{ p.ten }}</div>
+                            <div class="small text-muted">{{ p.mau }} • Size {{ p.size }} • Tồn {{ p.ton }}</div>
                             <div class="d-flex justify-content-between align-items-center mt-1">
-                                <span>[[ vnd(p.gia) ]]</span>
+                                <span>{{ vnd(p.gia) }}</span>
                                 <button class="btn btn-sm text-white" style="background:var(--bs-green)" @click="them(p)">Thêm</button>
                             </div>
                         </div></div>
@@ -696,10 +692,10 @@ POS layout from `Pnl_6_qlHoaDon`: left = product picker, right = current invoice
                     <thead><tr><th>SP</th><th class="text-end">SL</th><th class="text-end">Đơn giá</th><th class="text-end">TT</th><th></th></tr></thead>
                     <tbody>
                         <tr v-for="l in gio" :key="l.id">
-                            <td>[[ l.ten ]]<div class="small text-muted">[[ l.mau ]]/[[ l.size ]]</div></td>
+                            <td>{{ l.ten }}<div class="small text-muted">{{ l.mau }}/{{ l.size }}</div></td>
                             <td class="text-end" style="width:70px"><input type="number" min="1" class="form-control form-control-sm text-end" v-model.number="l.soLuong"></td>
-                            <td class="text-end">[[ vnd(l.gia) ]]</td>
-                            <td class="text-end">[[ vnd(l.gia * l.soLuong) ]]</td>
+                            <td class="text-end">{{ vnd(l.gia) }}</td>
+                            <td class="text-end">{{ vnd(l.gia * l.soLuong) }}</td>
                             <td class="text-end"><button class="btn btn-sm btn-outline-danger" @click="xoa(l)">×</button></td>
                         </tr>
                         <tr v-if="gio.length===0"><td colspan="5" class="text-center text-muted">Chưa có sản phẩm</td></tr>
@@ -712,9 +708,9 @@ POS layout from `Pnl_6_qlHoaDon`: left = product picker, right = current invoice
                     </select>
                 </div>
                 <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between"><span>Tạm tính</span><b>[[ vnd(tamTinh) ]]</b></li>
-                    <li class="list-group-item d-flex justify-content-between"><span>Giảm giá</span><b>-[[ vnd(giamGia) ]]</b></li>
-                    <li class="list-group-item d-flex justify-content-between fs-5"><span>Phải trả</span><b style="color:var(--bs-green)">[[ vnd(phaiTra) ]]</b></li>
+                    <li class="list-group-item d-flex justify-content-between"><span>Tạm tính</span><b>{{ vnd(tamTinh) }}</b></li>
+                    <li class="list-group-item d-flex justify-content-between"><span>Giảm giá</span><b>-{{ vnd(giamGia) }}</b></li>
+                    <li class="list-group-item d-flex justify-content-between fs-5"><span>Phải trả</span><b style="color:var(--bs-green)">{{ vnd(phaiTra) }}</b></li>
                 </ul>
                 <button class="btn w-100 text-white mt-3" style="background:var(--bs-green)" :disabled="gio.length===0" @click="thanhToan">Thanh toán</button>
             </div></div>
@@ -723,7 +719,6 @@ POS layout from `Pnl_6_qlHoaDon`: left = product picker, right = current invoice
 </section>
 <script>
 Vue.createApp({
-    delimiters: ['[[', ']]'],
     data() { return {
         tuKhoa: '', khachHang: 'Khách lẻ', voucher: 0, seq: 0,
         sanPham: [
@@ -792,9 +787,9 @@ From `HoaDon`/`LichSuHoaDon`: invoice list with status filter + detail view. Col
             <thead><tr><th>Mã HĐ</th><th>Khách</th><th>Nhân viên</th><th>Ngày tạo</th><th class="text-end">Tổng tiền</th><th>Trạng thái</th><th></th></tr></thead>
             <tbody>
                 <tr v-for="h in ketQua" :key="h.id">
-                    <td>[[ h.ma ]]</td><td>[[ h.khach ]]</td><td>[[ h.nhanVien ]]</td><td>[[ h.ngayTao ]]</td>
-                    <td class="text-end">[[ vnd(h.tongTien) ]]</td>
-                    <td><span class="badge" :class="badge(h.trangThai)">[[ h.trangThai ]]</span></td>
+                    <td>{{ h.ma }}</td><td>{{ h.khach }}</td><td>{{ h.nhanVien }}</td><td>{{ h.ngayTao }}</td>
+                    <td class="text-end">{{ vnd(h.tongTien) }}</td>
+                    <td><span class="badge" :class="badge(h.trangThai)">{{ h.trangThai }}</span></td>
                     <td class="text-end"><button class="btn btn-sm btn-outline-secondary" @click="xem(h)">Chi tiết</button></td>
                 </tr>
             </tbody>
@@ -802,19 +797,19 @@ From `HoaDon`/`LichSuHoaDon`: invoice list with status filter + detail view. Col
 
         <div class="modal fade" ref="modalEl" tabindex="-1">
             <div class="modal-dialog modal-lg"><div class="modal-content" v-if="chon">
-                <div class="modal-header"><h5 class="modal-title">Hoá đơn [[ chon.ma ]]</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-header"><h5 class="modal-title">Hoá đơn {{ chon.ma }}</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
-                    <p class="mb-1"><b>Khách:</b> [[ chon.khach ]] — <b>NV:</b> [[ chon.nhanVien ]] — <b>Ngày:</b> [[ chon.ngayTao ]]</p>
+                    <p class="mb-1"><b>Khách:</b> {{ chon.khach }} — <b>NV:</b> {{ chon.nhanVien }} — <b>Ngày:</b> {{ chon.ngayTao }}</p>
                     <table class="table table-sm">
                         <thead><tr><th>Sản phẩm</th><th class="text-end">SL</th><th class="text-end">Đơn giá</th><th class="text-end">Thành tiền</th></tr></thead>
                         <tbody>
                             <tr v-for="d in chon.chiTiet" :key="d.ten">
-                                <td>[[ d.ten ]]</td><td class="text-end">[[ d.soLuong ]]</td>
-                                <td class="text-end">[[ vnd(d.donGia) ]]</td><td class="text-end">[[ vnd(d.donGia*d.soLuong) ]]</td>
+                                <td>{{ d.ten }}</td><td class="text-end">{{ d.soLuong }}</td>
+                                <td class="text-end">{{ vnd(d.donGia) }}</td><td class="text-end">{{ vnd(d.donGia*d.soLuong) }}</td>
                             </tr>
                         </tbody>
                     </table>
-                    <div class="text-end fs-5">Tổng: <b style="color:var(--bs-green)">[[ vnd(chon.tongTien) ]]</b></div>
+                    <div class="text-end fs-5">Tổng: <b style="color:var(--bs-green)">{{ vnd(chon.tongTien) }}</b></div>
                 </div>
             </div></div>
         </div>
@@ -822,7 +817,6 @@ From `HoaDon`/`LichSuHoaDon`: invoice list with status filter + detail view. Col
 </section>
 <script>
 Vue.createApp({
-    delimiters: ['[[', ']]'],
     data() { return {
         tuKhoa: '', locTrangThai: '', chon: null, modal: null,
         rows: [
@@ -881,8 +875,8 @@ Per spec, this screen's primary action is Logout.
     <div id="app" style="max-width:520px">
         <h4 class="mb-3">Hệ thống</h4>
         <div class="card"><div class="card-body">
-            <p class="mb-1"><b>Người dùng:</b> [[ nguoiDung ]]</p>
-            <p class="mb-1"><b>Vai trò:</b> [[ vaiTro ]]</p>
+            <p class="mb-1"><b>Người dùng:</b> {{ nguoiDung }}</p>
+            <p class="mb-1"><b>Vai trò:</b> {{ vaiTro }}</p>
             <p class="mb-3"><b>Phiên bản:</b> BShoes 1.0 (demo)</p>
             <button class="btn btn-danger" @click="dangXuat">Đăng xuất</button>
         </div></div>
@@ -890,7 +884,6 @@ Per spec, this screen's primary action is Logout.
 </section>
 <script>
 Vue.createApp({
-    delimiters: ['[[', ']]'],
     data() { return { nguoiDung: 'admin', vaiTro: 'ADMIN' }; },
     methods: { dangXuat() { if (confirm('Đăng xuất?')) window.location.href = '/login'; } }
 }).mount('#app');
@@ -945,5 +938,5 @@ Expected: branch published to `origin`.
 
 - **Spec coverage:** All 9 screens (spec table) → Tasks 4–12. Port 8085 → Task 1. Green theme/sidebar layout → Task 3. Inline mock data → every screen task. Thymeleaf + Vue CDN + Bootstrap → Task 3 + all pages. No DB / no REST / no tests → enforced by Task 1 datasource exclusion and manual-only verification. Phase 2 intentionally out of scope.
 - **Placeholders:** Tasks 7 & 8 reference the Task 6 reference pattern but give complete concrete substitutions (columns, form fields, full mock `rows`, code prefix, filter keys) — no "TBD"/"implement later".
-- **Consistency:** All pages use Vue delimiters `[[ ]]`, method `vnd(n)`, layout fragment signature `layout(title, section, active)`, and `active` keys matching the sidebar `th:classappend` keys in Task 3 (`dashboard, sanpham, hoadon, nhanvien, khachhang, lichsu, phieu, hethong, login`).
+- **Consistency:** All pages use Vue delimiters `{{ }}`, method `vnd(n)`, layout fragment signature `layout(title, section, active)`, and `active` keys matching the sidebar `th:classappend` keys in Task 3 (`dashboard, sanpham, hoadon, nhanvien, khachhang, lichsu, phieu, hethong, login`).
 ```
