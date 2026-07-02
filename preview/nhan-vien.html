@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nhân viên — BShoes</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+    <header id="app-header" class="app-header d-flex align-items-center px-3"></header>
+    <div class="app-shell">
+        <nav id="app-sidebar" class="app-sidebar"></nav>
+        <main class="app-content">
+            <div id="app">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">Nhân viên</h4>
+                    <button class="btn text-white" style="background:var(--bs-green)" @click="moThem">+ Thêm nhân viên</button>
+                </div>
+                <input class="form-control mb-3" style="max-width:320px" v-model="tuKhoa" placeholder="Tìm theo mã / tên / tài khoản...">
+                <table class="table table-hover bg-white align-middle">
+                    <thead><tr>
+                        <th>Mã NV</th><th>Tên</th><th>Tài khoản</th><th>Email</th><th>SĐT</th><th>CCCD</th><th>Chức vụ</th><th>Vai trò</th><th>Trạng thái</th><th></th>
+                    </tr></thead>
+                    <tbody>
+                        <tr v-for="p in ketQua" :key="p.id">
+                            <td>{{ p.ma }}</td><td>{{ p.ten }}</td><td>{{ p.taiKhoan }}</td><td>{{ p.email }}</td>
+                            <td>{{ p.sdt }}</td><td>{{ p.cccd }}</td><td>{{ p.chucVu }}</td><td>{{ p.vaiTro }}</td>
+                            <td><span class="badge" :class="p.trangThai ? 'bg-success' : 'bg-secondary'">{{ p.trangThai ? 'Hoạt động' : 'Ngừng' }}</span></td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary" @click="moSua(p)">Sửa</button>
+                                <button class="btn btn-sm btn-outline-danger" @click="xoa(p)">Xoá</button>
+                            </td>
+                        </tr>
+                        <tr v-if="ketQua.length === 0"><td colspan="10" class="text-center text-muted">Không có dữ liệu</td></tr>
+                    </tbody>
+                </table>
+
+                <div class="modal fade" ref="modalEl" tabindex="-1">
+                    <div class="modal-dialog"><div class="modal-content">
+                        <div class="modal-header"><h5 class="modal-title">{{ form.id ? 'Sửa' : 'Thêm' }} nhân viên</h5>
+                            <button class="btn-close" data-bs-dismiss="modal"></button></div>
+                        <div class="modal-body">
+                            <div class="mb-2"><label class="form-label">Tên</label><input class="form-control" v-model="form.ten"></div>
+                            <div class="row">
+                                <div class="col mb-2"><label class="form-label">Tài khoản</label><input class="form-control" v-model="form.taiKhoan"></div>
+                                <div class="col mb-2"><label class="form-label">Email</label><input type="email" class="form-control" v-model="form.email"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col mb-2"><label class="form-label">Số điện thoại</label><input class="form-control" v-model="form.sdt"></div>
+                                <div class="col mb-2"><label class="form-label">CCCD</label><input class="form-control" v-model="form.cccd"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col mb-2"><label class="form-label">Chức vụ</label><input class="form-control" v-model="form.chucVu"></div>
+                                <div class="col mb-2"><label class="form-label">Giới tính</label>
+                                    <select class="form-select" v-model="form.gioiTinh"><option>Nam</option><option>Nữ</option></select></div>
+                            </div>
+                            <div class="mb-2"><label class="form-label">Vai trò</label>
+                                <select class="form-select" v-model="form.vaiTro"><option>ADMIN</option><option>NHÂN VIÊN</option></select></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" v-model="form.trangThai" id="tt"><label class="form-check-label" for="tt">Hoạt động</label></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
+                            <button class="btn text-white" style="background:var(--bs-green)" @click="luu">Lưu</button>
+                        </div>
+                    </div></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/shell.js"></script>
+    <script>renderShell('nhanvien');</script>
+    <script>
+Vue.createApp({
+    data() { return {
+        tuKhoa: '', modal: null, seq: 3,
+        form: { id: null, ma: '', ten: '', taiKhoan: '', email: '', sdt: '', cccd: '', chucVu: '', gioiTinh: 'Nam', vaiTro: 'NHÂN VIÊN', trangThai: true },
+        rows: [
+            { id:1, ma:'NV1', ten:'Phạm Quản Trị', taiKhoan:'admin', email:'admin@bshoes.vn', sdt:'0900000001', cccd:'012345678901', chucVu:'Quản lý', gioiTinh:'Nam', vaiTro:'ADMIN', trangThai:true },
+            { id:2, ma:'NV2', ten:'Hoàng Bán Hàng', taiKhoan:'hoangbh', email:'hoang@bshoes.vn', sdt:'0900000002', cccd:'012345678902', chucVu:'Bán hàng', gioiTinh:'Nam', vaiTro:'NHÂN VIÊN', trangThai:true },
+            { id:3, ma:'NV3', ten:'Vũ Thu Ngân', taiKhoan:'vungan', email:'ngan@bshoes.vn', sdt:'0900000003', cccd:'012345678903', chucVu:'Thu ngân', gioiTinh:'Nữ', vaiTro:'NHÂN VIÊN', trangThai:false },
+        ]
+    }; },
+    computed: {
+        ketQua() { const k = this.tuKhoa.toLowerCase();
+            return this.rows.filter(r => r.ma.toLowerCase().includes(k) || r.ten.toLowerCase().includes(k) || r.taiKhoan.toLowerCase().includes(k)); }
+    },
+    mounted() { this.modal = new bootstrap.Modal(this.$refs.modalEl); },
+    methods: {
+        moThem() { this.form = { id:null, ma:'', ten:'', taiKhoan:'', email:'', sdt:'', cccd:'', chucVu:'', gioiTinh:'Nam', vaiTro:'NHÂN VIÊN', trangThai:true }; this.modal.show(); },
+        moSua(p) { this.form = JSON.parse(JSON.stringify(p)); this.modal.show(); },
+        luu() {
+            if (this.form.id) { const i = this.rows.findIndex(r => r.id === this.form.id); this.rows.splice(i, 1, this.form); }
+            else { this.form.id = ++this.seq; this.form.ma = 'NV' + this.form.id; this.rows.push(this.form); }
+            this.modal.hide();
+        },
+        xoa(p) { if (confirm('Xoá nhân viên ' + p.ma + '?')) this.rows = this.rows.filter(r => r.id !== p.id); }
+    }
+}).mount('#app');
+    </script>
+</body>
+</html>

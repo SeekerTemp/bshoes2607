@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Phiếu giảm giá — BShoes</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+    <header id="app-header" class="app-header d-flex align-items-center px-3"></header>
+    <div class="app-shell">
+        <nav id="app-sidebar" class="app-sidebar"></nav>
+        <main class="app-content">
+            <div id="app">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">Phiếu giảm giá</h4>
+                    <button class="btn text-white" style="background:var(--bs-green)" @click="moThem">+ Thêm phiếu</button>
+                </div>
+                <input class="form-control mb-3" style="max-width:320px" v-model="tuKhoa" placeholder="Tìm theo mã / tên...">
+                <table class="table table-hover bg-white align-middle">
+                    <thead><tr>
+                        <th>Mã</th><th>Tên</th><th>Loại</th><th class="text-end">Giá trị</th>
+                        <th class="text-end">Đơn tối thiểu</th><th class="text-end">SL</th><th>Bắt đầu</th><th>Kết thúc</th>
+                        <th>Trạng thái</th><th></th>
+                    </tr></thead>
+                    <tbody>
+                        <tr v-for="p in ketQua" :key="p.id">
+                            <td>{{ p.ma }}</td><td>{{ p.ten }}</td>
+                            <td>{{ p.loai === 0 ? '% ' : 'Tiền' }}</td>
+                            <td class="text-end">{{ p.loai === 0 ? p.giaTri + '%' : vnd(p.giaTri) }}</td>
+                            <td class="text-end">{{ vnd(p.donToiThieu) }}</td>
+                            <td class="text-end">{{ p.soLuong }}</td>
+                            <td>{{ p.batDau }}</td><td>{{ p.ketThuc }}</td>
+                            <td><span class="badge" :class="p.trangThai ? 'bg-success' : 'bg-secondary'">{{ p.trangThai ? 'Hoạt động' : 'Ngừng' }}</span></td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary" @click="moSua(p)">Sửa</button>
+                                <button class="btn btn-sm btn-outline-danger" @click="xoa(p)">Xoá</button>
+                            </td>
+                        </tr>
+                        <tr v-if="ketQua.length === 0"><td colspan="10" class="text-center text-muted">Không có dữ liệu</td></tr>
+                    </tbody>
+                </table>
+
+                <!-- Modal add/edit -->
+                <div class="modal fade" ref="modalEl" tabindex="-1">
+                    <div class="modal-dialog"><div class="modal-content">
+                        <div class="modal-header"><h5 class="modal-title">{{ form.id ? 'Sửa' : 'Thêm' }} phiếu giảm giá</h5>
+                            <button class="btn-close" data-bs-dismiss="modal"></button></div>
+                        <div class="modal-body">
+                            <div class="mb-2"><label class="form-label">Tên</label><input class="form-control" v-model="form.ten"></div>
+                            <div class="mb-2"><label class="form-label">Loại</label>
+                                <select class="form-select" v-model.number="form.loai"><option :value="0">Phần trăm</option><option :value="1">Số tiền</option></select></div>
+                            <div class="row">
+                                <div class="col mb-2"><label class="form-label">Giá trị giảm</label><input type="number" class="form-control" v-model.number="form.giaTri"></div>
+                                <div class="col mb-2"><label class="form-label">Số lượng</label><input type="number" class="form-control" v-model.number="form.soLuong"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col mb-2"><label class="form-label">Đơn tối thiểu</label><input type="number" class="form-control" v-model.number="form.donToiThieu"></div>
+                                <div class="col mb-2"><label class="form-label">Giảm tối đa</label><input type="number" class="form-control" v-model.number="form.giamToiDa"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col mb-2"><label class="form-label">Bắt đầu</label><input type="date" class="form-control" v-model="form.batDau"></div>
+                                <div class="col mb-2"><label class="form-label">Kết thúc</label><input type="date" class="form-control" v-model="form.ketThuc"></div>
+                            </div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" v-model="form.trangThai" id="tt"><label class="form-check-label" for="tt">Hoạt động</label></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
+                            <button class="btn text-white" style="background:var(--bs-green)" @click="luu">Lưu</button>
+                        </div>
+                    </div></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/shell.js"></script>
+    <script>renderShell('phieu');</script>
+    <script>
+Vue.createApp({
+    data() { return {
+        tuKhoa: '', modal: null, seq: 3,
+        form: { id: null, ma: '', ten: '', loai: 0, giaTri: 0, donToiThieu: 0, giamToiDa: 0, soLuong: 0, batDau: '', ketThuc: '', trangThai: true },
+        rows: [
+            { id:1, ma:'PGG1', ten:'Giảm 10% toàn shop', loai:0, giaTri:10, donToiThieu:500000, giamToiDa:100000, soLuong:50, batDau:'2026-07-01', ketThuc:'2026-07-31', trangThai:true },
+            { id:2, ma:'PGG2', ten:'Giảm 50k', loai:1, giaTri:50000, donToiThieu:300000, giamToiDa:50000, soLuong:100, batDau:'2026-07-01', ketThuc:'2026-08-15', trangThai:true },
+            { id:3, ma:'PGG3', ten:'Flash sale', loai:0, giaTri:25, donToiThieu:1000000, giamToiDa:300000, soLuong:20, batDau:'2026-06-01', ketThuc:'2026-06-30', trangThai:false },
+        ]
+    }; },
+    computed: {
+        ketQua() { const k = this.tuKhoa.toLowerCase();
+            return this.rows.filter(r => r.ma.toLowerCase().includes(k) || r.ten.toLowerCase().includes(k)); }
+    },
+    mounted() { this.modal = new bootstrap.Modal(this.$refs.modalEl); },
+    methods: {
+        vnd(n){ return (n||0).toLocaleString('vi-VN') + ' ₫'; },
+        moThem() { this.form = { id:null, ma:'', ten:'', loai:0, giaTri:0, donToiThieu:0, giamToiDa:0, soLuong:0, batDau:'', ketThuc:'', trangThai:true }; this.modal.show(); },
+        moSua(p) { this.form = JSON.parse(JSON.stringify(p)); this.modal.show(); },
+        luu() {
+            if (this.form.id) { const i = this.rows.findIndex(r => r.id === this.form.id); this.rows.splice(i, 1, this.form); }
+            else { this.form.id = ++this.seq; this.form.ma = 'PGG' + this.form.id; this.rows.push(this.form); }
+            this.modal.hide();
+        },
+        xoa(p) { if (confirm('Xoá phiếu ' + p.ma + '?')) this.rows = this.rows.filter(r => r.id !== p.id); }
+    }
+}).mount('#app');
+    </script>
+</body>
+</html>
