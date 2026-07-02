@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: layout(~{::title}, ~{::section}, 'hethong')}">
+<head><title>Hệ thống — BShoes</title></head>
+<body>
+<section>
+    <div id="app" style="max-width:520px">
+        <h4 class="mb-3">Hệ thống</h4>
+        <div class="card"><div class="card-body">
+            <p class="mb-1"><b>Người dùng:</b> {{ nguoiDung }}</p>
+            <p class="mb-1"><b>Vai trò:</b> {{ vaiTro }}</p>
+            <p class="mb-3"><b>Phiên bản:</b> BShoes 1.0 (demo)</p>
+            <button class="btn btn-danger" @click="dangXuat">Đăng xuất</button>
+        </div></div>
+    </div>
+</section>
+<script>
+Vue.createApp({
+    data() { return { nguoiDung: 'admin', vaiTro: 'ADMIN' }; },
+    methods: { dangXuat() { if (confirm('Đăng xuất?')) window.location.href = '/login'; } }
+}).mount('#app');
+</script>
+</body>
+</html>
