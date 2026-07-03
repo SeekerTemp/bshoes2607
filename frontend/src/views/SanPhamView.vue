@@ -1,141 +1,375 @@
 <script setup>
+// Faithful to NetBeans Pnl_3_qlSanPham (see frontend/refui): a JTabbedPane with
+// three tabs — "Sản phẩm", "Sản phẩm chi tiết", "Thuộc tính". Each tab is a
+// master-detail screen: a table on the left and a green inspector panel on the
+// right (NOT a modal popup). Selecting a row fills the inspector.
 import { ref, computed } from 'vue'
 import AppShell from '../components/layout/AppShell.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
-import AppButton from '../components/ui/AppButton.vue'
-import SearchBar from '../components/ui/SearchBar.vue'
-import DataTable from '../components/ui/DataTable.vue'
-import AppModal from '../components/ui/AppModal.vue'
-import FormField from '../components/ui/FormField.vue'
 import AppSelect from '../components/ui/AppSelect.vue'
 import { useSanPham } from '../composables/useSanPham'
 import { useToast } from '../composables/useToast'
 import { vnd } from '../utils/format'
+import {
+  loaiSanPhamList, kieuDangList, kieuCoGiayList, kieuDayGiayList,
+  xuatXuList, thuocTinh as mockThuocTinh, loaiThuocTinhList,
+} from '../mock/data'
 
-const { filtered, keyword, add, update, thuongHieuList, chatLieuList } = useSanPham()
+const { filtered, add, update, remove, thuongHieuList, chatLieuList } = useSanPham()
 const { notify } = useToast()
 
-const columns = [
-  { key: 'ma', label: 'Mã' },
-  { key: 'ten', label: 'Tên' },
-  { key: 'thuongHieu', label: 'Thương hiệu' },
-  { key: 'chatLieu', label: 'Chất liệu' },
-  { key: 'gia', label: 'Giá', align: 'end' }
-]
+const tab = ref('sanpham') // 'sanpham' | 'chitiet' | 'thuoctinh'
 
-const brandOptions = computed(() => [{ value: '', label: '-- Thương hiệu --' }, ...thuongHieuList.map(t => ({ value: t, label: t }))])
-const locThuongHieu = ref('')
+const PLACEHOLDER = '/images/shoes/img_shoe_10001.png'
+function onImgError(e) { e.target.style.visibility = 'hidden' }
 
-const visible = computed(() => filtered.value.filter(p => !locThuongHieu.value || p.thuongHieu === locThuongHieu.value))
+/* ============================ TAB 1 — Sản phẩm ============================ */
+const spSearch = ref('')
+const spRows = computed(() => {
+  const k = spSearch.value.trim().toLowerCase()
+  return filtered.value.filter(p =>
+    !k || p.ma.toLowerCase().includes(k) || p.ten.toLowerCase().includes(k))
+})
+function firstVariant(p) { return (p.bienThe && p.bienThe[0]) || {} }
 
-const chon = ref(null)
-function chonSP(p) {
-  chon.value = p
-}
-
-function blankForm() {
-  return { id: null, ten: '', thuongHieu: thuongHieuList[0], chatLieu: chatLieuList[0], gia: 0, moTa: '' }
-}
-
-const modalOpen = ref(false)
-const form = ref(blankForm())
-
-function openCreate() {
-  form.value = blankForm()
-  modalOpen.value = true
-}
-
-function openEdit(row) {
-  form.value = { id: row.id, ten: row.ten, thuongHieu: row.thuongHieu, chatLieu: row.chatLieu, gia: row.gia, moTa: row.moTa }
-  modalOpen.value = true
-}
-
-function save() {
-  if (form.value.id) {
-    const existing = filtered.value.find(r => r.id === form.value.id)
-    update({ ...existing, ...form.value })
-  } else {
-    add({ ...form.value, bienThe: [] })
+function blankSP() {
+  return {
+    id: null, ma: '', ten: '', loaiSP: '', chatLieu: chatLieuList[0] || '',
+    kieuDang: '', coGiay: '', dayGiay: '', thuongHieu: thuongHieuList[0] || '',
+    xuatXu: '', gia: 0, moTa: '', imageUrl: '', bienThe: [],
   }
-  modalOpen.value = false
-  notify('Đã lưu', 'success')
+}
+const spForm = ref(blankSP())
+const spSelectedId = ref(null)
+function selectSP(p) {
+  spSelectedId.value = p.id
+  spForm.value = { ...blankSP(), ...JSON.parse(JSON.stringify(p)) }
+}
+function spThem() { spSelectedId.value = null; spForm.value = blankSP() }
+function spLamMoi() {
+  if (spSelectedId.value) { const p = filtered.value.find(x => x.id === spSelectedId.value); if (p) selectSP(p) }
+  else spForm.value = blankSP()
+}
+function spLuu() {
+  if (!spForm.value.ten) { notify('Nhập tên sản phẩm', 'warning'); return }
+  if (spForm.value.id) { update({ ...spForm.value }); notify('Đã cập nhật sản phẩm', 'success') }
+  else { add({ ...spForm.value }); notify('Đã thêm sản phẩm', 'success'); spThem() }
+}
+function spAn() {
+  if (!spForm.value.id) { notify('Chọn sản phẩm để ẩn', 'warning'); return }
+  if (confirm(`Ẩn (xóa mềm) sản phẩm ${spForm.value.ma}?`)) { remove(spForm.value.ma); spThem() }
+}
+
+/* ======================= TAB 2 — Sản phẩm chi tiết ======================= */
+const ctSearch = ref('')
+// flatten every product's variants into "sản phẩm chi tiết" rows
+const ctRows = computed(() => {
+  const k = ctSearch.value.trim().toLowerCase()
+  const rows = []
+  filtered.value.forEach(p => (p.bienThe || []).forEach(v => {
+    rows.push({
+      key: v.ma, ma: v.ma, ten: p.ten, mau: v.mau, size: v.size,
+      gia: v.gia, ton: v.ton, trangThai: v.trangThai !== false,
+      imageUrl: v.imageUrl || p.imageUrl,
+    })
+  }))
+  return rows.filter(r => !k || r.ma.toLowerCase().includes(k) || r.ten.toLowerCase().includes(k))
+})
+const ctSelectedKey = ref(null)
+const ctForm = ref({ ma: '', ten: '', gia: 0, ton: 0, trangThai: true, imageUrl: '' })
+function selectCT(r) { ctSelectedKey.value = r.key; ctForm.value = { ...r } }
+function ctLamMoi() { const r = ctRows.value.find(x => x.key === ctSelectedKey.value); if (r) ctForm.value = { ...r } }
+function ctLuu() {
+  const p = filtered.value.find(x => (x.bienThe || []).some(v => v.ma === ctForm.value.ma))
+  const v = p && p.bienThe.find(x => x.ma === ctForm.value.ma)
+  if (v) {
+    v.gia = ctForm.value.gia; v.ton = ctForm.value.ton; v.trangThai = ctForm.value.trangThai
+    update({ ...p }); notify('Đã cập nhật chi tiết', 'success')
+  }
+}
+
+/* =========================== TAB 3 — Thuộc tính =========================== */
+const ttSearch = ref('')
+const thuocTinhRows = ref(JSON.parse(JSON.stringify(mockThuocTinh)))
+const ttRows = computed(() => {
+  const k = ttSearch.value.trim().toLowerCase()
+  return thuocTinhRows.value.filter(r => !k || r.loai.toLowerCase().includes(k) || r.ten.toLowerCase().includes(k))
+})
+let ttSeq = mockThuocTinh.length
+function blankTT() { return { id: null, ma: '', loaiSP: '', loai: 'Màu sắc', ten: '', moTa: '' } }
+const ttForm = ref(blankTT())
+const ttSelectedId = ref(null)
+function selectTT(r) { ttSelectedId.value = r.id; ttForm.value = { ...blankTT(), ...r } }
+function ttThem() { ttSelectedId.value = null; ttForm.value = blankTT() }
+function ttLamMoi() {
+  if (ttSelectedId.value) { const r = thuocTinhRows.value.find(x => x.id === ttSelectedId.value); if (r) selectTT(r) }
+  else ttForm.value = blankTT()
+}
+function ttLuu() {
+  if (!ttForm.value.ten) { notify('Nhập tên thuộc tính', 'warning'); return }
+  if (ttForm.value.id) {
+    const r = thuocTinhRows.value.find(x => x.id === ttForm.value.id)
+    if (r) Object.assign(r, ttForm.value)
+    notify('Đã cập nhật thuộc tính', 'success')
+  } else {
+    ttSeq++
+    thuocTinhRows.value.push({ ...ttForm.value, id: ttSeq, ma: 'TT' + ttSeq })
+    notify('Đã thêm thuộc tính', 'success'); ttThem()
+  }
+}
+function ttXoa() {
+  if (!ttForm.value.id) { notify('Chọn thuộc tính để xóa', 'warning'); return }
+  if (confirm(`Xóa thuộc tính "${ttForm.value.ten}"?`)) {
+    thuocTinhRows.value = thuocTinhRows.value.filter(x => x.id !== ttForm.value.id); ttThem()
+  }
 }
 </script>
 
 <template>
   <AppShell>
-    <PageHeader title="Quản lý sản phẩm">
-      <template #actions>
-        <AppButton icon="plus-lg" @click="openCreate">Thêm sản phẩm</AppButton>
-      </template>
-    </PageHeader>
+    <PageHeader title="Quản lý sản phẩm" />
 
-    <div class="d-flex gap-2 mb-3">
-      <SearchBar v-model="keyword" placeholder="Tìm mã / tên..." />
-      <AppSelect v-model="locThuongHieu" :options="brandOptions" style="max-width: 200px" />
+    <!-- JTabbedPane section_1: Sản phẩm | Sản phẩm chi tiết | Thuộc tính -->
+    <div class="sp-tabs">
+      <button class="sp-tab" :class="{ active: tab === 'sanpham' }" @click="tab = 'sanpham'">Sản phẩm</button>
+      <button class="sp-tab" :class="{ active: tab === 'chitiet' }" @click="tab = 'chitiet'">Sản phẩm chi tiết</button>
+      <button class="sp-tab" :class="{ active: tab === 'thuoctinh' }" @click="tab = 'thuoctinh'">Thuộc tính</button>
     </div>
 
-    <div class="row g-3">
-      <div class="col-7">
-        <DataTable :columns="columns" :rows="visible">
-          <template #cell-ma="{ row, value }">
-            <div class="d-flex align-items-center gap-2">
-              <img v-if="row.imageUrl" :src="row.imageUrl" alt="" style="width:32px;height:32px;object-fit:contain;background:#f5f7fa;border-radius:6px" @error="e => e.target.style.display='none'" />
-              <span>{{ value }}</span>
+    <!-- ==================== TAB 1: SẢN PHẨM ==================== -->
+    <div v-show="tab === 'sanpham'" class="sp-grid">
+      <div class="sp-master">
+        <div class="card sp-panel">
+          <header class="sp-panel-head">
+            <h6 class="sp-title">SẢN PHẨM</h6>
+            <div class="input-group input-group-sm sp-search">
+              <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+              <input class="form-control" v-model="spSearch" placeholder="Tìm kiếm sản phẩm" />
             </div>
-          </template>
-          <template #cell-gia="{ value }">{{ vnd(value) }}</template>
-          <template #actions="{ row }">
-            <AppButton size="sm" variant="outline-secondary" @click="chonSP(row)">Chọn</AppButton>
-            <AppButton size="sm" variant="outline-secondary" class="ms-1" @click="openEdit(row)">Sửa</AppButton>
-          </template>
-        </DataTable>
-      </div>
-      <div class="col-5">
-        <div class="card">
-          <div class="card-body">
-            <h6 v-if="!chon" class="text-muted mb-0">Chọn 1 sản phẩm để xem biến thể</h6>
-            <div v-else>
-              <div class="d-flex align-items-center gap-2 mb-2">
-                <img v-if="chon.imageUrl" :src="chon.imageUrl" alt="" style="width:48px;height:48px;object-fit:contain;background:#f5f7fa;border-radius:8px" @error="e => e.target.style.display='none'" />
-                <h6 class="mb-0">Biến thể: {{ chon.ten }}</h6>
-              </div>
-              <table class="table table-sm mb-0">
-                <thead>
-                  <tr><th></th><th>Màu</th><th>Size</th><th class="text-end">Tồn</th><th class="text-end">Đơn giá</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="v in chon.bienThe" :key="v.ma">
-                    <td><img v-if="v.imageUrl" :src="v.imageUrl" alt="" style="width:40px;height:40px;object-fit:contain" @error="e => e.target.style.display='none'" /></td>
-                    <td>{{ v.mau }}</td><td>{{ v.size }}</td><td class="text-end">{{ v.ton }}</td><td class="text-end">{{ vnd(v.gia) }}</td>
-                  </tr>
-                  <tr v-if="!chon.bienThe || !chon.bienThe.length">
-                    <td colspan="5" class="text-center text-muted">Không có biến thể</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+          </header>
+          <div class="table-scroll" style="height: 460px">
+            <table class="table table-sm table-hover align-middle sp-table mb-0">
+              <thead><tr>
+                <th class="text-center">STT</th><th>Mã SP</th><th>Tên sp</th><th>Chất liệu</th>
+                <th>Màu sắc</th><th>Kích thước</th><th>Kiểu dáng</th><th>Kiểu cỡ giày</th>
+                <th>Kiểu dây giày</th><th>Thương hiệu</th>
+              </tr></thead>
+              <tbody>
+                <tr v-for="(p, i) in spRows" :key="p.id" :class="{ 'row-active': p.id === spSelectedId }" @click="selectSP(p)">
+                  <td class="text-center">{{ i + 1 }}</td><td class="fw-medium">{{ p.ma }}</td><td>{{ p.ten }}</td>
+                  <td>{{ p.chatLieu }}</td><td>{{ firstVariant(p).mau || '—' }}</td><td>{{ firstVariant(p).size || '—' }}</td>
+                  <td>{{ p.kieuDang || '—' }}</td><td>{{ p.coGiay || '—' }}</td><td>{{ p.dayGiay || '—' }}</td><td>{{ p.thuongHieu }}</td>
+                </tr>
+                <tr v-if="spRows.length === 0"><td colspan="10" class="text-center text-muted py-3">Không có sản phẩm</td></tr>
+              </tbody>
+            </table>
           </div>
+          <footer class="sp-master-foot"><button class="btn btn-sm btn-outline-secondary" disabled>Xem danh sách bị ẩn</button></footer>
+        </div>
+      </div>
+
+      <div class="sp-detail">
+        <div class="sp-tab-r">Chi tiết</div>
+        <div class="sp-panel-green">
+          <h6 class="green-title">Thông tin sản phẩm</h6>
+          <div class="green-img"><img :src="spForm.imageUrl || PLACEHOLDER" alt="" @error="onImgError"></div>
+          <dl class="green-fields">
+            <div class="gf"><dt>Mã sản phẩm</dt><dd><input class="form-control form-control-sm" v-model="spForm.ma" readonly></dd></div>
+            <div class="gf"><dt>Tên sản phẩm</dt><dd><input class="form-control form-control-sm" v-model="spForm.ten"></dd></div>
+            <div class="gf"><dt>Loại sản phẩm</dt><dd><AppSelect v-model="spForm.loaiSP" :options="loaiSanPhamList" /></dd></div>
+            <div class="gf"><dt>Chất liệu</dt><dd><AppSelect v-model="spForm.chatLieu" :options="chatLieuList" /></dd></div>
+            <div class="gf"><dt>Kiểu dáng</dt><dd><AppSelect v-model="spForm.kieuDang" :options="kieuDangList" /></dd></div>
+            <div class="gf"><dt>Kiểu cỡ giày</dt><dd><AppSelect v-model="spForm.coGiay" :options="kieuCoGiayList" /></dd></div>
+            <div class="gf"><dt>Kiểu dây giày</dt><dd><AppSelect v-model="spForm.dayGiay" :options="kieuDayGiayList" /></dd></div>
+            <div class="gf"><dt>Thương hiệu</dt><dd><AppSelect v-model="spForm.thuongHieu" :options="thuongHieuList" /></dd></div>
+            <div class="gf"><dt>Xuất xứ</dt><dd><AppSelect v-model="spForm.xuatXu" :options="xuatXuList" /></dd></div>
+          </dl>
+        </div>
+        <div class="green-actions">
+          <button class="btn btn-success w-100" @click="spThem">Thêm</button>
+          <button class="btn btn-success w-100" :disabled="!spForm.id" @click="spLuu">Sửa</button>
+          <button class="btn btn-success w-100" @click="spLamMoi">Làm mới</button>
+          <button class="btn btn-outline-danger w-100" :disabled="!spForm.id" @click="spAn">Ẩn (Xóa mềm)</button>
+          <button class="btn btn-light w-100" disabled>Xuất json thông tin sản phẩm</button>
+          <button class="btn btn-light w-100" disabled>Import sản phẩm bằng list json/csv/excel</button>
         </div>
       </div>
     </div>
 
-    <AppModal v-model:open="modalOpen" :title="form.id ? 'Sửa sản phẩm' : 'Thêm sản phẩm'">
-      <FormField label="Tên"><input class="form-control" v-model="form.ten"></FormField>
-      <div class="row">
-        <div class="col">
-          <FormField label="Thương hiệu"><AppSelect v-model="form.thuongHieu" :options="thuongHieuList" /></FormField>
-        </div>
-        <div class="col">
-          <FormField label="Chất liệu"><AppSelect v-model="form.chatLieu" :options="chatLieuList" /></FormField>
+    <!-- ==================== TAB 2: SẢN PHẨM CHI TIẾT ==================== -->
+    <div v-show="tab === 'chitiet'" class="sp-grid">
+      <div class="sp-master">
+        <div class="card sp-panel">
+          <header class="sp-panel-head">
+            <h6 class="sp-title">CHI TIẾT SẢN PHẨM</h6>
+            <div class="input-group input-group-sm sp-search">
+              <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+              <input class="form-control" v-model="ctSearch" placeholder="Tìm sản phẩm chi tiết" />
+            </div>
+          </header>
+          <div class="table-scroll" style="height: 460px">
+            <table class="table table-sm table-hover align-middle sp-table mb-0">
+              <thead><tr>
+                <th class="text-center">STT</th><th>Mã SP</th><th>Tên sp</th><th>Màu sắc</th>
+                <th>Kích cỡ</th><th class="text-end">Đơn giá</th><th class="text-end">Số lượng tồn</th><th>Trạng thái</th>
+              </tr></thead>
+              <tbody>
+                <tr v-for="(r, i) in ctRows" :key="r.key" :class="{ 'row-active': r.key === ctSelectedKey }" @click="selectCT(r)">
+                  <td class="text-center">{{ i + 1 }}</td><td class="fw-medium">{{ r.ma }}</td><td>{{ r.ten }}</td>
+                  <td>{{ r.mau }}</td><td>{{ r.size }}</td><td class="text-end">{{ vnd(r.gia) }}</td>
+                  <td class="text-end">{{ r.ton }}</td><td>{{ r.trangThai ? 'Đang bán' : 'Ngừng bán' }}</td>
+                </tr>
+                <tr v-if="ctRows.length === 0"><td colspan="8" class="text-center text-muted py-3">Không có chi tiết</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <footer class="sp-master-foot"><button class="btn btn-sm btn-outline-secondary" disabled>Xem danh sách bị ẩn</button></footer>
         </div>
       </div>
-      <FormField label="Giá"><input type="number" class="form-control" v-model.number="form.gia"></FormField>
-      <FormField label="Mô tả"><textarea class="form-control" v-model="form.moTa"></textarea></FormField>
-      <template #footer>
-        <AppButton variant="secondary" @click="modalOpen = false">Huỷ</AppButton>
-        <AppButton @click="save">Lưu</AppButton>
-      </template>
-    </AppModal>
+
+      <div class="sp-detail">
+        <div class="sp-tab-r">Chi tiết</div>
+        <div class="sp-panel-green">
+          <h6 class="green-title">Thông tin sản phẩm</h6>
+          <div class="green-img"><img :src="ctForm.imageUrl || PLACEHOLDER" alt="" @error="onImgError"></div>
+          <dl class="green-fields">
+            <div class="gf"><dt>Mã sản phẩm</dt><dd><input class="form-control form-control-sm" v-model="ctForm.ma" readonly></dd></div>
+            <div class="gf"><dt>Tên sản phẩm</dt><dd><input class="form-control form-control-sm" v-model="ctForm.ten" readonly></dd></div>
+            <div class="gf"><dt>Đơn giá</dt><dd><input type="number" class="form-control form-control-sm text-end" v-model.number="ctForm.gia"></dd></div>
+            <div class="gf"><dt>Số lượng tồn</dt><dd><input type="number" class="form-control form-control-sm text-end" v-model.number="ctForm.ton"></dd></div>
+            <div class="gf"><dt>Trạng thái</dt><dd class="d-flex gap-3 align-items-center">
+              <label class="green-radio"><input type="radio" :value="true" v-model="ctForm.trangThai"> Đang bán</label>
+              <label class="green-radio"><input type="radio" :value="false" v-model="ctForm.trangThai"> Ngừng bán</label>
+            </dd></div>
+          </dl>
+        </div>
+        <div class="green-actions">
+          <button class="btn btn-success w-100" :disabled="!ctSelectedKey" @click="ctLuu">Sửa</button>
+          <button class="btn btn-success w-100" @click="ctLamMoi">Làm mới</button>
+          <button class="btn btn-light w-100" disabled>Ẩn</button>
+          <button class="btn btn-light w-100" disabled>Xuất json thông tin sản phẩm</button>
+          <button class="btn btn-light w-100" disabled>Import sản phẩm bằng list json/csv/excel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 3: THUỘC TÍNH ==================== -->
+    <div v-show="tab === 'thuoctinh'" class="sp-grid">
+      <div class="sp-master">
+        <div class="card sp-panel">
+          <header class="sp-panel-head">
+            <h6 class="sp-title">THUỘC TÍNH SẢN PHẨM</h6>
+            <div class="input-group input-group-sm sp-search">
+              <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+              <input class="form-control" v-model="ttSearch" placeholder="Tìm kiếm thuộc tính" />
+            </div>
+          </header>
+          <div class="table-scroll" style="height: 460px">
+            <table class="table table-sm table-hover align-middle sp-table mb-0">
+              <thead><tr><th class="text-center">STT</th><th>Loại thuộc tính</th><th>Tên thuộc tính</th></tr></thead>
+              <tbody>
+                <tr v-for="(r, i) in ttRows" :key="r.id" :class="{ 'row-active': r.id === ttSelectedId }" @click="selectTT(r)">
+                  <td class="text-center">{{ i + 1 }}</td><td class="fw-medium">{{ r.loai }}</td><td>{{ r.ten }}</td>
+                </tr>
+                <tr v-if="ttRows.length === 0"><td colspan="3" class="text-center text-muted py-3">Không có thuộc tính</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <footer class="sp-master-foot"><button class="btn btn-sm btn-outline-secondary" disabled>Xem danh sách bị ẩn</button></footer>
+        </div>
+      </div>
+
+      <div class="sp-detail">
+        <div class="sp-tab-r">Chi tiết thuộc tính</div>
+        <div class="sp-panel-green">
+          <h6 class="green-title">Thông tin thuộc tính</h6>
+          <dl class="green-fields">
+            <div class="gf"><dt>Loại sản phẩm</dt><dd><AppSelect v-model="ttForm.loaiSP" :options="loaiSanPhamList" /></dd></div>
+          </dl>
+          <div class="green-radio-group">
+            <div class="green-radio-label">Loại thuộc tính:</div>
+            <label class="green-radio" v-for="lt in loaiThuocTinhList" :key="lt">
+              <input type="radio" :value="lt" v-model="ttForm.loai"> {{ lt }}
+            </label>
+          </div>
+          <dl class="green-fields mt-2">
+            <div class="gf"><dt>Tên thuộc tính</dt><dd><input class="form-control form-control-sm" v-model="ttForm.ten"></dd></div>
+          </dl>
+        </div>
+        <div class="green-actions">
+          <button class="btn btn-success w-100" @click="ttThem">Thêm</button>
+          <button class="btn btn-success w-100" :disabled="!ttForm.id" @click="ttLuu">Sửa</button>
+          <button class="btn btn-success w-100" @click="ttLamMoi">Làm mới</button>
+          <button class="btn btn-outline-danger w-100" :disabled="!ttForm.id" @click="ttXoa">Xóa</button>
+          <button class="btn btn-light w-100" disabled>Xuất json thông tin sản phẩm</button>
+          <button class="btn btn-light w-100" disabled>Import sản phẩm bằng list json/csv/excel</button>
+        </div>
+      </div>
+    </div>
   </AppShell>
 </template>
+
+<style scoped>
+.sp-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+.sp-tab {
+  padding: 8px 20px;
+  border: 1px solid var(--c-border);
+  border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: #eef1f4; color: var(--c-text-muted); font-weight: 500; cursor: pointer;
+}
+.sp-tab.active { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
+
+.sp-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; align-items: start; }
+.sp-master { min-width: 0; }
+.sp-panel { padding: 10px 12px; }
+.sp-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.sp-title { margin: 0; font-weight: 700; letter-spacing: .3px; }
+.sp-search { max-width: 280px; }
+
+.table-scroll { overflow: auto; border: 1px solid var(--c-border); border-radius: var(--radius-sm); }
+.sp-table { min-width: 640px; }
+.sp-table thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--c-primary); color: #fff; font-weight: 600; font-size: 12px; white-space: nowrap;
+}
+.sp-table tbody td { font-size: 13px; }
+.sp-table tbody tr { cursor: pointer; }
+.row-active > td { background: var(--c-primary); color: #fff; }
+.sp-master-foot { display: flex; justify-content: center; margin-top: 8px; }
+
+/* right inspector */
+.sp-detail { position: sticky; top: 16px; }
+.sp-tab-r {
+  display: inline-block; padding: 6px 18px; background: #eef1f4; color: var(--c-text-muted);
+  border: 1px solid var(--c-border); border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0; font-weight: 500;
+}
+.sp-panel-green {
+  background: var(--c-primary); color: #fff; padding: 14px;
+  border-radius: 0 var(--radius) var(--radius) var(--radius);
+}
+.green-title { font-weight: 700; margin: 0 0 12px; }
+.green-img { text-align: center; margin-bottom: 12px; }
+.green-img img { max-height: 120px; max-width: 100%; background: #fff; border-radius: var(--radius-sm); padding: 6px; }
+
+.green-fields { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.gf { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 8px; }
+.gf dt { font-weight: 500; font-size: 13px; opacity: .95; }
+.gf dd { margin: 0; }
+
+.green-radio-group { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.green-radio-label { font-weight: 500; font-size: 13px; }
+.green-radio { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+
+.green-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.green-actions .btn-success { background: #fff; color: var(--c-primary); border-color: #fff; font-weight: 600; }
+.green-actions .btn-success:hover:not(:disabled) { background: #f0f0f0; }
+.green-actions .btn-outline-danger { background: #fff; color: var(--c-danger); border-color: var(--c-danger); font-weight: 600; }
+.green-actions .btn-light:disabled { opacity: .5; }
+
+@media (max-width: 992px) {
+  .sp-grid { grid-template-columns: 1fr; }
+  .sp-detail { position: static; }
+}
+</style>

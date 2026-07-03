@@ -17,4 +17,5 @@ public class BienTheDto {
     private Integer ton;
     private BigDecimal gia;
     private String imageUrl;
+    private Boolean trangThai;
 }

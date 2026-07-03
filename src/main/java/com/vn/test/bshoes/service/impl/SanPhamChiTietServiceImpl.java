@@ -33,6 +33,7 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
         dto.setTon(v.getSoLuongTon());
         dto.setGia(v.getDonGia());
         dto.setImageUrl(v.getImageUrl());
+        dto.setTrangThai(v.getTrangThai());
         return dto;
     }
 
