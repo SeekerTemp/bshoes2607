@@ -1,6 +1,6 @@
 package com.vn.test.bshoes.controller;
 
-import com.vn.test.bshoes.entity.LichSuHoaDon;
+import com.vn.test.bshoes.dto.HoaDonDto;
 import com.vn.test.bshoes.service.LichSuHoaDonService;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,16 +17,12 @@ public class LichSuHoaDonController {
     }
 
     @GetMapping
-    public List<LichSuHoaDon> findAll() { return service.findAllActive(); }
-
-    @GetMapping("/cancelled")
-    public List<LichSuHoaDon> findCancelled() { return service.findAllCancel(); }
-
-    @GetMapping("/by-date")
-    public List<LichSuHoaDon> findByDate(@RequestParam String tuNgay, @RequestParam String denNgay) {
-        return service.findByDate(tuNgay, denNgay);
+    public List<HoaDonDto> findAll() {
+        return service.findAll();
     }
 
     @GetMapping("/{id}")
-    public LichSuHoaDon findById(@PathVariable int id) { return service.findById(id); }
+    public HoaDonDto findById(@PathVariable int id) {
+        return service.findById(id);
+    }
 }

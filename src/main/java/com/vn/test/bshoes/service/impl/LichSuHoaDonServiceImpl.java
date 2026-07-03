@@ -1,7 +1,7 @@
 package com.vn.test.bshoes.service.impl;
 
-import com.vn.test.bshoes.entity.LichSuHoaDon;
-import com.vn.test.bshoes.repository.LichSuHoaDonRepository;
+import com.vn.test.bshoes.dto.HoaDonDto;
+import com.vn.test.bshoes.service.HoaDonService;
 import com.vn.test.bshoes.service.LichSuHoaDonService;
 import org.springframework.stereotype.Service;
 
@@ -10,29 +10,19 @@ import java.util.List;
 @Service
 public class LichSuHoaDonServiceImpl implements LichSuHoaDonService {
 
-    private final LichSuHoaDonRepository repo;
+    private final HoaDonService hoaDonService;
 
-    public LichSuHoaDonServiceImpl(LichSuHoaDonRepository repo) {
-        this.repo = repo;
+    public LichSuHoaDonServiceImpl(HoaDonService hoaDonService) {
+        this.hoaDonService = hoaDonService;
     }
 
     @Override
-    public List<LichSuHoaDon> findAllActive() {
-        return repo.findAllActive();
+    public List<HoaDonDto> findAll() {
+        return hoaDonService.findAll();
     }
 
     @Override
-    public List<LichSuHoaDon> findAllCancel() {
-        return repo.findAllCancel();
-    }
-
-    @Override
-    public List<LichSuHoaDon> findByDate(String tuNgay, String denNgay) {
-        return repo.findByDate("%" + tuNgay + "%", "%" + denNgay + "%");
-    }
-
-    @Override
-    public LichSuHoaDon findById(int id) {
-        return repo.findById(id).orElse(null);
+    public HoaDonDto findById(int id) {
+        return hoaDonService.findById(id);
     }
 }

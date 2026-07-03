@@ -1,16 +1,16 @@
 package com.vn.test.bshoes.service;
 
-import com.vn.test.bshoes.entity.ThongKeDoanhThu;
-import com.vn.test.bshoes.entity.ThongKeSanPham;
+import com.vn.test.bshoes.dto.ThongKeDoanhThuDto;
+import com.vn.test.bshoes.dto.ThongKeSanPhamDto;
 
 import java.sql.Date;
 import java.util.List;
 
 public interface ThongKeService {
-    List<ThongKeDoanhThu> homNay();
-    List<ThongKeDoanhThu> theoNgay(Date from, Date to);
-    List<ThongKeDoanhThu> theoThang(int thang, int nam);
-    List<ThongKeDoanhThu> theoNam(int nam);
-    List<ThongKeSanPham> tatCaSanPham();
+    List<ThongKeDoanhThuDto> homNay();
+    List<ThongKeDoanhThuDto> theoNgay(Date from, Date to);
+    List<ThongKeDoanhThuDto> theoThang(int thang, int nam);
+    List<ThongKeDoanhThuDto> theoNam(int nam);
+    List<ThongKeSanPhamDto> tatCaSanPham();
     List<Integer> loatNam();
 }

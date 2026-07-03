@@ -1,7 +1,7 @@
 package com.vn.test.bshoes.controller;
 
-import com.vn.test.bshoes.entity.ThongKeDoanhThu;
-import com.vn.test.bshoes.entity.ThongKeSanPham;
+import com.vn.test.bshoes.dto.ThongKeDoanhThuDto;
+import com.vn.test.bshoes.dto.ThongKeSanPhamDto;
 import com.vn.test.bshoes.service.ThongKeService;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,29 +19,29 @@ public class ThongKeController {
     }
 
     @GetMapping("/hom-nay")
-    public List<ThongKeDoanhThu> homNay() {
+    public List<ThongKeDoanhThuDto> homNay() {
         return service.homNay();
     }
 
     @GetMapping("/theo-ngay")
-    public List<ThongKeDoanhThu> theoNgay(@RequestParam String tuNgay, @RequestParam String denNgay) {
+    public List<ThongKeDoanhThuDto> theoNgay(@RequestParam String tuNgay, @RequestParam String denNgay) {
         Date from = Date.valueOf(tuNgay);
         Date to = Date.valueOf(denNgay);
         return service.theoNgay(from, to);
     }
 
     @GetMapping("/theo-thang")
-    public List<ThongKeDoanhThu> theoThang(@RequestParam int thang, @RequestParam int nam) {
+    public List<ThongKeDoanhThuDto> theoThang(@RequestParam int thang, @RequestParam int nam) {
         return service.theoThang(thang, nam);
     }
 
     @GetMapping("/theo-nam")
-    public List<ThongKeDoanhThu> theoNam(@RequestParam int nam) {
+    public List<ThongKeDoanhThuDto> theoNam(@RequestParam int nam) {
         return service.theoNam(nam);
     }
 
     @GetMapping("/san-pham")
-    public List<ThongKeSanPham> tatCaSanPham() {
+    public List<ThongKeSanPhamDto> tatCaSanPham() {
         return service.tatCaSanPham();
     }
 
