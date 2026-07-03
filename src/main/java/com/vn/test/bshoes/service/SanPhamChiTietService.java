@@ -1,17 +1,14 @@
 package com.vn.test.bshoes.service;
 
-import com.vn.test.bshoes.entity.SanPhamChiTiet;
+import com.vn.test.bshoes.dto.BienTheDto;
 
 import java.util.List;
 
 public interface SanPhamChiTietService {
-    List<SanPhamChiTiet> findAll();
-    SanPhamChiTiet findById(int id);
-    List<SanPhamChiTiet> findAllAvailable();
-    SanPhamChiTiet findByMa(String ma);
-    List<SanPhamChiTiet> findAvailableByName(String keyword);
-    SanPhamChiTiet create(SanPhamChiTiet e);
-    SanPhamChiTiet update(SanPhamChiTiet e);
-    void delete(int id);
-    void updateStock(int soLuongTon, int idSanPhamChiTiet);
+    List<BienTheDto> findActive();
+    List<BienTheDto> findByProduct(int idSanPham);
+    List<BienTheDto> findAvailable();
+    BienTheDto findById(int id);
+    BienTheDto create(int idSanPham, BienTheDto dto);
+    void softDelete(int id);
 }

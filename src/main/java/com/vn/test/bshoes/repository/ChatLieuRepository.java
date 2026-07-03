@@ -13,6 +13,8 @@ public interface ChatLieuRepository extends JpaRepository<ChatLieu, Integer> {
     @Query(value = "select * from chat_lieu where ten_chat_lieu = ?1", nativeQuery = true)
     ChatLieu findByTen(String ten);
 
+    ChatLieu findByTenChatLieu(String tenChatLieu);
+
     @Modifying
     @Transactional
     @Query(value = "UPDATE chat_lieu SET ma_chat_lieu = ?1 WHERE id_chat_lieu = ?2", nativeQuery = true)

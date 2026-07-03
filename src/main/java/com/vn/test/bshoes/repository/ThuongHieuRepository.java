@@ -13,6 +13,8 @@ public interface ThuongHieuRepository extends JpaRepository<ThuongHieu, Integer>
     @Query(value = "select * from thuong_hieu where ten_thuong_hieu = ?1", nativeQuery = true)
     ThuongHieu findByTen(String ten);
 
+    ThuongHieu findByTenThuongHieu(String tenThuongHieu);
+
     @Modifying
     @Transactional
     @Query(value = "UPDATE thuong_hieu SET ma_thuong_hieu = ?1 WHERE id_thuong_hieu = ?2", nativeQuery = true)

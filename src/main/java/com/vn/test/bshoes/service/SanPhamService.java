@@ -1,14 +1,16 @@
 package com.vn.test.bshoes.service;
 
-import com.vn.test.bshoes.entity.SanPham;
+import com.vn.test.bshoes.dto.SanPhamDto;
 
 import java.util.List;
 
 public interface SanPhamService {
-    List<SanPham> findAll();
-    SanPham findById(int id);
-    List<SanPham> findByMa(String ma);
-    SanPham create(SanPham e);
-    SanPham update(SanPham e);
-    void delete(int id);
+    List<SanPhamDto> findAllActive();
+    List<SanPhamDto> findRecycle();
+    SanPhamDto findById(int id);
+    List<SanPhamDto> search(String keyword);
+    SanPhamDto create(SanPhamDto dto);
+    SanPhamDto update(SanPhamDto dto);
+    void softDelete(String ma);
+    void restore(String ma);
 }

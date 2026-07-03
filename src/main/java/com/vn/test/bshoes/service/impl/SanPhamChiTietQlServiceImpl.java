@@ -1,73 +1,49 @@
 package com.vn.test.bshoes.service.impl;
 
-import com.vn.test.bshoes.entity.SanPhamChiTiet_ql;
-import com.vn.test.bshoes.repository.SanPhamChiTietQlRepository;
+import com.vn.test.bshoes.dto.BienTheDto;
 import com.vn.test.bshoes.service.SanPhamChiTietQlService;
+import com.vn.test.bshoes.service.SanPhamChiTietService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 
 @Service
 public class SanPhamChiTietQlServiceImpl implements SanPhamChiTietQlService {
 
-    private final SanPhamChiTietQlRepository repo;
+    private final SanPhamChiTietService sanPhamChiTietService;
 
-    public SanPhamChiTietQlServiceImpl(SanPhamChiTietQlRepository repo) {
-        this.repo = repo;
+    public SanPhamChiTietQlServiceImpl(SanPhamChiTietService sanPhamChiTietService) {
+        this.sanPhamChiTietService = sanPhamChiTietService;
     }
 
     @Override
-    public List<SanPhamChiTiet_ql> findAllActive() {
-        return repo.findAllActive();
+    @Transactional(readOnly = true)
+    public List<BienTheDto> findActive() {
+        return sanPhamChiTietService.findActive();
     }
 
     @Override
-    public SanPhamChiTiet_ql findByIdJoined(int id) {
-        return repo.findByIdJoined(id);
+    @Transactional(readOnly = true)
+    public List<BienTheDto> findByProduct(int idSanPham) {
+        return sanPhamChiTietService.findByProduct(idSanPham);
     }
 
     @Override
-    public List<SanPhamChiTiet_ql> findByProduct(int idSanPham) {
-        return repo.findByProduct(idSanPham);
-    }
-
-    @Override
-    public List<SanPhamChiTiet_ql> search(String keyword) {
-        String like = "%" + keyword + "%";
-        return repo.search(like, like);
-    }
-
-    @Override
-    @Transactional
-    public SanPhamChiTiet_ql create(SanPhamChiTiet_ql e) {
-        // Mirrors the legacy SCOPE_IDENTITY() create: auto-generate "SPCT" + parent product code
-        // when the caller did not supply one.
-        if (!StringUtils.hasText(e.getMa_san_pham_chi_tiet())) {
-            String parentCode = repo.findParentCode(e.getId_san_pham());
-            e.setMa_san_pham_chi_tiet("SPCT" + parentCode);
-        }
-        return repo.save(e);
+    @Transactional(readOnly = true)
+    public BienTheDto findById(int id) {
+        return sanPhamChiTietService.findById(id);
     }
 
     @Override
     @Transactional
-    public void update(SanPhamChiTiet_ql e) {
-        repo.update(
-                e.getMa_san_pham_chi_tiet(),
-                e.getId_mau_sac(),
-                e.getId_kich_co(),
-                e.getDon_gia(),
-                e.getSo_luong_ton(),
-                e.isTrang_thai(),
-                e.getId_san_pham_chi_tiet()
-        );
+    public BienTheDto create(int idSanPham, BienTheDto dto) {
+        return sanPhamChiTietService.create(idSanPham, dto);
     }
 
     @Override
     @Transactional
-    public void delete(int id) {
-        repo.softDeleteById(id);
+    public void softDelete(int id) {
+        sanPhamChiTietService.softDelete(id);
     }
 }

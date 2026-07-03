@@ -1,6 +1,6 @@
 package com.vn.test.bshoes.controller;
 
-import com.vn.test.bshoes.entity.SanPham_ql;
+import com.vn.test.bshoes.dto.SanPhamDto;
 import com.vn.test.bshoes.service.SanPhamQlService;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,22 +17,22 @@ public class SanPhamQlController {
     }
 
     @GetMapping
-    public List<SanPham_ql> findAll() { return service.findAllActive(); }
+    public List<SanPhamDto> findAll() { return service.findAllActive(); }
 
     @GetMapping("/{id}")
-    public SanPham_ql findById(@PathVariable int id) { return service.findByIdJoined(id); }
-
-    @GetMapping("/recycle")
-    public List<SanPham_ql> findRecycle() { return service.findRecycle(); }
+    public SanPhamDto findById(@PathVariable int id) { return service.findById(id); }
 
     @GetMapping("/search")
-    public List<SanPham_ql> search(@RequestParam String keyword) { return service.search(keyword); }
+    public List<SanPhamDto> search(@RequestParam String keyword) { return service.search(keyword); }
+
+    @GetMapping("/recycle")
+    public List<SanPhamDto> findRecycle() { return service.findRecycle(); }
 
     @PostMapping
-    public SanPham_ql create(@RequestBody SanPham_ql e) { return service.create(e); }
+    public SanPhamDto create(@RequestBody SanPhamDto dto) { return service.create(dto); }
 
     @PutMapping
-    public SanPham_ql update(@RequestBody SanPham_ql e) { service.update(e); return e; }
+    public SanPhamDto update(@RequestBody SanPhamDto dto) { return service.update(dto); }
 
     @PostMapping("/restore/{ma}")
     public void restore(@PathVariable String ma) { service.restore(ma); }
