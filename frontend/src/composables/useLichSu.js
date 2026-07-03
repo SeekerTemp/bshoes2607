@@ -1,11 +1,22 @@
-// TODO(api): swap mock rows for lichSuApi calls when the backend runs.
-import { ref, computed } from 'vue'
+// Wired to /api/lich-su-hoa-don with a mock fallback when the backend is offline.
+import { ref, computed, onMounted } from 'vue'
+import { lichSuApi } from '../api/lichSu'
 import { lichSu } from '../mock/data'
 
 export function useLichSu() {
-  const rows = ref(JSON.parse(JSON.stringify(lichSu)))
+  const rows = ref([])
   const keyword = ref('')
   const trangThai = ref('')
+
+  async function load() {
+    try {
+      rows.value = await lichSuApi.findAll()
+    } catch (e) {
+      console.warn('API offline, using mock', e)
+      rows.value = JSON.parse(JSON.stringify(lichSu))
+    }
+  }
+  onMounted(load)
 
   const filtered = computed(() => {
     const k = keyword.value.toLowerCase()

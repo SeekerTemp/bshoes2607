@@ -1,5 +1,7 @@
-// TODO(api): swap mock data / local cart math for hoaDonApi calls when the backend runs.
-import { ref, computed } from 'vue'
+// POS. Products load from /api/hoa-don/pos-products with a mock fallback when
+// the backend is offline. Cart math + checkout stay client-side.
+import { ref, computed, onMounted } from 'vue'
+import { hoaDonApi } from '../api/hoaDon'
 import { posSanPham, posKhachHang, posVouchers } from '../mock/data'
 
 export function useHoaDon() {
@@ -12,6 +14,16 @@ export function useHoaDon() {
   const voucher = ref(0)
   const gio = ref([])
   let seq = 0
+
+  async function load() {
+    try {
+      sanPham.value = await hoaDonApi.posProducts()
+    } catch (e) {
+      console.warn('API offline, using mock', e)
+      sanPham.value = JSON.parse(JSON.stringify(posSanPham))
+    }
+  }
+  onMounted(load)
 
   const ketQua = computed(() => {
     const k = keyword.value.toLowerCase()

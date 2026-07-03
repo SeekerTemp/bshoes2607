@@ -1,7 +1,8 @@
-// TODO(api): swap useCrud(mock) for khachHangApi calls when the backend runs.
+// Wired to /api/khach-hang with a mock fallback when the backend is offline.
 import { useCrud } from './useCrud'
+import { khachHangApi } from '../api/khachHang'
 import { khachHang } from '../mock/data'
 
 export function useKhachHang() {
-  return useCrud(khachHang, { searchKeys: ['ma', 'ten', 'sdt'], codePrefix: 'KH', codeField: 'ma' })
+  return useCrud(khachHangApi, khachHang, { searchKeys: ['ma', 'ten', 'sdt'], codePrefix: 'KH', codeField: 'ma' })
 }

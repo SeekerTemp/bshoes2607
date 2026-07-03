@@ -19,15 +19,20 @@ Requires internet access on first `npm install` only.
 
 ## Data / backend
 
-Screens currently run on **mock data** via `src/composables/use*.js` (backed by
-`src/composables/useCrud.js` over seed arrays in `src/mock/data.js`). Each composable has a
-`// TODO(api)` marker showing where to swap in the REST calls.
+The composables in `src/composables/use*.js` now call the **live REST API** through the
+axios modules in `src/api/*.js`, with a **graceful fallback to mock data** (seed arrays in
+`src/mock/data.js`) whenever the backend is offline or a request fails. So the SPA runs
+either way: against real data when the backend is up, and against the demo seed when it is
+not (watch the console for `API offline, using mock` warnings).
 
-The Vite dev server proxies `/api` → `http://localhost:8085` (see `vite.config.js`), and
-`src/api/*.js` already maps to the Spring Boot Phase 2 endpoints (`/api/san-pham-ql`,
-`/api/khach-hang`, `/api/hoa-don`, `/api/thong-ke`, …). To go live: start the Spring Boot
-backend on :8085 (needs JPA-annotated entities + a SQL Server `BShoes` DB) and switch the
-composables from `useCrud(mock)` to the `*Api` calls.
+The Vite dev server proxies `/api` → `http://localhost:8085` (see `vite.config.js`). The
+api modules map to the Spring Boot DTO-shaped endpoints — `/api/khach-hang`, `/api/nhan-vien`,
+`/api/phieu-giam-gia`, `/api/san-pham-ql`, `/api/lich-su-hoa-don`, `/api/hoa-don`,
+`/api/thong-ke`, plus `/api/thuong-hieu` & `/api/chat-lieu` for the product-form selects —
+whose JSON field names match the frontend shapes. To go live: start the Spring Boot backend
+on :8085 (needs JPA-annotated entities + a SQL Server `BShoes` DB). CRUD writes (add/update/
+delete) POST/PUT/DELETE to the API and re-load on success; when offline they mutate the local
+rows so the UI stays interactive.
 
 ## Design system
 

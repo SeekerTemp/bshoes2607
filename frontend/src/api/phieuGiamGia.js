@@ -6,4 +6,5 @@ export const phieuGiamGiaApi = {
   create: (e) => http.post('/phieu-giam-gia', e).then(r => r.data),
   update: (e) => http.put('/phieu-giam-gia', e).then(r => r.data),
   remove: (id) => http.delete(`/phieu-giam-gia/${id}`),
+  search: (keyword) => http.get('/phieu-giam-gia/search', { params: { keyword } }).then(r => r.data),
 }
