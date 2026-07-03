@@ -78,6 +78,12 @@ function save() {
     <div class="row g-3">
       <div class="col-7">
         <DataTable :columns="columns" :rows="visible">
+          <template #cell-ma="{ row, value }">
+            <div class="d-flex align-items-center gap-2">
+              <img v-if="row.imageUrl" :src="row.imageUrl" alt="" style="width:32px;height:32px;object-fit:contain;background:#f5f7fa;border-radius:6px" @error="e => e.target.style.display='none'" />
+              <span>{{ value }}</span>
+            </div>
+          </template>
           <template #cell-gia="{ value }">{{ vnd(value) }}</template>
           <template #actions="{ row }">
             <AppButton size="sm" variant="outline-secondary" @click="chonSP(row)">Chọn</AppButton>
@@ -90,17 +96,21 @@ function save() {
           <div class="card-body">
             <h6 v-if="!chon" class="text-muted mb-0">Chọn 1 sản phẩm để xem biến thể</h6>
             <div v-else>
-              <h6 class="mb-2">Biến thể: {{ chon.ten }}</h6>
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <img v-if="chon.imageUrl" :src="chon.imageUrl" alt="" style="width:48px;height:48px;object-fit:contain;background:#f5f7fa;border-radius:8px" @error="e => e.target.style.display='none'" />
+                <h6 class="mb-0">Biến thể: {{ chon.ten }}</h6>
+              </div>
               <table class="table table-sm mb-0">
                 <thead>
-                  <tr><th>Màu</th><th>Size</th><th class="text-end">Tồn</th><th class="text-end">Đơn giá</th></tr>
+                  <tr><th></th><th>Màu</th><th>Size</th><th class="text-end">Tồn</th><th class="text-end">Đơn giá</th></tr>
                 </thead>
                 <tbody>
                   <tr v-for="v in chon.bienThe" :key="v.ma">
+                    <td><img v-if="v.imageUrl" :src="v.imageUrl" alt="" style="width:40px;height:40px;object-fit:contain" @error="e => e.target.style.display='none'" /></td>
                     <td>{{ v.mau }}</td><td>{{ v.size }}</td><td class="text-end">{{ v.ton }}</td><td class="text-end">{{ vnd(v.gia) }}</td>
                   </tr>
                   <tr v-if="!chon.bienThe || !chon.bienThe.length">
-                    <td colspan="4" class="text-center text-muted">Không có biến thể</td>
+                    <td colspan="5" class="text-center text-muted">Không có biến thể</td>
                   </tr>
                 </tbody>
               </table>

@@ -92,7 +92,12 @@ function huy() {
                 <tr v-for="(p, i) in ketQua" :key="p.id" @dblclick="addLine(p)">
                   <td class="text-center">{{ i + 1 }}</td>
                   <td>{{ p.ma }}</td>
-                  <td class="fw-medium">{{ p.ten }}</td>
+                  <td class="fw-medium">
+                    <div class="d-flex align-items-center gap-2">
+                      <img v-if="p.imageUrl" :src="p.imageUrl" alt="" style="width:40px;height:40px;object-fit:contain;background:#f5f7fa;border-radius:6px" @error="e => e.target.style.display='none'" />
+                      <span>{{ p.ten }}</span>
+                    </div>
+                  </td>
                   <td>{{ p.mau }}</td>
                   <td>{{ p.size }}</td>
                   <td class="text-end">{{ p.ton }}</td>

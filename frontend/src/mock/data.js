@@ -45,23 +45,29 @@ export const chatLieuList = ['Vải', 'Da', 'Canvas', 'Primeknit']
 export const sanPham = [
   {
     id: 1, ma: 'SP1', ten: 'Nike Air Zoom', thuongHieu: 'Nike', chatLieu: 'Vải', gia: 2000000, moTa: 'Giày chạy bộ',
-    bienThe: [{ ma: 'SP1-D42', mau: 'Đen', size: '42', ton: 12, gia: 2000000 }, { ma: 'SP1-T41', mau: 'Trắng', size: '41', ton: 8, gia: 2000000 }],
+    imageUrl: '/images/shoes/img_shoe_10001.png',
+    bienThe: [
+      { ma: 'SP1-D42', mau: 'Đen', size: '42', ton: 12, gia: 2000000, imageUrl: '/images/shoes/img_shoe_10001.png' },
+      { ma: 'SP1-T41', mau: 'Trắng', size: '41', ton: 8, gia: 2000000, imageUrl: '/images/shoes/img_shoe_10002.png' },
+    ],
   },
   {
     id: 2, ma: 'SP2', ten: 'Adidas Ultraboost', thuongHieu: 'Adidas', chatLieu: 'Primeknit', gia: 2500000, moTa: 'Đệm Boost',
-    bienThe: [{ ma: 'SP2-T40', mau: 'Trắng', size: '40', ton: 5, gia: 2500000 }],
+    imageUrl: '/images/shoes/img_shoe_10003.png',
+    bienThe: [{ ma: 'SP2-T40', mau: 'Trắng', size: '40', ton: 5, gia: 2500000, imageUrl: '/images/shoes/img_shoe_10004.png' }],
   },
   {
     id: 3, ma: 'SP3', ten: 'Converse Classic', thuongHieu: 'Converse', chatLieu: 'Canvas', gia: 1200000, moTa: 'Cổ điển',
-    bienThe: [{ ma: 'SP3-D39', mau: 'Đỏ', size: '39', ton: 20, gia: 1200000 }],
+    imageUrl: '/images/shoes/img_shoe_10005.png',
+    bienThe: [{ ma: 'SP3-D39', mau: 'Đỏ', size: '39', ton: 20, gia: 1200000, imageUrl: '/images/shoes/img_shoe_10006.png' }],
   },
 ]
 
 // ---- preview/hoa-don.html (POS) ----
 export const posSanPham = [
-  { id: 1, ma: 'SP1', ten: 'Nike Air Zoom', mau: 'Đen', size: '42', ton: 12, gia: 2000000 },
-  { id: 2, ma: 'SP2', ten: 'Adidas Ultraboost', mau: 'Trắng', size: '40', ton: 5, gia: 2500000 },
-  { id: 3, ma: 'SP3', ten: 'Converse Classic', mau: 'Đỏ', size: '39', ton: 20, gia: 1200000 },
+  { id: 1, ma: 'SP1', ten: 'Nike Air Zoom', mau: 'Đen', size: '42', ton: 12, gia: 2000000, imageUrl: '/images/shoes/img_shoe_10001.png' },
+  { id: 2, ma: 'SP2', ten: 'Adidas Ultraboost', mau: 'Trắng', size: '40', ton: 5, gia: 2500000, imageUrl: '/images/shoes/img_shoe_10003.png' },
+  { id: 3, ma: 'SP3', ten: 'Converse Classic', mau: 'Đỏ', size: '39', ton: 20, gia: 1200000, imageUrl: '/images/shoes/img_shoe_10005.png' },
 ]
 
 export const posKhachHang = ['Khách lẻ', 'Nguyễn Văn A', 'Trần Thị B']
