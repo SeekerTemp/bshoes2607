@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { Modal } from 'bootstrap'
-const props = defineProps({ open: Boolean, title: { type: String, default: '' } })
+const props = defineProps({ open: Boolean, title: { type: String, default: '' }, size: { type: String, default: '' } })
 const emit = defineEmits(['update:open'])
 const el = ref(null)
 let modal
@@ -16,7 +16,7 @@ onBeforeUnmount(() => modal?.dispose())
 
 <template>
   <div class="modal fade" tabindex="-1" ref="el">
-    <div class="modal-dialog">
+    <div class="modal-dialog" :class="size ? `modal-${size}` : ''">
       <div class="modal-content app-modal-content">
         <div class="modal-header app-modal-header">
           <h5 class="modal-title">{{ title }}</h5>

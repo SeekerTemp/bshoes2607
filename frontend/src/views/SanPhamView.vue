@@ -7,12 +7,13 @@ import { ref, computed } from 'vue'
 import AppShell from '../components/layout/AppShell.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
 import AppSelect from '../components/ui/AppSelect.vue'
+import ImagePicker from '../components/ui/ImagePicker.vue'
 import { useSanPham } from '../composables/useSanPham'
 import { useToast } from '../composables/useToast'
 import { vnd } from '../utils/format'
 import {
   loaiSanPhamList, kieuDangList, kieuCoGiayList, kieuDayGiayList,
-  xuatXuList, thuocTinh as mockThuocTinh, loaiThuocTinhList,
+  xuatXuList, mauSacList, kichThuocList, thuocTinh as mockThuocTinh, loaiThuocTinhList,
 } from '../mock/data'
 
 const { filtered, add, update, remove, thuongHieuList, chatLieuList } = useSanPham()
@@ -22,6 +23,10 @@ const tab = ref('sanpham') // 'sanpham' | 'chitiet' | 'thuoctinh'
 
 const PLACEHOLDER = '/images/shoes/img_shoe_10001.png'
 function onImgError(e) { e.target.style.visibility = 'hidden' }
+
+// grid-card image pickers (one per tab that carries an image)
+const spImgOpen = ref(false)
+const ctImgOpen = ref(false)
 
 /* ============================ TAB 1 — Sản phẩm ============================ */
 const spSearch = ref('')
@@ -76,14 +81,16 @@ const ctRows = computed(() => {
   return rows.filter(r => !k || r.ma.toLowerCase().includes(k) || r.ten.toLowerCase().includes(k))
 })
 const ctSelectedKey = ref(null)
-const ctForm = ref({ ma: '', ten: '', gia: 0, ton: 0, trangThai: true, imageUrl: '' })
+const ctForm = ref({ ma: '', ten: '', mau: '', size: '', gia: 0, ton: 0, trangThai: true, imageUrl: '' })
 function selectCT(r) { ctSelectedKey.value = r.key; ctForm.value = { ...r } }
 function ctLamMoi() { const r = ctRows.value.find(x => x.key === ctSelectedKey.value); if (r) ctForm.value = { ...r } }
 function ctLuu() {
   const p = filtered.value.find(x => (x.bienThe || []).some(v => v.ma === ctForm.value.ma))
   const v = p && p.bienThe.find(x => x.ma === ctForm.value.ma)
   if (v) {
+    v.mau = ctForm.value.mau; v.size = ctForm.value.size
     v.gia = ctForm.value.gia; v.ton = ctForm.value.ton; v.trangThai = ctForm.value.trangThai
+    v.imageUrl = ctForm.value.imageUrl
     update({ ...p }); notify('Đã cập nhật chi tiết', 'success')
   }
 }
@@ -172,7 +179,12 @@ function ttXoa() {
         <div class="sp-tab-r">Chi tiết</div>
         <div class="sp-panel-green">
           <h6 class="green-title">Thông tin sản phẩm</h6>
-          <div class="green-img"><img :src="spForm.imageUrl || PLACEHOLDER" alt="" @error="onImgError"></div>
+          <div class="green-img">
+            <button type="button" class="img-choose" @click="spImgOpen = true" title="Chọn ảnh">
+              <img :src="spForm.imageUrl || PLACEHOLDER" alt="" @error="onImgError">
+              <span class="img-choose-overlay"><i class="bi bi-images"></i> Chọn ảnh</span>
+            </button>
+          </div>
           <dl class="green-fields">
             <div class="gf"><dt>Mã sản phẩm</dt><dd><input class="form-control form-control-sm" v-model="spForm.ma" readonly></dd></div>
             <div class="gf"><dt>Tên sản phẩm</dt><dd><input class="form-control form-control-sm" v-model="spForm.ten"></dd></div>
@@ -231,10 +243,17 @@ function ttXoa() {
         <div class="sp-tab-r">Chi tiết</div>
         <div class="sp-panel-green">
           <h6 class="green-title">Thông tin sản phẩm</h6>
-          <div class="green-img"><img :src="ctForm.imageUrl || PLACEHOLDER" alt="" @error="onImgError"></div>
+          <div class="green-img">
+            <button type="button" class="img-choose" @click="ctImgOpen = true" title="Chọn ảnh">
+              <img :src="ctForm.imageUrl || PLACEHOLDER" alt="" @error="onImgError">
+              <span class="img-choose-overlay"><i class="bi bi-images"></i> Chọn ảnh</span>
+            </button>
+          </div>
           <dl class="green-fields">
             <div class="gf"><dt>Mã sản phẩm</dt><dd><input class="form-control form-control-sm" v-model="ctForm.ma" readonly></dd></div>
             <div class="gf"><dt>Tên sản phẩm</dt><dd><input class="form-control form-control-sm" v-model="ctForm.ten" readonly></dd></div>
+            <div class="gf"><dt>Màu sắc</dt><dd><AppSelect v-model="ctForm.mau" :options="mauSacList" /></dd></div>
+            <div class="gf"><dt>Kích cỡ</dt><dd><AppSelect v-model="ctForm.size" :options="kichThuocList" /></dd></div>
             <div class="gf"><dt>Đơn giá</dt><dd><input type="number" class="form-control form-control-sm text-end" v-model.number="ctForm.gia"></dd></div>
             <div class="gf"><dt>Số lượng tồn</dt><dd><input type="number" class="form-control form-control-sm text-end" v-model.number="ctForm.ton"></dd></div>
             <div class="gf"><dt>Trạng thái</dt><dd class="d-flex gap-3 align-items-center">
@@ -306,6 +325,9 @@ function ttXoa() {
         </div>
       </div>
     </div>
+
+    <ImagePicker v-model:open="spImgOpen" v-model="spForm.imageUrl" />
+    <ImagePicker v-model:open="ctImgOpen" v-model="ctForm.imageUrl" />
   </AppShell>
 </template>
 
@@ -351,7 +373,17 @@ function ttXoa() {
 }
 .green-title { font-weight: 700; margin: 0 0 12px; }
 .green-img { text-align: center; margin-bottom: 12px; }
-.green-img img { max-height: 120px; max-width: 100%; background: #fff; border-radius: var(--radius-sm); padding: 6px; }
+.img-choose {
+  position: relative; display: inline-block; border: none; padding: 0;
+  background: #fff; border-radius: var(--radius-sm); cursor: pointer; overflow: hidden;
+}
+.img-choose img { max-height: 120px; max-width: 100%; padding: 6px; display: block; }
+.img-choose-overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 6px;
+  background: rgba(11, 137, 90, 0.72); color: #fff; font-size: 13px; font-weight: 600;
+  opacity: 0; transition: opacity var(--transition);
+}
+.img-choose:hover .img-choose-overlay { opacity: 1; }
 
 .green-fields { display: flex; flex-direction: column; gap: 8px; margin: 0; }
 .gf { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 8px; }

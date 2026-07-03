@@ -1,4 +1,7 @@
 <script setup>
+import { useLayout } from '../../composables/useLayout'
+const { sidebarCollapsed } = useLayout()
+
 const navItems = [
   { to: '/', icon: 'bi-graph-up', label: 'Doanh Thu', exact: true },
   { to: '/san-pham', icon: 'bi-box-seam', label: 'Sản Phẩm' },
@@ -12,8 +15,8 @@ const navItems = [
 </script>
 
 <template>
-  <aside class="app-sidebar d-flex flex-column">
-    <nav class="d-flex flex-column flex-grow-1">
+  <aside class="app-sidebar d-flex flex-column" :class="{ collapsed: sidebarCollapsed }">
+    <nav class="side-nav d-flex flex-column">
       <router-link
         v-for="item in navItems"
         :key="item.to"
@@ -22,15 +25,16 @@ const navItems = [
         :class="{ 'exact-link': item.exact }"
         active-class="active"
         :exact-active-class="item.exact ? 'active' : undefined"
+        :title="sidebarCollapsed ? item.label : undefined"
       >
         <i :class="['bi', item.icon]"></i>
-        <span>{{ item.label }}</span>
+        <span class="nav-label">{{ item.label }}</span>
       </router-link>
     </nav>
 
-    <router-link to="/login" class="nav-link-item mt-auto" active-class="active">
+    <router-link to="/login" class="nav-link-item logout-link" active-class="active" :title="sidebarCollapsed ? 'Đăng Nhập' : undefined">
       <i class="bi bi-box-arrow-right"></i>
-      <span>Đăng Nhập</span>
+      <span class="nav-label">Đăng Nhập</span>
     </router-link>
   </aside>
 </template>
@@ -41,6 +45,20 @@ const navItems = [
   min-width: var(--sidebar-w);
   background: var(--c-primary);
   padding: var(--sp-3) var(--sp-2);
+  height: 100%;
+  overflow: hidden;                /* the nav scrolls, not the whole sidebar */
+  transition: width var(--transition), min-width var(--transition);
+}
+.app-sidebar.collapsed {
+  width: 64px;
+  min-width: 64px;
+}
+
+/* nav list scrolls on its own if it ever overflows; logout stays pinned below */
+.side-nav {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .nav-link-item {
@@ -53,13 +71,15 @@ const navItems = [
   color: rgba(255, 255, 255, 0.9);
   text-decoration: none;
   font-weight: 500;
-  transition: background-color var(--transition), color var(--transition), transform var(--transition);
+  white-space: nowrap;
+  transition: background-color var(--transition), color var(--transition);
 }
 
 .nav-link-item i {
   font-size: 1.05rem;
   width: 20px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .nav-link-item:hover {
@@ -72,4 +92,13 @@ const navItems = [
   color: var(--c-primary);
   box-shadow: var(--shadow-sm);
 }
+
+.logout-link {
+  flex-shrink: 0;
+  margin-top: var(--sp-2);
+}
+
+/* collapsed: hide labels, center icons */
+.collapsed .nav-label { display: none; }
+.collapsed .nav-link-item { justify-content: center; padding: 10px 0; gap: 0; }
 </style>
