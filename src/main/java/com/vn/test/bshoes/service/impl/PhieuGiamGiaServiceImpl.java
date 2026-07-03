@@ -1,5 +1,6 @@
 package com.vn.test.bshoes.service.impl;
 
+import com.vn.test.bshoes.dto.PhieuGiamGiaDto;
 import com.vn.test.bshoes.entity.PhieuGiamGia;
 import com.vn.test.bshoes.repository.PhieuGiamGiaRepository;
 import com.vn.test.bshoes.service.PhieuGiamGiaService;
@@ -17,65 +18,83 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
         this.repo = repo;
     }
 
-    @Override
-    public List<PhieuGiamGia> findAllActive() {
-        return repo.findAllActive();
+    private PhieuGiamGiaDto toDto(PhieuGiamGia e) {
+        PhieuGiamGiaDto dto = new PhieuGiamGiaDto();
+        dto.setId(e.getId());
+        dto.setMa(e.getMaPhieuGiam());
+        dto.setTen(e.getTenPhieuGiam());
+        dto.setLoai(e.getLoaiGiamGia());
+        dto.setGiaTri(e.getGiaTriGiam());
+        dto.setDonToiThieu(e.getDonToiThieu());
+        dto.setGiamToiDa(e.getGiamToiDa());
+        dto.setSoLuong(e.getSoLuong());
+        dto.setBatDau(e.getThoiGianBatDau() != null ? e.getThoiGianBatDau().toString() : null);
+        dto.setKetThuc(e.getThoiGianKetThuc() != null ? e.getThoiGianKetThuc().toString() : null);
+        dto.setTrangThai(e.getTrangThai());
+        return dto;
+    }
+
+    private java.time.Instant parseDate(String s) {
+        if (s == null || s.isBlank()) return null;
+        try {
+            return java.time.Instant.parse(s);
+        } catch (Exception ex) {
+            return java.time.LocalDate.parse(s).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+        }
+    }
+
+    private void apply(PhieuGiamGiaDto dto, PhieuGiamGia e) {
+        e.setTenPhieuGiam(dto.getTen());
+        e.setLoaiGiamGia(dto.getLoai());
+        e.setGiaTriGiam(dto.getGiaTri());
+        e.setDonToiThieu(dto.getDonToiThieu());
+        e.setGiamToiDa(dto.getGiamToiDa());
+        e.setSoLuong(dto.getSoLuong());
+        e.setThoiGianBatDau(parseDate(dto.getBatDau()));
+        e.setThoiGianKetThuc(parseDate(dto.getKetThuc()));
+        e.setTrangThai(dto.getTrangThai());
     }
 
     @Override
-    public PhieuGiamGia findByIdActive(int id) {
-        return repo.findByIdActive(id);
+    public List<PhieuGiamGiaDto> findAll() {
+        return repo.findActive().stream().map(this::toDto).toList();
     }
 
     @Override
-    public List<PhieuGiamGia> search(String keyword) {
-        return repo.searchByName("%" + keyword + "%");
+    public PhieuGiamGiaDto findById(int id) {
+        return repo.findById(id).map(this::toDto).orElse(null);
+    }
+
+    @Override
+    public List<PhieuGiamGiaDto> search(String kw) {
+        return repo.search(kw).stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional
-    public PhieuGiamGia create(PhieuGiamGia e) {
-        // bug-fix: create() must return the persisted entity instead of null.
-        return repo.save(e);
+    public PhieuGiamGiaDto create(PhieuGiamGiaDto dto) {
+        PhieuGiamGia e = new PhieuGiamGia();
+        apply(dto, e);
+        e.setTrangThaiXoa(false);
+        if (dto.getTrangThai() == null) e.setTrangThai(true);
+        e = repo.save(e);
+        e.setMaPhieuGiam("PGG" + e.getId());
+        return toDto(repo.save(e));
     }
 
     @Override
     @Transactional
-    public void update(PhieuGiamGia e) {
-        repo.updateByMa(
-                e.getTen_phieu_giam(),
-                e.getLoai_giam_gia(),
-                e.getGia_tri_giam(),
-                e.getDon_toi_thieu(),
-                e.getGiam_toi_da(),
-                e.getSo_luong(),
-                e.getThoi_gian_bat_dau(),
-                e.getThoi_gian_ket_thuc(),
-                e.isTrang_thai(),
-                e.getMa_phieu_giam()
-        );
+    public PhieuGiamGiaDto update(PhieuGiamGiaDto dto) {
+        PhieuGiamGia e = repo.findById(dto.getId()).orElseThrow();
+        apply(dto, e);
+        return toDto(repo.save(e));
     }
 
     @Override
     @Transactional
     public void delete(int id) {
-        repo.softDelete(id);
-    }
-
-    @Override
-    public boolean existsMa(String ma) {
-        return repo.existsMa(ma) > 0;
-    }
-
-    @Override
-    public boolean existsTen(String ten) {
-        return repo.existsTen(ten) > 0;
-    }
-
-    @Override
-    @Transactional
-    // NOTE: legacy uses a scheduled proc; a @Scheduled Java job could replace it later.
-    public void capNhatTrangThai() {
-        repo.capNhatTrangThai();
+        PhieuGiamGia e = repo.findById(id).orElseThrow();
+        e.setTrangThaiXoa(true);
+        repo.save(e);
     }
 }

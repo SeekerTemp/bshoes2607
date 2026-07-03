@@ -1,6 +1,6 @@
 package com.vn.test.bshoes.controller;
 
-import com.vn.test.bshoes.entity.PhieuGiamGia;
+import com.vn.test.bshoes.dto.PhieuGiamGiaDto;
 import com.vn.test.bshoes.service.PhieuGiamGiaService;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,23 +17,20 @@ public class PhieuGiamGiaController {
     }
 
     @GetMapping
-    public List<PhieuGiamGia> findAll() { return service.findAllActive(); }
+    public List<PhieuGiamGiaDto> findAll() { return service.findAll(); }
 
     @GetMapping("/{id}")
-    public PhieuGiamGia findById(@PathVariable int id) { return service.findByIdActive(id); }
-
-    @GetMapping("/search")
-    public List<PhieuGiamGia> search(@RequestParam String keyword) { return service.search(keyword); }
+    public PhieuGiamGiaDto findById(@PathVariable int id) { return service.findById(id); }
 
     @PostMapping
-    public PhieuGiamGia create(@RequestBody PhieuGiamGia e) { return service.create(e); }
+    public PhieuGiamGiaDto create(@RequestBody PhieuGiamGiaDto dto) { return service.create(dto); }
 
     @PutMapping
-    public PhieuGiamGia update(@RequestBody PhieuGiamGia e) { service.update(e); return e; }
+    public PhieuGiamGiaDto update(@RequestBody PhieuGiamGiaDto dto) { return service.update(dto); }
 
     @DeleteMapping("/{id}")
     public void delete(@PathVariable int id) { service.delete(id); }
 
-    @PostMapping("/cap-nhat-trang-thai")
-    public void capNhatTrangThai() { service.capNhatTrangThai(); }
+    @GetMapping("/search")
+    public List<PhieuGiamGiaDto> search(@RequestParam String keyword) { return service.search(keyword); }
 }

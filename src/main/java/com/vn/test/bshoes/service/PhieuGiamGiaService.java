@@ -1,16 +1,14 @@
 package com.vn.test.bshoes.service;
 
-import com.vn.test.bshoes.entity.PhieuGiamGia;
+import com.vn.test.bshoes.dto.PhieuGiamGiaDto;
+
 import java.util.List;
 
 public interface PhieuGiamGiaService {
-    List<PhieuGiamGia> findAllActive();
-    PhieuGiamGia findByIdActive(int id);
-    List<PhieuGiamGia> search(String keyword);
-    PhieuGiamGia create(PhieuGiamGia e);
-    void update(PhieuGiamGia e);
+    List<PhieuGiamGiaDto> findAll();
+    PhieuGiamGiaDto findById(int id);
+    List<PhieuGiamGiaDto> search(String kw);
+    PhieuGiamGiaDto create(PhieuGiamGiaDto dto);
+    PhieuGiamGiaDto update(PhieuGiamGiaDto dto);
     void delete(int id);
-    boolean existsMa(String ma);
-    boolean existsTen(String ten);
-    void capNhatTrangThai();
 }
