@@ -18,5 +18,6 @@ public class SanPhamDto {
     private String chatLieu;
     private BigDecimal gia;
     private String moTa;
+    private String imageUrl;
     private List<BienTheDto> bienThe;
 }

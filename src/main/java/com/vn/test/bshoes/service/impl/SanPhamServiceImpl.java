@@ -42,6 +42,7 @@ public class SanPhamServiceImpl implements SanPhamService {
                     dto.setSize(v.getIdKichCo() != null ? v.getIdKichCo().getTenKichCo() : null);
                     dto.setTon(v.getSoLuongTon());
                     dto.setGia(v.getDonGia());
+                    dto.setImageUrl(v.getImageUrl());
                     return dto;
                 })
                 .toList();
@@ -53,6 +54,7 @@ public class SanPhamServiceImpl implements SanPhamService {
         dto.setThuongHieu(s.getIdThuongHieu() != null ? s.getIdThuongHieu().getTenThuongHieu() : null);
         dto.setChatLieu(s.getIdChatLieu() != null ? s.getIdChatLieu().getTenChatLieu() : null);
         dto.setGia(!bienThe.isEmpty() ? bienThe.get(0).getGia() : null);
+        dto.setImageUrl(!bienThe.isEmpty() ? bienThe.get(0).getImageUrl() : null);
         dto.setMoTa(s.getMoTa());
         dto.setBienThe(bienThe);
         return dto;

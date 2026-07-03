@@ -63,6 +63,27 @@ export const sanPham = [
   },
 ]
 
+// Attribute option lists (NetBeans Pnl_3 "Thuộc tính" types) for the SanPham inspectors.
+export const loaiSanPhamList = ['Thể thao', 'Chạy bộ', 'Lifestyle', 'Thời trang']
+export const kieuDangList = ['Thấp cổ', 'Cổ cao', 'Cổ lửng']
+export const kieuCoGiayList = ['Cổ thấp', 'Cổ cao']
+export const kieuDayGiayList = ['Dây tròn', 'Dây dẹt', 'Không dây']
+export const mauSacList = ['Đen', 'Trắng', 'Đỏ', 'Xanh', 'Hồng cánh sen', 'Tím']
+export const kichThuocList = ['38', '39', '40', '41', '42', '43']
+export const xuatXuList = ['Việt Nam', 'Trung Quốc', 'Indonesia']
+
+// NetBeans Pnl_3 tab "Thuộc tính" — the attribute-manager table (Loại thuộc tính / Tên thuộc tính).
+export const thuocTinh = [
+  { id: 1, ma: 'TT1', loai: 'Màu sắc', ten: 'Hồng cánh sen', moTa: '' },
+  { id: 2, ma: 'TT2', loai: 'Màu sắc', ten: 'Tím', moTa: '' },
+  { id: 3, ma: 'TT3', loai: 'Kích thước', ten: '31-32', moTa: '' },
+  { id: 4, ma: 'TT4', loai: 'Chất liệu', ten: 'Foam', moTa: '' },
+  { id: 5, ma: 'TT5', loai: 'Thương hiệu', ten: 'Nike', moTa: '' },
+]
+
+// The radio group of attribute types in the "Thông tin thuộc tính" inspector.
+export const loaiThuocTinhList = ['Loại sản phẩm', 'Màu sắc', 'Chất liệu', 'Kiểu dáng', 'Kiểu cỡ giày', 'Kiểu dây giày', 'Thương hiệu']
+
 // ---- preview/hoa-don.html (POS) ----
 export const posSanPham = [
   { id: 1, ma: 'SP1', ten: 'Nike Air Zoom', mau: 'Đen', size: '42', ton: 12, gia: 2000000, imageUrl: '/images/shoes/img_shoe_10001.png' },

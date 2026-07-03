@@ -16,4 +16,5 @@ public class PosSanPhamDto {
     private String size;
     private Integer ton;
     private BigDecimal gia;
+    private String imageUrl;
 }

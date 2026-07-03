@@ -32,6 +32,7 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
         dto.setSize(v.getIdKichCo() != null ? v.getIdKichCo().getTenKichCo() : null);
         dto.setTon(v.getSoLuongTon());
         dto.setGia(v.getDonGia());
+        dto.setImageUrl(v.getImageUrl());
         return dto;
     }
 
@@ -100,6 +101,7 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
         dto.setSize(v.getIdKichCo() != null ? v.getIdKichCo().getTenKichCo() : null);
         dto.setTon(v.getSoLuongTon());
         dto.setGia(v.getDonGia());
+        dto.setImageUrl(v.getImageUrl());
         return dto;
     }
 }

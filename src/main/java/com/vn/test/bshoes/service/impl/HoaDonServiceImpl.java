@@ -116,6 +116,7 @@ public class HoaDonServiceImpl implements HoaDonService {
                     dto.setSize(s.getIdKichCo() != null ? s.getIdKichCo().getTenKichCo() : null);
                     dto.setTon(s.getSoLuongTon());
                     dto.setGia(s.getDonGia());
+                    dto.setImageUrl(s.getImageUrl());
                     return dto;
                 })
                 .toList();

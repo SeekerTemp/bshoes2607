@@ -69,6 +69,10 @@ public class SanPhamChiTiet {
     @Column(name = "trang_thai_xoa")
     private Boolean trangThaiXoa;
 
+    @Nationalized
+    @Column(name = "image_url", length = 255)
+    private String imageUrl;
+
     @OneToMany(mappedBy = "idSanPhamChiTiet")
     private Set<HoaDonChiTiet> hoaDonChiTiets = new LinkedHashSet<>();
 
