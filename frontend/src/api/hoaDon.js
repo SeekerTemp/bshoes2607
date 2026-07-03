@@ -8,4 +8,5 @@ export const hoaDonApi = {
   findById: (id) => http.get(`/hoa-don/${id}`).then(r => r.data),
   giamGia: (idPhieu, tongTien) => http.get(`/hoa-don/${idPhieu}/giam-gia`, { params: { tongTien } }).then(r => r.data),
   create: (e) => http.post('/hoa-don', e).then(r => r.data),
+  scanByMa: (ma) => http.get('/san-pham-chi-tiet/by-ma/' + encodeURIComponent(ma)).then(r => r.data),
 }

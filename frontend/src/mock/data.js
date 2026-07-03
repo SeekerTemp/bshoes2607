@@ -59,9 +59,9 @@ export const sanPham = [
 
 // ---- preview/hoa-don.html (POS) ----
 export const posSanPham = [
-  { id: 1, ten: 'Nike Air Zoom', mau: 'Đen', size: '42', ton: 12, gia: 2000000 },
-  { id: 2, ten: 'Adidas Ultraboost', mau: 'Trắng', size: '40', ton: 5, gia: 2500000 },
-  { id: 3, ten: 'Converse Classic', mau: 'Đỏ', size: '39', ton: 20, gia: 1200000 },
+  { id: 1, ma: 'SP1', ten: 'Nike Air Zoom', mau: 'Đen', size: '42', ton: 12, gia: 2000000 },
+  { id: 2, ma: 'SP2', ten: 'Adidas Ultraboost', mau: 'Trắng', size: '40', ton: 5, gia: 2500000 },
+  { id: 3, ma: 'SP3', ten: 'Converse Classic', mau: 'Đỏ', size: '39', ton: 20, gia: 1200000 },
 ]
 
 export const posKhachHang = ['Khách lẻ', 'Nguyễn Văn A', 'Trần Thị B']
@@ -70,6 +70,37 @@ export const posVouchers = [
   { value: 0, label: 'Không' },
   { value: 0.1, label: 'Giảm 10%' },
   { value: 50000, label: 'Giảm 50k' },
+]
+
+export const posHinhThuc = ['Tiền mặt', 'Chuyển khoản', 'Thẻ']
+
+// Invoices sitting on the queue (NetBeans "Danh sách hóa đơn" / tbl_hoaDon).
+// The first one is the one being edited ("Đang tạo"); the rest are waiting.
+export const posHoaDonQueue = [
+  {
+    ma: 'HD001', nhanVien: 'admin', khachHang: 'Khách lẻ', sdt: '', diaChi: '',
+    trangThai: 'Đang tạo', trangThaiHang: '-', ngayTao: '03-07-2026',
+    voucher: 0, hinhThuc: 'Tiền mặt', khachDua: 0, memberCode: '', phiShip: 0, ghiChu: '',
+    gio: [
+      { spId: 1, ma: 'SP1', ten: 'Nike Air Zoom', mau: 'Đen', size: '42', gia: 2000000, ton: 12, soLuong: 1, trangThai: '-' },
+    ],
+  },
+  {
+    ma: 'HD002', nhanVien: 'hoangbh', khachHang: 'Nguyễn Văn A', sdt: '0901234567', diaChi: '',
+    trangThai: 'Chờ', trangThaiHang: 'Chưa thanh toán', ngayTao: '03-07-2026',
+    voucher: 0, hinhThuc: 'Tiền mặt', khachDua: 0, memberCode: '', phiShip: 0, ghiChu: '',
+    gio: [
+      { spId: 2, ma: 'SP2', ten: 'Adidas Ultraboost', mau: 'Trắng', size: '40', gia: 2500000, ton: 5, soLuong: 2, trangThai: '-' },
+    ],
+  },
+  {
+    ma: 'HD003', nhanVien: 'admin', khachHang: 'Trần Thị B', sdt: '0912345678', diaChi: '',
+    trangThai: 'Chờ', trangThaiHang: 'Đã thanh toán', ngayTao: '02-07-2026',
+    voucher: 0, hinhThuc: 'Chuyển khoản', khachDua: 1200000, memberCode: '', phiShip: 0, ghiChu: '',
+    gio: [
+      { spId: 3, ma: 'SP3', ten: 'Converse Classic', mau: 'Đỏ', size: '39', gia: 1200000, ton: 20, soLuong: 1, trangThai: '-' },
+    ],
+  },
 ]
 
 // ---- preview/lich-su.html ----
