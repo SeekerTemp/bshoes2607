@@ -1,89 +1,148 @@
 package com.vn.test.bshoes.service.impl;
 
+import com.vn.test.bshoes.dto.HoaDonChiTietDto;
+import com.vn.test.bshoes.dto.HoaDonDto;
+import com.vn.test.bshoes.dto.PhieuGiamGiaDto;
+import com.vn.test.bshoes.dto.PosSanPhamDto;
 import com.vn.test.bshoes.entity.HoaDon;
+import com.vn.test.bshoes.entity.HoaDonChiTiet;
 import com.vn.test.bshoes.entity.PhieuGiamGia;
+import com.vn.test.bshoes.entity.SanPhamChiTiet;
+import com.vn.test.bshoes.repository.HoaDonChiTietRepository;
 import com.vn.test.bshoes.repository.HoaDonRepository;
+import com.vn.test.bshoes.repository.SanPhamChiTietRepository;
 import com.vn.test.bshoes.service.HoaDonService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
 @Service
 public class HoaDonServiceImpl implements HoaDonService {
 
-    private final HoaDonRepository repo;
+    private final HoaDonRepository hoaDonRepository;
+    private final HoaDonChiTietRepository hoaDonChiTietRepository;
+    private final SanPhamChiTietRepository sanPhamChiTietRepository;
 
-    public HoaDonServiceImpl(HoaDonRepository repo) {
-        this.repo = repo;
+    public HoaDonServiceImpl(HoaDonRepository hoaDonRepository,
+                             HoaDonChiTietRepository hoaDonChiTietRepository,
+                             SanPhamChiTietRepository sanPhamChiTietRepository) {
+        this.hoaDonRepository = hoaDonRepository;
+        this.hoaDonChiTietRepository = hoaDonChiTietRepository;
+        this.sanPhamChiTietRepository = sanPhamChiTietRepository;
+    }
+
+    private String trangThaiLabel(Integer trangThai) {
+        if (trangThai == null) return "Khác";
+        return switch (trangThai) {
+            case 0 -> "Chờ";
+            case 1 -> "Thành công";
+            case 2 -> "Huỷ";
+            default -> "Khác";
+        };
+    }
+
+    private HoaDonChiTietDto chiTietToDto(HoaDonChiTiet h) {
+        SanPhamChiTiet spct = h.getIdSanPhamChiTiet();
+        HoaDonChiTietDto dto = new HoaDonChiTietDto();
+        dto.setId(h.getId());
+        dto.setTen(spct != null && spct.getIdSanPham() != null ? spct.getIdSanPham().getTenSanPham() : null);
+        dto.setSoLuong(h.getSoLuong());
+        dto.setDonGia(spct != null ? spct.getDonGia() : null);
+        dto.setThanhTien(h.getThanhTien());
+        return dto;
+    }
+
+    private HoaDonDto toDto(HoaDon h) {
+        HoaDonDto dto = new HoaDonDto();
+        dto.setId(h.getId());
+        dto.setMa(h.getMaHoaDon());
+        dto.setKhach(h.getIdKhachHang() != null ? h.getIdKhachHang().getTenKhachHang() : h.getTenNguoiNhan());
+        dto.setNhanVien(h.getIdNhanVien() != null ? h.getIdNhanVien().getTenNhanVien() : null);
+        dto.setNgayTao(h.getNgayTaoMa() != null ? h.getNgayTaoMa().toString() : null);
+        dto.setTongTien(h.getTongTienPhaiTra());
+        dto.setTrangThai(trangThaiLabel(h.getTrangThai()));
+        List<HoaDonChiTietDto> chiTiet = hoaDonChiTietRepository.findByHoaDon(h.getId()).stream()
+                .map(this::chiTietToDto).toList();
+        dto.setChiTiet(chiTiet);
+        return dto;
+    }
+
+    private PhieuGiamGiaDto voucherToDto(PhieuGiamGia p) {
+        PhieuGiamGiaDto dto = new PhieuGiamGiaDto();
+        dto.setId(p.getId());
+        dto.setMa(p.getMaPhieuGiam());
+        dto.setTen(p.getTenPhieuGiam());
+        dto.setLoai(p.getLoaiGiamGia());
+        dto.setGiaTri(p.getGiaTriGiam());
+        dto.setDonToiThieu(p.getDonToiThieu());
+        dto.setGiamToiDa(p.getGiamToiDa());
+        dto.setSoLuong(p.getSoLuong());
+        dto.setBatDau(p.getThoiGianBatDau() != null ? p.getThoiGianBatDau().toString() : null);
+        dto.setKetThuc(p.getThoiGianKetThuc() != null ? p.getThoiGianKetThuc().toString() : null);
+        dto.setTrangThai(p.getTrangThai());
+        return dto;
     }
 
     @Override
-    public List<HoaDon> findAll() {
-        return repo.findAll();
+    @Transactional(readOnly = true)
+    public List<HoaDonDto> findAll() {
+        return hoaDonRepository.findAll().stream().map(this::toDto).toList();
     }
 
     @Override
-    public HoaDon findById(int id) {
-        return repo.findById(id).orElse(null);
+    @Transactional(readOnly = true)
+    public HoaDonDto findById(int id) {
+        return hoaDonRepository.findById(id).map(this::toDto).orElse(null);
     }
 
     @Override
-    public HoaDon findByMa(String ma) {
-        return repo.findByMa(ma);
+    @Transactional(readOnly = true)
+    public List<HoaDonDto> findCart() {
+        return hoaDonRepository.findByTrangThai(0).stream().map(this::toDto).toList();
     }
 
     @Override
-    public List<HoaDon> findAllCart() {
-        return repo.findAllCart();
+    @Transactional(readOnly = true)
+    public List<PosSanPhamDto> posProducts() {
+        return sanPhamChiTietRepository.findAvailable().stream()
+                .map(s -> {
+                    PosSanPhamDto dto = new PosSanPhamDto();
+                    dto.setId(s.getId());
+                    dto.setTen(s.getIdSanPham() != null ? s.getIdSanPham().getTenSanPham() : null);
+                    dto.setMau(s.getIdMauSac() != null ? s.getIdMauSac().getTenMauSac() : null);
+                    dto.setSize(s.getIdKichCo() != null ? s.getIdKichCo().getTenKichCo() : null);
+                    dto.setTon(s.getSoLuongTon());
+                    dto.setGia(s.getDonGia());
+                    return dto;
+                })
+                .toList();
     }
 
     @Override
-    @Transactional
-    public void create(int trangThai, int loaiHoaDon, int idNhanVien) {
-        repo.create(trangThai, loaiHoaDon, idNhanVien);
-    }
-
-    @Override
-    @Transactional
-    public void update(HoaDon e) {
-        repo.update(
-                e.getTong_tien_ban_dau(),
-                e.getTien_giam_gia(),
-                e.getTong_tien_phai_tra(),
-                e.getTrang_thai(),
-                e.isLoai_hoa_don(),
-                e.getNguoi_cap_nhat(),
-                e.getId_hoa_don()
-        );
-    }
-
-    @Override
-    @Transactional
-    public void markPaid(int id, String nguoiCapNhat) {
-        repo.markPaid(id, nguoiCapNhat);
-    }
-
-    @Override
-    @Transactional
-    public void updateKhachHang(int idHoaDon, int idKhachHang) {
-        repo.updateKhachHang(idHoaDon, idKhachHang);
+    @Transactional(readOnly = true)
+    public List<PhieuGiamGiaDto> vouchersActive() {
+        return hoaDonRepository.getVouchersActive().stream()
+                .map(this::voucherToDto)
+                .toList();
     }
 
     @Override
     public BigDecimal tinhGiamGia(int idPhieu, BigDecimal tongTien) {
-        return repo.tinhGiamGia(idPhieu, tongTien);
-    }
-
-    @Override
-    public List<PhieuGiamGia> getPhieuGiamGiaHoatDong() {
-        return repo.getPhieuGiamGiaHoatDong();
+        return hoaDonRepository.tinhGiamGia(idPhieu, tongTien);
     }
 
     @Override
     @Transactional
-    public void deleteById(int id) {
-        repo.deleteById(id);
+    public HoaDonDto create(HoaDonDto dto) {
+        HoaDon h = new HoaDon();
+        h.setTrangThai(0);
+        h.setTongTienPhaiTra(dto.getTongTien());
+        h.setNgayTaoMa(Instant.now());
+        h = hoaDonRepository.save(h);
+        h.setMaHoaDon("HD" + h.getId());
+        return toDto(hoaDonRepository.save(h));
     }
 }

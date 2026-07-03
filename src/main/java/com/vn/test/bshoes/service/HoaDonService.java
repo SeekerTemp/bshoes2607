@@ -1,21 +1,18 @@
 package com.vn.test.bshoes.service;
 
-import com.vn.test.bshoes.entity.HoaDon;
-import com.vn.test.bshoes.entity.PhieuGiamGia;
+import com.vn.test.bshoes.dto.HoaDonDto;
+import com.vn.test.bshoes.dto.PhieuGiamGiaDto;
+import com.vn.test.bshoes.dto.PosSanPhamDto;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 public interface HoaDonService {
-    List<HoaDon> findAll();
-    HoaDon findById(int id);
-    HoaDon findByMa(String ma);
-    List<HoaDon> findAllCart();
-    void create(int trangThai, int loaiHoaDon, int idNhanVien);
-    void update(HoaDon e);
-    void markPaid(int id, String nguoiCapNhat);
-    void updateKhachHang(int idHoaDon, int idKhachHang);
+    List<HoaDonDto> findAll();
+    HoaDonDto findById(int id);
+    List<HoaDonDto> findCart();
+    List<PosSanPhamDto> posProducts();
+    List<PhieuGiamGiaDto> vouchersActive();
     BigDecimal tinhGiamGia(int idPhieu, BigDecimal tongTien);
-    List<PhieuGiamGia> getPhieuGiamGiaHoatDong();
-    void deleteById(int id);
+    HoaDonDto create(HoaDonDto dto);
 }
