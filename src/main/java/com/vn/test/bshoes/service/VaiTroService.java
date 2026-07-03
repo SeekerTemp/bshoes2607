@@ -1,10 +1,7 @@
 package com.vn.test.bshoes.service;
-
-import com.vn.test.bshoes.entity.VaiTro;
-
+import com.vn.test.bshoes.dto.AttributeDto;
 import java.util.List;
-
 public interface VaiTroService {
-    List<VaiTro> findAll();
-    VaiTro findById(int id);
+    List<AttributeDto> findAll();
+    AttributeDto findById(int id);
 }

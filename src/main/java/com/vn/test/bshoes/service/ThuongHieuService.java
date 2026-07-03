@@ -1,13 +1,10 @@
 package com.vn.test.bshoes.service;
-
-import com.vn.test.bshoes.entity.ThuongHieu;
+import com.vn.test.bshoes.dto.AttributeMoTaDto;
 import java.util.List;
-
 public interface ThuongHieuService {
-    List<ThuongHieu> findAll();
-    ThuongHieu findById(int id);
-    ThuongHieu findByTen(String ten);
-    ThuongHieu create(ThuongHieu e);
-    void update(ThuongHieu e);
+    List<AttributeMoTaDto> findAll();
+    AttributeMoTaDto findById(int id);
+    AttributeMoTaDto create(AttributeMoTaDto dto);
+    AttributeMoTaDto update(AttributeMoTaDto dto);
     void delete(int id);
 }
