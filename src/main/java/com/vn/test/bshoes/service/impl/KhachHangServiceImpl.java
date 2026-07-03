@@ -1,5 +1,6 @@
 package com.vn.test.bshoes.service.impl;
 
+import com.vn.test.bshoes.dto.KhachHangDto;
 import com.vn.test.bshoes.entity.KhachHang;
 import com.vn.test.bshoes.repository.KhachHangRepository;
 import com.vn.test.bshoes.service.KhachHangService;
@@ -17,70 +18,68 @@ public class KhachHangServiceImpl implements KhachHangService {
         this.repo = repo;
     }
 
-    @Override
-    public List<KhachHang> findAllActive() {
-        return repo.findAllActive();
-    }
-
-    @Override
-    public KhachHang findByIdActive(int id) {
-        return repo.findByIdActive(id);
-    }
-
-    @Override
-    public List<KhachHang> search(String keyword) {
-        return repo.searchByName("%" + keyword + "%");
-    }
-
-    @Override
-    public KhachHang findBySdt(String sdt) {
-        return repo.findBySdt(sdt);
-    }
-
-    @Override
-    @Transactional
-    public KhachHang create(KhachHang e) {
-        // bug-fix: legacy create() returned null; return the persisted entity instead.
-        return repo.save(e);
-    }
-
-    @Override
-    @Transactional
-    public void update(KhachHang e) {
-        repo.updateByMa(
-                e.getTen_khach_hang(),
-                e.getGioi_tinh(),
-                e.getSo_dien_thoai(),
-                e.getDia_chi(),
+    private KhachHangDto toDto(KhachHang e) {
+        return new KhachHangDto(
+                e.getId(),
+                e.getMaKhachHang(),
+                e.getTenKhachHang(),
+                e.getGioiTinh(),
+                e.getSoDienThoai(),
                 e.getEmail(),
-                e.isTrang_thai(),
-                e.getMa_khach_hang()
+                e.getDiaChi(),
+                e.getTrangThai()
         );
+    }
+
+    @Override
+    public List<KhachHangDto> findAll() {
+        return repo.findActive().stream().map(this::toDto).toList();
+    }
+
+    @Override
+    public KhachHangDto findById(int id) {
+        return repo.findById(id).map(this::toDto).orElse(null);
+    }
+
+    @Override
+    public List<KhachHangDto> search(String keyword) {
+        return repo.search(keyword).stream().map(this::toDto).toList();
+    }
+
+    @Override
+    @Transactional
+    public KhachHangDto create(KhachHangDto dto) {
+        KhachHang e = new KhachHang();
+        e.setTenKhachHang(dto.getTen());
+        e.setGioiTinh(dto.getGioiTinh());
+        e.setSoDienThoai(dto.getSdt());
+        e.setEmail(dto.getEmail());
+        e.setDiaChi(dto.getDiaChi());
+        e.setTrangThai(dto.getTrangThai() == null ? Boolean.TRUE : dto.getTrangThai());
+        e.setTrangThaiXoa(false);
+        e = repo.save(e);
+        e.setMaKhachHang("KH" + e.getId());
+        return toDto(repo.save(e));
+    }
+
+    @Override
+    @Transactional
+    public KhachHangDto update(KhachHangDto dto) {
+        KhachHang e = repo.findById(dto.getId()).orElseThrow();
+        e.setTenKhachHang(dto.getTen());
+        e.setGioiTinh(dto.getGioiTinh());
+        e.setSoDienThoai(dto.getSdt());
+        e.setEmail(dto.getEmail());
+        e.setDiaChi(dto.getDiaChi());
+        if (dto.getTrangThai() != null) e.setTrangThai(dto.getTrangThai());
+        return toDto(repo.save(e));
     }
 
     @Override
     @Transactional
     public void delete(int id) {
-        repo.softDelete(id);
-    }
-
-    @Override
-    public boolean existsMa(String ma) {
-        return repo.existsMa(ma) > 0;
-    }
-
-    @Override
-    public boolean existsEmail(String email) {
-        return repo.existsEmail(email) > 0;
-    }
-
-    @Override
-    public boolean existsSdt(String sdt) {
-        return repo.existsSdt(sdt) > 0;
-    }
-
-    @Override
-    public boolean existsMaExcludingId(String ma, int id) {
-        return repo.existsMaExcludingId(ma, id) > 0;
+        KhachHang e = repo.findById(id).orElseThrow();
+        e.setTrangThaiXoa(true);
+        repo.save(e);
     }
 }

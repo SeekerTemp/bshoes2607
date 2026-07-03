@@ -1,7 +1,10 @@
 package com.vn.test.bshoes.service.impl;
 
+import com.vn.test.bshoes.dto.NhanVienDto;
 import com.vn.test.bshoes.entity.NhanVien;
+import com.vn.test.bshoes.entity.VaiTro;
 import com.vn.test.bshoes.repository.NhanVienRepository;
+import com.vn.test.bshoes.repository.VaiTroRepository;
 import com.vn.test.bshoes.service.NhanVienService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,79 +16,94 @@ import java.util.List;
 public class NhanVienServiceImpl implements NhanVienService {
 
     private final NhanVienRepository repo;
+    private final VaiTroRepository vaiTroRepository;
 
-    public NhanVienServiceImpl(NhanVienRepository repo) {
+    public NhanVienServiceImpl(NhanVienRepository repo, VaiTroRepository vaiTroRepository) {
         this.repo = repo;
+        this.vaiTroRepository = vaiTroRepository;
     }
 
-    @Override
-    public List<NhanVien> findAllActive() {
-        return repo.findAllActive();
-    }
-
-    @Override
-    public NhanVien findByIdActive(int id) {
-        return repo.findByIdActive(id);
-    }
-
-    @Override
-    public List<NhanVien> search(String ten, String gioiTinh) {
-        String gt = StringUtils.hasText(gioiTinh) ? gioiTinh : "all";
-        return repo.searchByName("%" + ten + "%", gt);
-    }
-
-    @Override
-    @Transactional
-    public NhanVien create(NhanVien e) {
-        // bug-fix: legacy create() returned null; return the persisted entity instead.
-        return repo.save(e);
-    }
-
-    @Override
-    @Transactional
-    public void update(NhanVien e) {
-        repo.updateByMa(
-                e.getTen_nhan_vien(),
-                e.getCccd(),
+    private NhanVienDto toDto(NhanVien e) {
+        return new NhanVienDto(
+                e.getId(),
+                e.getMaNhanVien(),
+                e.getTenNhanVien(),
+                e.getTaiKhoan(),
                 e.getEmail(),
-                e.getSo_dien_thoai(),
-                e.getGioi_tinh(),
-                e.getDia_chi(),
-                e.getNgay_sinh(),
-                e.getTai_khoan(),
-                e.getMat_khau(),
-                e.getMa_nhan_vien()
+                e.getSoDienThoai(),
+                e.getCccd(),
+                e.getChucVu(),
+                e.getGioiTinh(),
+                e.getIdVaiTro() != null ? e.getIdVaiTro().getTenVaiTro() : null,
+                e.getTrangThai()
         );
+    }
+
+    private void applyVaiTro(NhanVienDto dto, NhanVien e) {
+        if (StringUtils.hasText(dto.getVaiTro())) {
+            VaiTro vt = vaiTroRepository.findByTenVaiTro(dto.getVaiTro());
+            e.setIdVaiTro(vt);
+        } else {
+            e.setIdVaiTro(null);
+        }
+    }
+
+    @Override
+    public List<NhanVienDto> findAll() {
+        return repo.findActive().stream().map(this::toDto).toList();
+    }
+
+    @Override
+    public NhanVienDto findById(int id) {
+        return repo.findById(id).map(this::toDto).orElse(null);
+    }
+
+    @Override
+    public List<NhanVienDto> search(String ten, String gioiTinh) {
+        String gt = StringUtils.hasText(gioiTinh) ? gioiTinh : "all";
+        return repo.search(ten, gt).stream().map(this::toDto).toList();
+    }
+
+    @Override
+    @Transactional
+    public NhanVienDto create(NhanVienDto dto) {
+        NhanVien e = new NhanVien();
+        e.setTenNhanVien(dto.getTen());
+        e.setTaiKhoan(dto.getTaiKhoan());
+        e.setEmail(dto.getEmail());
+        e.setSoDienThoai(dto.getSdt());
+        e.setCccd(dto.getCccd());
+        e.setChucVu(dto.getChucVu());
+        e.setGioiTinh(dto.getGioiTinh());
+        e.setTrangThai(dto.getTrangThai() == null ? Boolean.TRUE : dto.getTrangThai());
+        e.setTrangThaiXoa(false);
+        applyVaiTro(dto, e);
+        e = repo.save(e);
+        e.setMaNhanVien("NV" + e.getId());
+        return toDto(repo.save(e));
+    }
+
+    @Override
+    @Transactional
+    public NhanVienDto update(NhanVienDto dto) {
+        NhanVien e = repo.findById(dto.getId()).orElseThrow();
+        e.setTenNhanVien(dto.getTen());
+        e.setTaiKhoan(dto.getTaiKhoan());
+        e.setEmail(dto.getEmail());
+        e.setSoDienThoai(dto.getSdt());
+        e.setCccd(dto.getCccd());
+        e.setChucVu(dto.getChucVu());
+        e.setGioiTinh(dto.getGioiTinh());
+        if (dto.getTrangThai() != null) e.setTrangThai(dto.getTrangThai());
+        applyVaiTro(dto, e);
+        return toDto(repo.save(e));
     }
 
     @Override
     @Transactional
     public void delete(int id) {
-        repo.softDelete(id);
-    }
-
-    @Override
-    public boolean existsMa(String ma) {
-        return repo.existsMa(ma) > 0;
-    }
-
-    @Override
-    public boolean existsTaiKhoan(String taiKhoan) {
-        return repo.existsTaiKhoan(taiKhoan) > 0;
-    }
-
-    @Override
-    public boolean existsCCCD(String cccd) {
-        return repo.existsCCCD(cccd) > 0;
-    }
-
-    @Override
-    public boolean existsEmail(String email) {
-        return repo.existsEmail(email) > 0;
-    }
-
-    @Override
-    public boolean existsSdt(String sdt) {
-        return repo.existsSdt(sdt) > 0;
+        NhanVien e = repo.findById(id).orElseThrow();
+        e.setTrangThaiXoa(true);
+        repo.save(e);
     }
 }

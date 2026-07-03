@@ -1,6 +1,6 @@
 package com.vn.test.bshoes.controller;
 
-import com.vn.test.bshoes.entity.KhachHang;
+import com.vn.test.bshoes.dto.KhachHangDto;
 import com.vn.test.bshoes.service.KhachHangService;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,29 +17,20 @@ public class KhachHangController {
     }
 
     @GetMapping
-    public List<KhachHang> findAll() { return service.findAllActive(); }
+    public List<KhachHangDto> findAll() { return service.findAll(); }
 
     @GetMapping("/{id}")
-    public KhachHang findById(@PathVariable int id) { return service.findByIdActive(id); }
+    public KhachHangDto findById(@PathVariable int id) { return service.findById(id); }
 
     @PostMapping
-    public KhachHang create(@RequestBody KhachHang e) { return service.create(e); }
+    public KhachHangDto create(@RequestBody KhachHangDto dto) { return service.create(dto); }
 
     @PutMapping
-    public KhachHang update(@RequestBody KhachHang e) { service.update(e); return e; }
+    public KhachHangDto update(@RequestBody KhachHangDto dto) { return service.update(dto); }
 
     @DeleteMapping("/{id}")
     public void delete(@PathVariable int id) { service.delete(id); }
 
     @GetMapping("/search")
-    public List<KhachHang> search(@RequestParam String keyword) { return service.search(keyword); }
-
-    @GetMapping("/exists/ma")
-    public boolean existsMa(@RequestParam String value) { return service.existsMa(value); }
-
-    @GetMapping("/exists/email")
-    public boolean existsEmail(@RequestParam String value) { return service.existsEmail(value); }
-
-    @GetMapping("/exists/sdt")
-    public boolean existsSdt(@RequestParam String value) { return service.existsSdt(value); }
+    public List<KhachHangDto> search(@RequestParam String keyword) { return service.search(keyword); }
 }

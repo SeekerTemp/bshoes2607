@@ -1,7 +1,7 @@
 package com.vn.test.bshoes.service;
 
-import com.vn.test.bshoes.entity.NhanVien;
+import com.vn.test.bshoes.dto.LoginResponse;
 
 public interface AuthService {
-    NhanVien login(String taiKhoan, String matKhau);
+    LoginResponse login(String taiKhoan, String matKhau);
 }

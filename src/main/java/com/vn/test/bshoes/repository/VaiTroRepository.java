@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 // NOTE: legacy VaiTro DAO was all stubs; inherited JpaRepository CRUD is sufficient.
 @Repository
 public interface VaiTroRepository extends JpaRepository<VaiTro, Integer> {
+
+    VaiTro findByTenVaiTro(String ten);
 }

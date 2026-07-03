@@ -1,19 +1,14 @@
 package com.vn.test.bshoes.service;
 
-import com.vn.test.bshoes.entity.KhachHang;
+import com.vn.test.bshoes.dto.KhachHangDto;
 
 import java.util.List;
 
 public interface KhachHangService {
-    List<KhachHang> findAllActive();
-    KhachHang findByIdActive(int id);
-    List<KhachHang> search(String keyword);
-    KhachHang findBySdt(String sdt);
-    KhachHang create(KhachHang e);
-    void update(KhachHang e);
+    List<KhachHangDto> findAll();
+    KhachHangDto findById(int id);
+    List<KhachHangDto> search(String keyword);
+    KhachHangDto create(KhachHangDto dto);
+    KhachHangDto update(KhachHangDto dto);
     void delete(int id);
-    boolean existsMa(String ma);
-    boolean existsEmail(String email);
-    boolean existsSdt(String sdt);
-    boolean existsMaExcludingId(String ma, int id);
 }
