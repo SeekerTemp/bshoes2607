@@ -18,4 +18,6 @@ public interface SanPhamChiTietRepository extends JpaRepository<SanPhamChiTiet, 
 
     @Query("select s from SanPhamChiTiet s where s.trangThai = true and s.soLuongTon > 0")
     List<SanPhamChiTiet> findAvailable();
+
+    SanPhamChiTiet findByMaSanPhamChiTiet(String ma);
 }

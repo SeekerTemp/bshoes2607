@@ -1,6 +1,7 @@
 package com.vn.test.bshoes.service.impl;
 
 import com.vn.test.bshoes.dto.BienTheDto;
+import com.vn.test.bshoes.dto.PosSanPhamDto;
 import com.vn.test.bshoes.entity.SanPham;
 import com.vn.test.bshoes.entity.SanPhamChiTiet;
 import com.vn.test.bshoes.repository.SanPhamChiTietRepository;
@@ -83,5 +84,22 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
         SanPhamChiTiet v = repo.findById(id).orElseThrow();
         v.setTrangThaiXoa(true);
         repo.save(v);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PosSanPhamDto findPosByMa(String ma) {
+        SanPhamChiTiet v = repo.findByMaSanPhamChiTiet(ma);
+        if (v == null) {
+            return null;
+        }
+        PosSanPhamDto dto = new PosSanPhamDto();
+        dto.setId(v.getId());
+        dto.setTen(v.getIdSanPham() != null ? v.getIdSanPham().getTenSanPham() : null);
+        dto.setMau(v.getIdMauSac() != null ? v.getIdMauSac().getTenMauSac() : null);
+        dto.setSize(v.getIdKichCo() != null ? v.getIdKichCo().getTenKichCo() : null);
+        dto.setTon(v.getSoLuongTon());
+        dto.setGia(v.getDonGia());
+        return dto;
     }
 }

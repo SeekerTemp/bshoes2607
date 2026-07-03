@@ -1,6 +1,7 @@
 package com.vn.test.bshoes.service;
 
 import com.vn.test.bshoes.dto.BienTheDto;
+import com.vn.test.bshoes.dto.PosSanPhamDto;
 
 import java.util.List;
 
@@ -11,4 +12,7 @@ public interface SanPhamChiTietService {
     BienTheDto findById(int id);
     BienTheDto create(int idSanPham, BienTheDto dto);
     void softDelete(int id);
+
+    /** Look up one variant by its business code (for QR/barcode scan at POS). Cart-friendly shape. */
+    PosSanPhamDto findPosByMa(String ma);
 }
