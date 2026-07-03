@@ -1,13 +1,10 @@
 package com.vn.test.bshoes.service;
-
-import com.vn.test.bshoes.entity.MauSac;
+import com.vn.test.bshoes.dto.AttributeDto;
 import java.util.List;
-
 public interface MauSacService {
-    List<MauSac> findAll();
-    MauSac findById(int id);
-    MauSac findByTen(String ten);
-    MauSac create(MauSac e);
-    void update(MauSac e);
+    List<AttributeDto> findAll();
+    AttributeDto findById(int id);
+    AttributeDto create(AttributeDto dto);
+    AttributeDto update(AttributeDto dto);
     void delete(int id);
 }

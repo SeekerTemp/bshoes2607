@@ -1,13 +1,10 @@
 package com.vn.test.bshoes.service;
-
-import com.vn.test.bshoes.entity.KieuDayGiay;
+import com.vn.test.bshoes.dto.AttributeDto;
 import java.util.List;
-
 public interface KieuDayGiayService {
-    List<KieuDayGiay> findAll();
-    KieuDayGiay findById(int id);
-    KieuDayGiay findByTen(String ten);
-    KieuDayGiay create(KieuDayGiay e);
-    void update(KieuDayGiay e);
+    List<AttributeDto> findAll();
+    AttributeDto findById(int id);
+    AttributeDto create(AttributeDto dto);
+    AttributeDto update(AttributeDto dto);
     void delete(int id);
 }

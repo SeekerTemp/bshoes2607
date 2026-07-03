@@ -1,13 +1,10 @@
 package com.vn.test.bshoes.service;
-
-import com.vn.test.bshoes.entity.KichCo;
+import com.vn.test.bshoes.dto.AttributeDto;
 import java.util.List;
-
 public interface KichCoService {
-    List<KichCo> findAll();
-    KichCo findById(int id);
-    KichCo findByTen(String ten);
-    KichCo create(KichCo e);
-    void update(KichCo e);
+    List<AttributeDto> findAll();
+    AttributeDto findById(int id);
+    AttributeDto create(AttributeDto dto);
+    AttributeDto update(AttributeDto dto);
     void delete(int id);
 }

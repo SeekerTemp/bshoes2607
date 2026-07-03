@@ -1,13 +1,10 @@
 package com.vn.test.bshoes.service;
-
-import com.vn.test.bshoes.entity.ChatLieu;
+import com.vn.test.bshoes.dto.AttributeDto;
 import java.util.List;
-
 public interface ChatLieuService {
-    List<ChatLieu> findAll();
-    ChatLieu findById(int id);
-    ChatLieu findByTen(String ten);
-    ChatLieu create(ChatLieu e);
-    void update(ChatLieu e);
+    List<AttributeDto> findAll();
+    AttributeDto findById(int id);
+    AttributeDto create(AttributeDto dto);
+    AttributeDto update(AttributeDto dto);
     void delete(int id);
 }
