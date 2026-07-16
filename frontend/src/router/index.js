@@ -5,6 +5,7 @@ import { SCREENS } from '../config/screens'
 const routes = [
   { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
   { path: '/home', name: 'home', component: () => import('../views/HomeView.vue') },
+  { path: '/gio-hang', name: 'gio-hang', component: () => import('../views/GioHangView.vue') },
   { path: '/', name: 'dashboard', component: () => import('../views/DashboardView.vue') },
   { path: '/san-pham', name: 'san-pham', component: () => import('../views/SanPhamView.vue') },
   { path: '/danh-muc', name: 'danh-muc', component: () => import('../views/DanhMucView.vue') },
@@ -25,8 +26,8 @@ const routes = [
 
 const router = createRouter({ history: createWebHistory(), routes })
 
-// Public routes bypass auth; storefront + login are open to everyone.
-const PUBLIC = ['login', 'home', 'style-guide']
+// Public routes bypass auth; storefront + giỏ hàng + login are open to everyone.
+const PUBLIC = ['login', 'home', 'gio-hang', 'style-guide']
 
 router.beforeEach((to) => {
   const { isAuthed, allowed } = useAuth()

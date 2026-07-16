@@ -1,6 +1,7 @@
 package com.vn.test.bshoes.service.impl;
 
 import com.vn.test.bshoes.dto.AddItemRequest;
+import com.vn.test.bshoes.dto.CheckoutRequest;
 import com.vn.test.bshoes.dto.HoaDonChiTietDto;
 import com.vn.test.bshoes.dto.HoaDonDto;
 import com.vn.test.bshoes.dto.PhieuGiamGiaDto;
@@ -358,6 +359,78 @@ public class HoaDonServiceImpl implements HoaDonService {
         h.setNgayCapNhat(Instant.now());
         hoaDonRepository.save(h);
         writeHistory(h, "Đã giao hàng - " + h.getMaHoaDon(), true);
+        return toDto(h);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HoaDonDto> findBySoDienThoai(String soDienThoai) {
+        if (soDienThoai == null || soDienThoai.isBlank()) return List.of();
+        return hoaDonRepository.findBySoDienThoai(soDienThoai.trim()).stream().map(this::toDto).toList();
+    }
+
+    @Override
+    @Transactional
+    public HoaDonDto datHangOnline(CheckoutRequest req) {
+        if (req.getItems() == null || req.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Giỏ hàng trống.");
+        }
+        if (req.getTenNguoiNhan() == null || req.getTenNguoiNhan().isBlank()) {
+            throw new IllegalArgumentException("Nhập tên người nhận.");
+        }
+        if (req.getSoDienThoai() == null || req.getSoDienThoai().isBlank()) {
+            throw new IllegalArgumentException("Nhập số điện thoại.");
+        }
+        if (req.getDiaChi() == null || req.getDiaChi().isBlank()) {
+            throw new IllegalArgumentException("Nhập địa chỉ nhận hàng.");
+        }
+
+        Instant now = Instant.now();
+        HoaDon h = new HoaDon();
+        h.setTrangThai(3);            // Chờ giao — nhân viên xử lý tiếp ở màn Giao Hàng
+        h.setLoaiHoaDon(false);       // COD: chưa thu tiền
+        h.setPhuongThucThanhToan("COD");
+        if (req.getIdKhachHang() != null) {
+            khachHangRepository.findById(req.getIdKhachHang()).ifPresent(h::setIdKhachHang);
+        }
+        h.setTenNguoiNhan(req.getTenNguoiNhan().trim());
+        h.setSoDienThoai(req.getSoDienThoai().trim());
+        h.setDiaChi(req.getDiaChi().trim());
+        h.setGhiChu(req.getGhiChu());
+        h.setTongTienBanDau(BigDecimal.ZERO);
+        h.setTienGiamGia(BigDecimal.ZERO);
+        h.setTongTienPhaiTra(BigDecimal.ZERO);
+        h.setNgayTaoMa(now);
+        h.setNgayCapNhat(now);
+        h.setNguoiTaoMa(h.getTenNguoiNhan());
+        h = hoaDonRepository.save(h);
+        h.setMaHoaDon("HD" + h.getId());
+        h = hoaDonRepository.save(h);
+
+        for (AddItemRequest item : req.getItems()) {
+            Integer spctId = item.getIdSanPhamChiTiet();
+            if (spctId == null) throw new IllegalArgumentException("Thiếu id sản phẩm chi tiết.");
+            int qty = (item.getSoLuong() == null || item.getSoLuong() < 1) ? 1 : item.getSoLuong();
+            SanPhamChiTiet spct = sanPhamChiTietRepository.findById(spctId)
+                    .orElseThrow(() -> new IllegalArgumentException("Sản phẩm chi tiết không tồn tại."));
+            // Cùng cách trừ kho atomic như POS: hết hàng thì rollback cả đơn.
+            if (sanPhamChiTietRepository.decrementStock(spctId, qty) == 0) {
+                throw new IllegalStateException("Không đủ tồn kho cho " + spct.getMaSanPhamChiTiet()
+                        + " — vui lòng giảm số lượng hoặc đặt trước.");
+            }
+            HoaDonChiTiet line = new HoaDonChiTiet();
+            line.setIdHoaDon(h);
+            line.setIdSanPhamChiTiet(spct);
+            line.setSoLuong(qty);
+            line.setThanhTien(lineThanhTien(spct.getDonGia(), qty));
+            line.setNgayTaoMa(now);
+            line.setNgayCapNhat(now);
+            line.setTrangThai(true);
+            line.setTrangThaiXoa(false);
+            hoaDonChiTietRepository.save(line);
+        }
+        recomputeTotals(h);
+        writeHistory(h, "Khách đặt hàng online - " + h.getMaHoaDon(), true);
         return toDto(h);
     }
 

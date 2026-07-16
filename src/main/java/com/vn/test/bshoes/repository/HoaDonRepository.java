@@ -15,6 +15,13 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
 
     long countByTrangThai(Integer trangThai);
 
+    /**
+     * Khách tra cứu đơn của mình bằng SĐT (chưa có đăng nhập cho khách).
+     * Bỏ hoá đơn nháp tại quầy (trang_thai = 0) — đó không phải đơn của khách.
+     */
+    @Query("select h from HoaDon h where h.soDienThoai = ?1 and h.trangThai <> 0 order by h.id desc")
+    List<HoaDon> findBySoDienThoai(String soDienThoai);
+
     HoaDon findByMaHoaDon(String ma);
 
     @Query(value = "SELECT * FROM view_phieu_giam_gia_hoat_dong", nativeQuery = true)

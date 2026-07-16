@@ -2,12 +2,16 @@
 import { ref, computed, onMounted } from 'vue'
 import { bienTheApi } from '../api/bienThe'
 import { datTruocApi } from '../api/datTruoc'
+import { useCart } from '../composables/useCart'
+import { useToast } from '../composables/useToast'
+import ToastHost from '../components/ui/ToastHost.vue'   // storefront không nằm trong AppShell nên phải tự gắn
 import { vnd } from '../utils/format'
 
 const IMG = n => `/images/shoes/img_shoe_${n}.png`
 const activeCat = ref(0)
 const sort = ref('hot')
-const cartCount = ref(2)
+const { soLuong: cartCount, add: addToCart } = useCart()
+const { notify } = useToast()
 
 const categories = [
   { name: 'Giày thể thao', img: IMG('10001'), sale: 50, count: 42 },
@@ -60,7 +64,10 @@ const sorted = computed(() => {
   return a.sort((x, y) => y.ban - x.ban)
 })
 const oldPrice = p => Math.round(p.gia / (1 - p.sale / 100))
-function add(p) { cartCount.value++; }
+function add(p) {
+  const r = addToCart(p)
+  notify(r.ok ? `Đã thêm "${p.ten}" vào giỏ` : r.message, r.ok ? 'success' : 'warning')
+}
 
 // ---- đặt trước (pre-order) ----
 const preOrder = ref(null)      // sản phẩm đang đặt, null = đóng modal
@@ -102,6 +109,7 @@ async function submitPreOrder() {
 
 <template>
   <div class="store">
+    <ToastHost />
     <!-- utility -->
     <div class="util"><div class="container d-flex justify-content-between py-1">
       <div class="d-flex gap-3"><a href="#">bshoes.vn</a><a href="#">Tải ứng dụng</a><a href="#">Kết nối</a></div>
@@ -119,7 +127,9 @@ async function submitPreOrder() {
         <button class="btn px-4"><i class="bi bi-search"></i></button>
       </div>
       <router-link to="/" class="icon-btn" title="Trang quản trị"><i class="bi bi-speedometer2"></i></router-link>
-      <router-link to="/hoa-don" class="icon-btn"><i class="bi bi-cart3"></i><span class="dot">{{ cartCount }}</span></router-link>
+      <router-link to="/gio-hang" class="icon-btn" title="Giỏ hàng của tôi">
+        <i class="bi bi-cart3"></i><span class="dot" v-if="cartCount">{{ cartCount }}</span>
+      </router-link>
     </div></header>
 
     <!-- category nav -->
@@ -282,7 +292,7 @@ async function submitPreOrder() {
         <div class="col-6 col-md-2"><h6>Về BShoes</h6><a href="#">Giới thiệu</a><a href="#">Tuyển dụng</a><a href="#">Tin tức</a></div>
         <div class="col-6 col-md-2"><h6>Hỗ trợ</h6><router-link to="/bao-hanh">Chính sách bảo hành</router-link><a href="#">Đổi trả 30 ngày</a><a href="#">Hướng dẫn chọn size</a></div>
         <div class="col-6 col-md-2"><h6>Thanh toán</h6><a href="#">Tiền mặt (COD)</a><a href="#">Chuyển khoản</a><a href="#">Thẻ / Ví</a></div>
-        <div class="col-6 col-md-3"><h6>Vận chuyển</h6><a href="#">Giao hàng nhanh</a><a href="#">Theo dõi đơn hàng</a><a href="#">Freeship đơn từ 500K</a></div>
+        <div class="col-6 col-md-3"><h6>Vận chuyển</h6><a href="#">Giao hàng nhanh</a><router-link to="/gio-hang">Theo dõi đơn hàng</router-link><a href="#">Freeship đơn từ 500K</a></div>
       </div>
     </div>
       <div class="foot-bar text-center py-2">© 2026 BShoes — Cửa hàng giày chính hãng</div>

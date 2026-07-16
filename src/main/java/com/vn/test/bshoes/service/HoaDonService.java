@@ -1,6 +1,7 @@
 package com.vn.test.bshoes.service;
 
 import com.vn.test.bshoes.dto.AddItemRequest;
+import com.vn.test.bshoes.dto.CheckoutRequest;
 import com.vn.test.bshoes.dto.HoaDonDto;
 import com.vn.test.bshoes.dto.PhieuGiamGiaDto;
 import com.vn.test.bshoes.dto.PosSanPhamDto;
@@ -38,6 +39,16 @@ public interface HoaDonService {
 
     /** Mark a delivery order (status "Chờ giao") as delivered ("Đã giao"). */
     HoaDonDto daGiao(int idHoaDon);
+
+    /**
+     * Khách đặt hàng online từ giỏ hàng: tạo hoá đơn "Chờ giao" (COD, chưa thanh toán),
+     * trừ kho atomically từng dòng. Không đi qua {@link #createEmpty} vì giới hạn 3 hoá
+     * đơn chờ là quy tắc của quầy, không áp cho khách.
+     */
+    HoaDonDto datHangOnline(CheckoutRequest req);
+
+    /** Đơn của khách, tra theo SĐT (chưa có đăng nhập cho khách). */
+    List<HoaDonDto> findBySoDienThoai(String soDienThoai);
 
     /** Return goods: restore stock, status="Trả hàng", write history. */
     HoaDonDto traHang(int idHoaDon, Integer idNhanVien);
