@@ -8,6 +8,8 @@ import QrScanner from '../components/ui/QrScanner.vue'
 import { useHoaDon } from '../composables/useHoaDon'
 import { useToast } from '../composables/useToast'
 import { vnd } from '../utils/format'
+import { hoaDonApi } from '../api/hoaDon'
+import { khachHangApi } from '../api/khachHang'
 
 const {
   sanPham, khachHangOptions, voucherOptions, hinhThucOptions,
@@ -17,7 +19,7 @@ const {
   gio, selectedLineId, selectedLine, selectLine,
   addLine, removeLine, inc, dec, clampLine, hoanTra, scanAdd,
   soLuong, tamTinh, giamGia, phiShip, phaiTra, tienThua,
-  thanhToan,
+  thanhToan, checkout,
 } = useHoaDon()
 const { notify } = useToast()
 
@@ -45,13 +47,167 @@ function giamSL() { if (needLine()) dec(selectedLine.value) }
 function boSanPham() { if (needLine()) removeLine(selectedLine.value) }
 function hoanTraLine() { if (needLine()) hoanTra(selectedLine.value) }
 
-function pay() {
+// ---- payment (cash validation + VietQR for transfer + combined) ----
+const showQR = ref(false)
+const qrAmount = ref(0)
+const qrLabel = ref('')
+const qrUrl = computed(() =>
+  `https://img.vietqr.io/image/970436-1234567890-compact2.png?amount=${qrAmount.value}&addInfo=${encodeURIComponent(active.value.ma || 'BShoes')}&accountName=BShoes`)
+
+async function pay() {
   if (gio.value.length === 0) return
-  notify(`Thanh toán ${active.value.ma}: ${vnd(phaiTra.value)}`, 'success')
-  thanhToan()
+  const method = active.value.hinhThuc
+  const phai = phaiTra.value
+  const dua = Number(active.value.khachDua) || 0
+  if (method === 'Tiền mặt') {
+    if (dua < phai) { notify(`Khách đưa ${vnd(dua)} chưa đủ — cần ${vnd(phai)}`, 'warning'); return }
+    await doCheckout(); return
+  }
+  if (method === 'Tiền mặt + Chuyển khoản') {
+    if (dua < 0 || dua > phai) { notify(`Tiền mặt phải trong khoảng 0 – ${vnd(phai)}`, 'warning'); return }
+    qrAmount.value = phai - dua
+    qrLabel.value = `Tiền mặt ${vnd(dua)} · CK phần còn lại ${vnd(phai - dua)}`
+    showQR.value = true
+    return
+  }
+  // Chuyển khoản / Thẻ — full amount via QR
+  qrAmount.value = phai
+  qrLabel.value = ''
+  showQR.value = true
+}
+async function confirmQR() { showQR.value = false; await doCheckout() }
+async function doCheckout() {
+  const snapshot = buildReceipt(true)   // capture cart before any refresh
+  const paidId = active.value.id
+  const counterSale = orderTab.value === 'hoadon'
+  const r = await checkout()
+  if (r.online) notify(`Đã thanh toán ${active.value.ma}: ${vnd(phaiTra.value)} — đã lưu DB, ghi lịch sử & trừ kho`, 'success')
+  else notify(`Thanh toán ${active.value.ma}: ${vnd(phaiTra.value)} (offline — chưa lưu DB)`, 'warning')
+  printReceipt(snapshot)
+  // paid counter-sale invoice leaves the pending queue (a fresh one opens if it was the last)
+  if (r.ok && counterSale) removeHoaDon(paidId)
 }
 function huy() {
   if (confirm(`Huỷ hoá đơn ${active.value.ma}?`)) removeHoaDon(active.value.id)
+}
+
+// ---- delivery (Đặt hàng tab) ----
+async function giaoHang() {   // create a delivery order: pay + status "Chờ giao"
+  if (gio.value.length === 0) { notify('Giỏ hàng trống', 'warning'); return }
+  await doCheckout()
+}
+async function daGiaoAction() {
+  const sid = active.value.serverId
+  if (!sid) { notify('Đơn chưa lưu trên hệ thống', 'warning'); return }
+  try { await hoaDonApi.daGiao(sid); active.value.trangThaiHang = 'Đã giao'; notify('Đã giao hàng ' + active.value.ma, 'success') }
+  catch (e) { notify('Đơn phải ở trạng thái "Chờ giao" mới đánh dấu Đã giao', 'warning') }
+}
+async function traHangAction() {
+  const sid = active.value.serverId
+  if (!sid) { notify('Đơn chưa lưu trên hệ thống', 'warning'); return }
+  if (!confirm(`Xác nhận trả hàng ${active.value.ma}? Kho sẽ được hoàn lại.`)) return
+  try { await hoaDonApi.traHang(sid); active.value.trangThaiHang = 'Trả hàng'; notify('Đã trả hàng ' + active.value.ma, 'success') }
+  catch (e) { notify('Không thể trả hàng (chỉ đơn đã bán/đã giao)', 'warning') }
+}
+
+// ---- quick add customer at the counter ----
+const showAddKH = ref(false)
+const newKH = ref({ ten: '', sdt: '', diaChi: '', email: '', gioiTinh: 'Nam' })
+function openAddKH() { newKH.value = { ten: '', sdt: '', diaChi: '', email: '', gioiTinh: 'Nam' }; showAddKH.value = true }
+async function saveKH() {
+  if (!newKH.value.ten) { notify('Nhập tên khách hàng', 'warning'); return }
+  try {
+    const kh = await khachHangApi.create({ ...newKH.value })
+    active.value.khachHang = kh?.ten || newKH.value.ten
+    active.value.idKhachHang = kh?.id || null
+    if (kh?.sdt || newKH.value.sdt) active.value.sdt = kh?.sdt || newKH.value.sdt
+    notify('Đã thêm khách hàng: ' + (kh?.ten || newKH.value.ten), 'success')
+  } catch (e) {
+    active.value.khachHang = newKH.value.ten
+    notify('Lưu khách offline — gán tạm vào hóa đơn', 'warning')
+  }
+  showAddKH.value = false
+}
+
+// ---- receipt / print ----
+function buildReceipt(paid) {
+  return {
+    ma: active.value.ma,
+    ngay: new Date().toLocaleString('vi-VN'),
+    khach: active.value.khachHang || 'Khách lẻ',
+    hinhThuc: active.value.hinhThuc,
+    paid,
+    lines: gio.value.map(l => ({ ten: l.ten, mau: l.mau, size: l.size, soLuong: l.soLuong, gia: l.gia, thanhTien: l.gia * l.soLuong })),
+    tamTinh: tamTinh.value, giamGia: giamGia.value, phiShip: phiShip.value,
+    phaiTra: phaiTra.value, khachDua: Number(active.value.khachDua) || 0, tienThua: tienThua.value,
+  }
+}
+function printReceipt(data) {
+  if (!data || !data.lines.length) { notify('Giỏ hàng trống, không có gì để in', 'warning'); return }
+  const rows = data.lines.map((l, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${l.ten}${l.mau || l.size ? `<br><small>${[l.mau, l.size].filter(Boolean).join(' / ')}</small>` : ''}</td>
+      <td class="c">${l.soLuong}</td>
+      <td class="r">${vnd(l.gia)}</td>
+      <td class="r">${vnd(l.thanhTien)}</td>
+    </tr>`).join('')
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${data.ma}</title>
+    <style>
+      *{font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box}
+      body{width:300px;margin:0 auto;padding:12px;color:#111}
+      h1{font-size:18px;text-align:center;margin:0 0 2px}
+      .sub{text-align:center;font-size:11px;color:#555;margin-bottom:8px}
+      .meta{font-size:12px;margin-bottom:8px;border-bottom:1px dashed #999;padding-bottom:6px}
+      table{width:100%;border-collapse:collapse;font-size:12px}
+      th{border-bottom:1px solid #333;text-align:left;padding:3px 2px}
+      td{padding:3px 2px;vertical-align:top}
+      td.c,th.c{text-align:center}td.r,th.r{text-align:right}
+      small{color:#666}
+      .tot{margin-top:8px;border-top:1px dashed #999;padding-top:6px;font-size:12px}
+      .tot div{display:flex;justify-content:space-between;padding:1px 0}
+      .tot .big{font-weight:700;font-size:14px}
+      .tag{text-align:center;margin:6px 0;font-weight:700;color:${data.paid ? '#0B895A' : '#b26a00'}}
+      .thanks{text-align:center;font-size:11px;margin-top:10px;color:#555}
+    </style></head><body>
+    <h1>BShoes</h1>
+    <div class="sub">Cửa hàng giày dép BShoes</div>
+    <div class="tag">${data.paid ? 'HÓA ĐƠN THANH TOÁN' : 'PHIẾU TẠM TÍNH'}</div>
+    <div class="meta">
+      Mã HĐ: <b>${data.ma}</b><br>
+      Ngày: ${data.ngay}<br>
+      Khách: ${data.khach}<br>
+      Thanh toán: ${data.hinhThuc}
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Sản phẩm</th><th class="c">SL</th><th class="r">Đơn giá</th><th class="r">T.Tiền</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="tot">
+      <div><span>Tạm tính</span><span>${vnd(data.tamTinh)}</span></div>
+      <div><span>Giảm giá</span><span>-${vnd(data.giamGia)}</span></div>
+      ${data.phiShip ? `<div><span>Phí ship</span><span>${vnd(data.phiShip)}</span></div>` : ''}
+      <div class="big"><span>Phải trả</span><span>${vnd(data.phaiTra)}</span></div>
+      ${data.paid && data.khachDua ? `<div><span>Khách đưa</span><span>${vnd(data.khachDua)}</span></div><div><span>Tiền thừa</span><span>${vnd(data.tienThua)}</span></div>` : ''}
+    </div>
+    <div class="thanks">Cảm ơn quý khách & hẹn gặp lại!</div>
+    </body></html>`
+  // Print via a hidden iframe — reliable (no popup blocker, works after an await).
+  const iframe = document.createElement('iframe')
+  iframe.setAttribute('aria-hidden', 'true')
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0'
+  document.body.appendChild(iframe)
+  const doc = iframe.contentWindow.document
+  doc.open(); doc.write(html); doc.close()
+  const fire = () => { try { iframe.contentWindow.focus(); iframe.contentWindow.print() } catch (e) { /* ignore */ } }
+  iframe.onload = fire
+  setTimeout(fire, 300)
+  setTimeout(() => iframe.remove(), 1500)
+}
+function inTamTinh() { printReceipt(buildReceipt(false)) }
+function taoHoaDon() {
+  const hd = createHoaDon()
+  notify('Đã tạo hóa đơn mới: ' + hd.ma, 'success')
 }
 </script>
 
@@ -214,7 +370,7 @@ function huy() {
                 <input class="form-control" v-model="active.memberCode" placeholder="" />
                 <button class="btn btn-success" @click="notify('Nhập SĐT hội viên', 'info')">Nhập sdt</button>
               </div>
-              <button class="btn btn-success btn-sm w-100 mb-1" @click="notify('Thêm khách hàng mới', 'info')">Thêm khách hàng mới</button>
+              <button class="btn btn-success btn-sm w-100 mb-1" @click="openAddKH">Thêm khách hàng mới</button>
               <button class="btn btn-success btn-sm w-100" @click="active.khachHang = 'Khách lẻ'">Khách vãng lai</button>
             </div>
 
@@ -236,8 +392,8 @@ function huy() {
 
             <div class="green-actions">
               <button class="btn btn-success w-100" :disabled="gio.length === 0" @click="pay">Thanh toán</button>
-              <button class="btn btn-success w-100" @click="createHoaDon">Tạo hóa đơn</button>
-              <button class="btn btn-success w-100" :disabled="gio.length === 0" @click="notify('In phiếu tạm tính: ' + vnd(phaiTra), 'info')">Phiếu tạm tính</button>
+              <button class="btn btn-success w-100" @click="taoHoaDon">Tạo hóa đơn</button>
+              <button class="btn btn-success w-100" :disabled="gio.length === 0" @click="inTamTinh">Phiếu tạm tính</button>
               <button class="btn btn-outline-danger w-100" @click="huy">Hủy</button>
               <button class="btn btn-light w-100" disabled>Xuất json thông tin sản phẩm</button>
               <button class="btn btn-light w-100" disabled>Import sản phẩm bằng list json/csv/excel</button>
@@ -248,7 +404,7 @@ function huy() {
           <template v-else>
             <h5 class="green-title">Đặt hàng</h5>
             <div class="green-box">
-              <button class="btn btn-success btn-sm w-100 mb-2" @click="notify('Thêm khách hàng mới', 'info')">Thêm khách hàng mới</button>
+              <button class="btn btn-success btn-sm w-100 mb-2" @click="openAddKH">Thêm khách hàng mới</button>
               <div class="input-group input-group-sm">
                 <span class="input-group-text">Mã hội viên</span>
                 <input class="form-control" v-model="active.memberCode" />
@@ -272,10 +428,10 @@ function huy() {
             </dl>
 
             <div class="green-actions">
-              <button class="btn btn-success w-100" @click="createHoaDon">Tạo hóa đơn</button>
-              <button class="btn btn-success w-100" @click="notify('Giao hàng', 'info')">Giao hàng</button>
-              <button class="btn btn-success w-100" @click="notify('Đã giao', 'success')">Đã giao</button>
-              <button class="btn btn-outline-danger w-100" @click="hoanTraLine">Hoàn trả</button>
+              <button class="btn btn-success w-100" @click="taoHoaDon">Tạo hóa đơn</button>
+              <button class="btn btn-success w-100" :disabled="gio.length === 0" @click="giaoHang">Giao hàng (thanh toán)</button>
+              <button class="btn btn-success w-100" @click="daGiaoAction">Đã giao</button>
+              <button class="btn btn-outline-danger w-100" @click="traHangAction">Hoàn trả</button>
               <button class="btn btn-light w-100" disabled>Xuất json thông tin sản phẩm</button>
               <button class="btn btn-light w-100" disabled>Import sản phẩm bằng list json/csv/excel</button>
             </div>
@@ -285,6 +441,40 @@ function huy() {
     </div>
 
     <QrScanner v-model:open="showScanner" @detected="onScan" />
+
+    <!-- VietQR bank-transfer modal -->
+    <div v-if="showQR" class="bs-overlay" @click.self="showQR = false">
+      <div class="bs-modal text-center">
+        <h5 class="mb-1">Chuyển khoản VietQR</h5>
+        <div class="text-muted small mb-2">Quét mã để thanh toán <b>{{ vnd(qrAmount) }}</b></div>
+        <div v-if="qrLabel" class="small mb-2" style="color:#0B895A">{{ qrLabel }}</div>
+        <img :src="qrUrl" alt="VietQR" style="width:240px;height:240px;object-fit:contain" @error="e => e.target.style.opacity = .2" />
+        <div class="small text-muted mb-3">BShoes • VCB • 1234567890 • ND: {{ active.ma }}</div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary flex-fill" @click="showQR = false">Huỷ</button>
+          <button class="btn btn-success flex-fill" @click="confirmQR">Đã chuyển khoản</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick add-customer modal -->
+    <div v-if="showAddKH" class="bs-overlay" @click.self="showAddKH = false">
+      <div class="bs-modal">
+        <h5 class="mb-3">Thêm khách hàng mới</h5>
+        <div class="mb-2"><label class="form-label small mb-1">Tên khách hàng *</label><input class="form-control form-control-sm" v-model="newKH.ten"></div>
+        <div class="row g-2 mb-2">
+          <div class="col-7"><label class="form-label small mb-1">SĐT</label><input class="form-control form-control-sm" v-model="newKH.sdt"></div>
+          <div class="col-5"><label class="form-label small mb-1">Giới tính</label>
+            <select class="form-select form-select-sm" v-model="newKH.gioiTinh"><option>Nam</option><option>Nữ</option></select></div>
+        </div>
+        <div class="mb-2"><label class="form-label small mb-1">Email</label><input class="form-control form-control-sm" v-model="newKH.email"></div>
+        <div class="mb-3"><label class="form-label small mb-1">Địa chỉ</label><input class="form-control form-control-sm" v-model="newKH.diaChi"></div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary flex-fill" @click="showAddKH = false">Huỷ</button>
+          <button class="btn btn-success flex-fill" @click="saveKH">Lưu &amp; gán</button>
+        </div>
+      </div>
+    </div>
   </AppShell>
 </template>
 
@@ -368,6 +558,10 @@ function huy() {
 .green-actions .btn-success:hover:not(:disabled) { background: #f0f0f0; }
 .green-actions .btn-outline-danger { background: transparent; color: #ffdede; border-color: #ffb3b3; }
 .green-actions .btn-light:disabled { opacity: .5; }
+
+/* lightweight modal overlay (VietQR / add-customer) */
+.bs-overlay { position: fixed; inset: 0; background: rgba(15,23,20,.5); display: flex; align-items: center; justify-content: center; z-index: 1080; }
+.bs-modal { background: #fff; border-radius: 12px; padding: 20px; width: 340px; max-width: 92vw; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
 
 @media (max-width: 992px) {
   .pos-grid { grid-template-columns: 1fr; }

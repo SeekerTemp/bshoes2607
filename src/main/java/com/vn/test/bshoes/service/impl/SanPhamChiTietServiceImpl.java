@@ -4,6 +4,8 @@ import com.vn.test.bshoes.dto.BienTheDto;
 import com.vn.test.bshoes.dto.PosSanPhamDto;
 import com.vn.test.bshoes.entity.SanPham;
 import com.vn.test.bshoes.entity.SanPhamChiTiet;
+import com.vn.test.bshoes.repository.KichCoRepository;
+import com.vn.test.bshoes.repository.MauSacRepository;
 import com.vn.test.bshoes.repository.SanPhamChiTietRepository;
 import com.vn.test.bshoes.repository.SanPhamRepository;
 import com.vn.test.bshoes.service.SanPhamChiTietService;
@@ -18,10 +20,15 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
 
     private final SanPhamChiTietRepository repo;
     private final SanPhamRepository sanPhamRepository;
+    private final MauSacRepository mauSacRepository;
+    private final KichCoRepository kichCoRepository;
 
-    public SanPhamChiTietServiceImpl(SanPhamChiTietRepository repo, SanPhamRepository sanPhamRepository) {
+    public SanPhamChiTietServiceImpl(SanPhamChiTietRepository repo, SanPhamRepository sanPhamRepository,
+                                     MauSacRepository mauSacRepository, KichCoRepository kichCoRepository) {
         this.repo = repo;
         this.sanPhamRepository = sanPhamRepository;
+        this.mauSacRepository = mauSacRepository;
+        this.kichCoRepository = kichCoRepository;
     }
 
     private BienTheDto toDto(SanPhamChiTiet v) {
@@ -32,6 +39,7 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
         dto.setSize(v.getIdKichCo() != null ? v.getIdKichCo().getTenKichCo() : null);
         dto.setTon(v.getSoLuongTon());
         dto.setGia(v.getDonGia());
+        dto.setGiaNhap(v.getGiaNhap());
         dto.setImageUrl(v.getImageUrl());
         dto.setTrangThai(v.getTrangThai());
         return dto;
@@ -68,6 +76,9 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
         v.setIdSanPham(sanPhamRepository.getReferenceById(idSanPham));
         v.setSoLuongTon(dto.getTon());
         v.setDonGia(dto.getGia());
+        v.setGiaNhap(dto.getGiaNhap());
+        if (StringUtils.hasText(dto.getMau())) v.setIdMauSac(mauSacRepository.findByTenMauSac(dto.getMau()));
+        if (StringUtils.hasText(dto.getSize())) v.setIdKichCo(kichCoRepository.findByTenKichCo(dto.getSize()));
         if (StringUtils.hasText(dto.getMa())) {
             v.setMaSanPhamChiTiet(dto.getMa());
         } else {
@@ -77,6 +88,31 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
         }
         v.setTrangThai(true);
         v.setTrangThaiXoa(false);
+        return toDto(repo.save(v));
+    }
+
+    @Override
+    @Transactional
+    public BienTheDto update(int id, BienTheDto dto) {
+        SanPhamChiTiet v = repo.findById(id).orElseThrow();
+        if (dto.getTon() != null) v.setSoLuongTon(dto.getTon());
+        if (dto.getGia() != null) v.setDonGia(dto.getGia());
+        if (dto.getGiaNhap() != null) v.setGiaNhap(dto.getGiaNhap());
+        if (dto.getTrangThai() != null) v.setTrangThai(dto.getTrangThai());
+        if (StringUtils.hasText(dto.getMau())) v.setIdMauSac(mauSacRepository.findByTenMauSac(dto.getMau()));
+        if (StringUtils.hasText(dto.getSize())) v.setIdKichCo(kichCoRepository.findByTenKichCo(dto.getSize()));
+        if (StringUtils.hasText(dto.getMa())) v.setMaSanPhamChiTiet(dto.getMa());
+        if (StringUtils.hasText(dto.getImageUrl())) v.setImageUrl(dto.getImageUrl());
+        return toDto(repo.save(v));
+    }
+
+    @Override
+    @Transactional
+    public BienTheDto nhapKho(int id, int soLuong) {
+        SanPhamChiTiet v = repo.findById(id).orElseThrow();
+        int cur = v.getSoLuongTon() == null ? 0 : v.getSoLuongTon();
+        v.setSoLuongTon(cur + Math.max(0, soLuong));
+        if (v.getSoLuongTon() > 0) v.setTrangThai(true);
         return toDto(repo.save(v));
     }
 

@@ -11,6 +11,9 @@ public interface SanPhamChiTietService {
     List<BienTheDto> findAvailable();
     BienTheDto findById(int id);
     BienTheDto create(int idSanPham, BienTheDto dto);
+    BienTheDto update(int id, BienTheDto dto);
+    /** Stock-in: add {@code soLuong} units to a variant's on-hand quantity. */
+    BienTheDto nhapKho(int id, int soLuong);
     void softDelete(int id);
 
     /** Look up one variant by its business code (for QR/barcode scan at POS). Cart-friendly shape. */

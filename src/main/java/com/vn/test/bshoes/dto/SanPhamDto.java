@@ -14,6 +14,8 @@ public class SanPhamDto {
     private Integer id;
     private String ma;
     private String ten;
+    private Integer idLoaiSanPham;   // category id
+    private String loaiSP;           // category name
     private String thuongHieu;
     private String chatLieu;
     private BigDecimal gia;

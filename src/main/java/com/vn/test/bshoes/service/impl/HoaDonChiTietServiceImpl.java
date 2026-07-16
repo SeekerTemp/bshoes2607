@@ -23,6 +23,7 @@ public class HoaDonChiTietServiceImpl implements HoaDonChiTietService {
         SanPhamChiTiet spct = h.getIdSanPhamChiTiet();
         HoaDonChiTietDto dto = new HoaDonChiTietDto();
         dto.setId(h.getId());
+        dto.setIdSanPhamChiTiet(spct != null ? spct.getId() : null);
         dto.setTen(spct != null && spct.getIdSanPham() != null ? spct.getIdSanPham().getTenSanPham() : null);
         dto.setSoLuong(h.getSoLuong());
         dto.setDonGia(spct != null ? spct.getDonGia() : null);

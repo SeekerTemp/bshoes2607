@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 public interface MauSacRepository extends JpaRepository<MauSac, Integer> {
 
     @Query(value = "select * from mau_sac where ten_mau_sac = ?1", nativeQuery = true)
-    MauSac findByTen(String ten);
+    MauSac findByTenMauSac(String tenMauSac);
 
     @Modifying
     @Transactional

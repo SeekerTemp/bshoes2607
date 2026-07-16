@@ -30,6 +30,9 @@ public class VaiTro {
     @Column(name = "ten_vai_tro", length = 100)
     private String tenVaiTro;
 
+    @Column(name = "quyen", length = 500)
+    private String quyen;
+
     @Column(name = "trang_thai")
     private Boolean trangThai;
 

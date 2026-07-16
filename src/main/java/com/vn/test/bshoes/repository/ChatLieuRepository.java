@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 public interface ChatLieuRepository extends JpaRepository<ChatLieu, Integer> {
 
     @Query(value = "select * from chat_lieu where ten_chat_lieu = ?1", nativeQuery = true)
-    ChatLieu findByTen(String ten);
 
     ChatLieu findByTenChatLieu(String tenChatLieu);
 

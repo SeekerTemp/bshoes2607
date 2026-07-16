@@ -9,4 +9,13 @@ export const hoaDonApi = {
   giamGia: (idPhieu, tongTien) => http.get(`/hoa-don/${idPhieu}/giam-gia`, { params: { tongTien } }).then(r => r.data),
   create: (e) => http.post('/hoa-don', e).then(r => r.data),
   scanByMa: (ma) => http.get('/san-pham-chi-tiet/by-ma/' + encodeURIComponent(ma)).then(r => r.data),
+  // --- POS write flow (server-backed cart + payment) ---
+  createEmpty: (idNhanVien) => http.post('/hoa-don/create-empty', null, { params: idNhanVien ? { idNhanVien } : {} }).then(r => r.data),
+  addItem: (id, body) => http.post(`/hoa-don/${id}/items`, body).then(r => r.data),
+  updateItem: (idChiTiet, soLuong) => http.put(`/hoa-don/items/${idChiTiet}`, null, { params: { soLuong } }).then(r => r.data),
+  removeItem: (idChiTiet) => http.delete(`/hoa-don/items/${idChiTiet}`).then(r => r.data),
+  thanhToan: (id, body) => http.post(`/hoa-don/${id}/thanh-toan`, body).then(r => r.data),
+  huyHoaDon: (id, idNhanVien) => http.post(`/hoa-don/${id}/huy`, null, { params: idNhanVien ? { idNhanVien } : {} }).then(r => r.data),
+  daGiao: (id) => http.post(`/hoa-don/${id}/da-giao`).then(r => r.data),
+  traHang: (id, idNhanVien) => http.post(`/hoa-don/${id}/tra-hang`, null, { params: idNhanVien ? { idNhanVien } : {} }).then(r => r.data),
 }

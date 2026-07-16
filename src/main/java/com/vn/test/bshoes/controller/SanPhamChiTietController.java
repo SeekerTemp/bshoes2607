@@ -33,4 +33,24 @@ public class SanPhamChiTietController {
         PosSanPhamDto dto = service.findPosByMa(ma);
         return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
     }
+
+    // --- variant management (consolidated from the former /san-pham-chi-tiet-ql) ---
+    @PostMapping("/product/{idSanPham}")
+    public BienTheDto create(@PathVariable int idSanPham, @RequestBody BienTheDto dto) {
+        return service.create(idSanPham, dto);
+    }
+
+    @PutMapping("/{id}")
+    public BienTheDto update(@PathVariable int id, @RequestBody BienTheDto dto) {
+        return service.update(id, dto);
+    }
+
+    /** Stock-in (nhập kho): add units to on-hand quantity. */
+    @PostMapping("/{id}/nhap-kho")
+    public BienTheDto nhapKho(@PathVariable int id, @RequestParam int soLuong) {
+        return service.nhapKho(id, soLuong);
+    }
+
+    @DeleteMapping("/{id}")
+    public void softDelete(@PathVariable int id) { service.softDelete(id); }
 }

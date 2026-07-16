@@ -12,4 +12,9 @@ public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, In
 
     @Query("select h from HoaDonChiTiet h where h.idHoaDon.id = ?1")
     List<HoaDonChiTiet> findByHoaDon(int idHoaDon);
+
+    /** Find an existing (non-deleted) line for a given variant in a given invoice, if any. */
+    @Query("select h from HoaDonChiTiet h where h.idHoaDon.id = ?1 and h.idSanPhamChiTiet.id = ?2 " +
+           "and (h.trangThaiXoa = false or h.trangThaiXoa is null)")
+    HoaDonChiTiet findByHoaDonAndVariant(int idHoaDon, int idSanPhamChiTiet);
 }

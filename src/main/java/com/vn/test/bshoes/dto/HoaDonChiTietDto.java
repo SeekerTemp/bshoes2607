@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class HoaDonChiTietDto {
     private Integer id;
+    private Integer idSanPhamChiTiet;   // variant id — lets the POS sync its cart from the server
     private String ten;
     private Integer soLuong;
     private BigDecimal donGia;

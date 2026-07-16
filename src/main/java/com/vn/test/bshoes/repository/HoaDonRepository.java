@@ -13,6 +13,8 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
 
     List<HoaDon> findByTrangThai(Integer trangThai);
 
+    long countByTrangThai(Integer trangThai);
+
     HoaDon findByMaHoaDon(String ma);
 
     @Query(value = "SELECT * FROM view_phieu_giam_gia_hoat_dong", nativeQuery = true)

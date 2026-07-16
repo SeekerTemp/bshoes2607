@@ -9,9 +9,24 @@ import AppButton from '../components/ui/AppButton.vue'
 import AppModal from '../components/ui/AppModal.vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
 import { useLichSu } from '../composables/useLichSu'
+import { useToast } from '../composables/useToast'
+import { useAuth } from '../composables/useAuth'
+import { hoaDonApi } from '../api/hoaDon'
 import { vnd } from '../utils/format'
 
-const { keyword, trangThai, filtered } = useLichSu()
+const { keyword, trangThai, filtered, load } = useLichSu()
+const { notify } = useToast()
+const { user } = useAuth()
+
+async function daGiao() {
+  try { await hoaDonApi.daGiao(chon.value.id); notify('Đã giao ' + chon.value.ma, 'success'); modalOpen.value = false; await load() }
+  catch (e) { notify('Chỉ đơn "Chờ giao" mới đánh dấu Đã giao', 'warning') }
+}
+async function traHang() {
+  if (!confirm(`Trả hàng ${chon.value.ma}? Kho sẽ được hoàn lại.`)) return
+  try { await hoaDonApi.traHang(chon.value.id, user.value?.id); notify('Đã trả hàng ' + chon.value.ma, 'success'); modalOpen.value = false; await load() }
+  catch (e) { notify('Không thể trả hàng', 'warning') }
+}
 
 const statusOptions = [
   { value: '', label: '-- Trạng thái --' },
@@ -80,6 +95,8 @@ function xem(row) {
         <div class="text-end fs-5">Tổng: <b style="color: var(--c-primary)">{{ vnd(chon.tongTien) }}</b></div>
       </template>
       <template #footer>
+        <AppButton v-if="chon && chon.trangThai === 'Chờ giao'" variant="primary" @click="daGiao">Đánh dấu Đã giao</AppButton>
+        <AppButton v-if="chon && ['Thành công','Chờ giao','Đã giao'].includes(chon.trangThai)" variant="outline-danger" @click="traHang">Trả hàng</AppButton>
         <AppButton variant="secondary" @click="modalOpen = false">Đóng</AppButton>
       </template>
     </AppModal>

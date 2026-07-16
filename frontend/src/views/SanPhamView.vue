@@ -11,15 +11,16 @@ import ImagePicker from '../components/ui/ImagePicker.vue'
 import { useSanPham } from '../composables/useSanPham'
 import { useToast } from '../composables/useToast'
 import { vnd } from '../utils/format'
+import { bienTheApi } from '../api/bienThe'
 import {
   loaiSanPhamList, kieuDangList, kieuCoGiayList, kieuDayGiayList,
-  xuatXuList, mauSacList, kichThuocList, thuocTinh as mockThuocTinh, loaiThuocTinhList,
+  xuatXuList, mauSacList, kichThuocList,
 } from '../mock/data'
 
-const { filtered, add, update, remove, thuongHieuList, chatLieuList } = useSanPham()
+const { filtered, load, add, update, remove, thuongHieuList, chatLieuList } = useSanPham()
 const { notify } = useToast()
 
-const tab = ref('sanpham') // 'sanpham' | 'chitiet' | 'thuoctinh'
+const tab = ref('sanpham') // 'sanpham' | 'chitiet'  (attributes now live in the /thuoc-tinh screen)
 
 const PLACEHOLDER = '/images/shoes/img_shoe_10001.png'
 function onImgError(e) { e.target.style.visibility = 'hidden' }
@@ -51,6 +52,13 @@ function selectSP(p) {
   spForm.value = { ...blankSP(), ...JSON.parse(JSON.stringify(p)) }
 }
 function spThem() { spSelectedId.value = null; spForm.value = blankSP() }
+// double-click a product → jump to its variants (Sản phẩm chi tiết tab), filtered
+function openBienThe(p) {
+  selectSP(p)
+  ctSearch.value = p.ten
+  ctSelectedKey.value = null
+  tab.value = 'chitiet'
+}
 function spLamMoi() {
   if (spSelectedId.value) { const p = filtered.value.find(x => x.id === spSelectedId.value); if (p) selectSP(p) }
   else spForm.value = blankSP()
@@ -65,70 +73,54 @@ function spAn() {
   if (confirm(`Ẩn (xóa mềm) sản phẩm ${spForm.value.ma}?`)) { remove(spForm.value.ma); spThem() }
 }
 
-/* ======================= TAB 2 — Sản phẩm chi tiết ======================= */
+/* ============= TAB 2 — Sản phẩm chi tiết (biến thể), wired to backend ============= */
 const ctSearch = ref('')
-// flatten every product's variants into "sản phẩm chi tiết" rows
+// flatten every product's variants; each row carries the server variant id (idSpct)
 const ctRows = computed(() => {
   const k = ctSearch.value.trim().toLowerCase()
   const rows = []
   filtered.value.forEach(p => (p.bienThe || []).forEach(v => {
     rows.push({
-      key: v.ma, ma: v.ma, ten: p.ten, mau: v.mau, size: v.size,
-      gia: v.gia, ton: v.ton, trangThai: v.trangThai !== false,
-      imageUrl: v.imageUrl || p.imageUrl,
+      key: v.id != null ? 'v' + v.id : (p.id + '-' + v.ma), idSpct: v.id, idSanPham: p.id,
+      ma: v.ma, tenSP: p.ten, mau: v.mau, size: v.size, gia: v.gia, giaNhap: v.giaNhap,
+      ton: v.ton, trangThai: v.trangThai !== false, imageUrl: v.imageUrl || p.imageUrl,
     })
   }))
-  return rows.filter(r => !k || r.ma.toLowerCase().includes(k) || r.ten.toLowerCase().includes(k))
+  return rows.filter(r => !k || (r.ma || '').toLowerCase().includes(k) || (r.tenSP || '').toLowerCase().includes(k))
 })
 const ctSelectedKey = ref(null)
-const ctForm = ref({ ma: '', ten: '', mau: '', size: '', gia: 0, ton: 0, trangThai: true, imageUrl: '' })
-function selectCT(r) { ctSelectedKey.value = r.key; ctForm.value = { ...r } }
-function ctLamMoi() { const r = ctRows.value.find(x => x.key === ctSelectedKey.value); if (r) ctForm.value = { ...r } }
-function ctLuu() {
-  const p = filtered.value.find(x => (x.bienThe || []).some(v => v.ma === ctForm.value.ma))
-  const v = p && p.bienThe.find(x => x.ma === ctForm.value.ma)
-  if (v) {
-    v.mau = ctForm.value.mau; v.size = ctForm.value.size
-    v.gia = ctForm.value.gia; v.ton = ctForm.value.ton; v.trangThai = ctForm.value.trangThai
-    v.imageUrl = ctForm.value.imageUrl
-    update({ ...p }); notify('Đã cập nhật chi tiết', 'success')
-  }
+const ctNhap = ref(0)
+function blankCT() {
+  return { idSpct: null, idSanPham: '', ma: '', tenSP: '', mau: mauSacList[0] || '', size: kichThuocList[0] || '', gia: 0, giaNhap: 0, ton: 0, trangThai: true, imageUrl: '' }
 }
-
-/* =========================== TAB 3 — Thuộc tính =========================== */
-const ttSearch = ref('')
-const thuocTinhRows = ref(JSON.parse(JSON.stringify(mockThuocTinh)))
-const ttRows = computed(() => {
-  const k = ttSearch.value.trim().toLowerCase()
-  return thuocTinhRows.value.filter(r => !k || r.loai.toLowerCase().includes(k) || r.ten.toLowerCase().includes(k))
-})
-let ttSeq = mockThuocTinh.length
-function blankTT() { return { id: null, ma: '', loaiSP: '', loai: 'Màu sắc', ten: '', moTa: '' } }
-const ttForm = ref(blankTT())
-const ttSelectedId = ref(null)
-function selectTT(r) { ttSelectedId.value = r.id; ttForm.value = { ...blankTT(), ...r } }
-function ttThem() { ttSelectedId.value = null; ttForm.value = blankTT() }
-function ttLamMoi() {
-  if (ttSelectedId.value) { const r = thuocTinhRows.value.find(x => x.id === ttSelectedId.value); if (r) selectTT(r) }
-  else ttForm.value = blankTT()
+const ctForm = ref(blankCT())
+function selectCT(r) { ctSelectedKey.value = r.key; ctForm.value = { ...r }; ctNhap.value = 0 }
+function ctThem() { ctSelectedKey.value = null; ctForm.value = blankCT() }
+function ctLamMoi() { const r = ctRows.value.find(x => x.key === ctSelectedKey.value); ctForm.value = r ? { ...r } : blankCT() }
+async function ctLuu() {
+  const f = ctForm.value
+  const dto = { ma: f.ma, mau: f.mau, size: f.size, gia: f.gia, giaNhap: f.giaNhap, ton: f.ton, trangThai: f.trangThai, imageUrl: f.imageUrl }
+  try {
+    if (f.idSpct) { await bienTheApi.update(f.idSpct, dto); notify('Đã cập nhật biến thể', 'success') }
+    else {
+      if (!f.idSanPham) { notify('Chọn sản phẩm cho biến thể', 'warning'); return }
+      await bienTheApi.create(f.idSanPham, dto); notify('Đã thêm biến thể', 'success')
+    }
+    await load(); ctThem()
+  } catch (e) { notify('Lưu thất bại (backend offline?)', 'warning') }
 }
-function ttLuu() {
-  if (!ttForm.value.ten) { notify('Nhập tên thuộc tính', 'warning'); return }
-  if (ttForm.value.id) {
-    const r = thuocTinhRows.value.find(x => x.id === ttForm.value.id)
-    if (r) Object.assign(r, ttForm.value)
-    notify('Đã cập nhật thuộc tính', 'success')
-  } else {
-    ttSeq++
-    thuocTinhRows.value.push({ ...ttForm.value, id: ttSeq, ma: 'TT' + ttSeq })
-    notify('Đã thêm thuộc tính', 'success'); ttThem()
-  }
+async function ctNhapKho() {
+  if (!ctForm.value.idSpct) { notify('Chọn biến thể để nhập kho', 'warning'); return }
+  const sl = Number(ctNhap.value) || 0
+  if (sl <= 0) { notify('Nhập số lượng > 0', 'warning'); return }
+  try { await bienTheApi.nhapKho(ctForm.value.idSpct, sl); notify(`Đã nhập ${sl} vào kho`, 'success'); ctNhap.value = 0; await load(); ctLamMoi() }
+  catch (e) { notify('Nhập kho thất bại', 'warning') }
 }
-function ttXoa() {
-  if (!ttForm.value.id) { notify('Chọn thuộc tính để xóa', 'warning'); return }
-  if (confirm(`Xóa thuộc tính "${ttForm.value.ten}"?`)) {
-    thuocTinhRows.value = thuocTinhRows.value.filter(x => x.id !== ttForm.value.id); ttThem()
-  }
+async function ctAn() {
+  if (!ctForm.value.idSpct) { notify('Chọn biến thể để ẩn', 'warning'); return }
+  if (!confirm('Ẩn (xóa mềm) biến thể ' + ctForm.value.ma + '?')) return
+  try { await bienTheApi.remove(ctForm.value.idSpct); notify('Đã ẩn biến thể', 'success'); await load(); ctThem() }
+  catch (e) { notify('Thao tác thất bại', 'warning') }
 }
 </script>
 
@@ -140,7 +132,7 @@ function ttXoa() {
     <div class="sp-tabs">
       <button class="sp-tab" :class="{ active: tab === 'sanpham' }" @click="tab = 'sanpham'">Sản phẩm</button>
       <button class="sp-tab" :class="{ active: tab === 'chitiet' }" @click="tab = 'chitiet'">Sản phẩm chi tiết</button>
-      <button class="sp-tab" :class="{ active: tab === 'thuoctinh' }" @click="tab = 'thuoctinh'">Thuộc tính</button>
+      <router-link to="/thuoc-tinh" class="sp-tab sp-tab-link">Thuộc tính ↗</router-link>
     </div>
 
     <!-- ==================== TAB 1: SẢN PHẨM ==================== -->
@@ -162,7 +154,7 @@ function ttXoa() {
                 <th>Kiểu dây giày</th><th>Thương hiệu</th>
               </tr></thead>
               <tbody>
-                <tr v-for="(p, i) in spRows" :key="p.id" :class="{ 'row-active': p.id === spSelectedId }" @click="selectSP(p)">
+                <tr v-for="(p, i) in spRows" :key="p.id" :class="{ 'row-active': p.id === spSelectedId }" @click="selectSP(p)" @dblclick="openBienThe(p)" title="Double-click để xem biến thể">
                   <td class="text-center">{{ i + 1 }}</td><td class="fw-medium">{{ p.ma }}</td><td>{{ p.ten }}</td>
                   <td>{{ p.chatLieu }}</td><td>{{ firstVariant(p).mau || '—' }}</td><td>{{ firstVariant(p).size || '—' }}</td>
                   <td>{{ p.kieuDang || '—' }}</td><td>{{ p.coGiay || '—' }}</td><td>{{ p.dayGiay || '—' }}</td><td>{{ p.thuongHieu }}</td>
@@ -223,15 +215,15 @@ function ttXoa() {
             <table class="table table-sm table-hover align-middle sp-table mb-0">
               <thead><tr>
                 <th class="text-center">STT</th><th>Mã SP</th><th>Tên sp</th><th>Màu sắc</th>
-                <th>Kích cỡ</th><th class="text-end">Đơn giá</th><th class="text-end">Số lượng tồn</th><th>Trạng thái</th>
+                <th>Kích cỡ</th><th class="text-end">Đơn giá</th><th class="text-end">Giá nhập</th><th class="text-end">Tồn</th><th>Trạng thái</th>
               </tr></thead>
               <tbody>
                 <tr v-for="(r, i) in ctRows" :key="r.key" :class="{ 'row-active': r.key === ctSelectedKey }" @click="selectCT(r)">
-                  <td class="text-center">{{ i + 1 }}</td><td class="fw-medium">{{ r.ma }}</td><td>{{ r.ten }}</td>
+                  <td class="text-center">{{ i + 1 }}</td><td class="fw-medium">{{ r.ma }}</td><td>{{ r.tenSP }}</td>
                   <td>{{ r.mau }}</td><td>{{ r.size }}</td><td class="text-end">{{ vnd(r.gia) }}</td>
-                  <td class="text-end">{{ r.ton }}</td><td>{{ r.trangThai ? 'Đang bán' : 'Ngừng bán' }}</td>
+                  <td class="text-end">{{ vnd(r.giaNhap) }}</td><td class="text-end">{{ r.ton }}</td><td>{{ r.trangThai ? 'Đang bán' : 'Ngừng bán' }}</td>
                 </tr>
-                <tr v-if="ctRows.length === 0"><td colspan="8" class="text-center text-muted py-3">Không có chi tiết</td></tr>
+                <tr v-if="ctRows.length === 0"><td colspan="9" class="text-center text-muted py-3">Không có biến thể</td></tr>
               </tbody>
             </table>
           </div>
@@ -240,9 +232,9 @@ function ttXoa() {
       </div>
 
       <div class="sp-detail">
-        <div class="sp-tab-r">Chi tiết</div>
+        <div class="sp-tab-r">{{ ctForm.idSpct ? 'Sửa biến thể' : 'Thêm biến thể' }}</div>
         <div class="sp-panel-green">
-          <h6 class="green-title">Thông tin sản phẩm</h6>
+          <h6 class="green-title">Thông tin biến thể</h6>
           <div class="green-img">
             <button type="button" class="img-choose" @click="ctImgOpen = true" title="Chọn ảnh">
               <img :src="ctForm.imageUrl || PLACEHOLDER" alt="" @error="onImgError">
@@ -250,78 +242,35 @@ function ttXoa() {
             </button>
           </div>
           <dl class="green-fields">
-            <div class="gf"><dt>Mã sản phẩm</dt><dd><input class="form-control form-control-sm" v-model="ctForm.ma" readonly></dd></div>
-            <div class="gf"><dt>Tên sản phẩm</dt><dd><input class="form-control form-control-sm" v-model="ctForm.ten" readonly></dd></div>
+            <div class="gf" v-if="!ctForm.idSpct"><dt>Sản phẩm</dt><dd>
+              <select class="form-select form-select-sm" v-model="ctForm.idSanPham">
+                <option value="">-- Chọn sản phẩm --</option>
+                <option v-for="p in filtered" :key="p.id" :value="p.id">{{ p.ma }} · {{ p.ten }}</option>
+              </select>
+            </dd></div>
+            <div class="gf" v-else><dt>Sản phẩm</dt><dd><input class="form-control form-control-sm" :value="ctForm.tenSP" readonly></dd></div>
+            <div class="gf"><dt>Mã biến thể</dt><dd><input class="form-control form-control-sm" v-model="ctForm.ma" placeholder="Tự sinh nếu bỏ trống"></dd></div>
             <div class="gf"><dt>Màu sắc</dt><dd><AppSelect v-model="ctForm.mau" :options="mauSacList" /></dd></div>
             <div class="gf"><dt>Kích cỡ</dt><dd><AppSelect v-model="ctForm.size" :options="kichThuocList" /></dd></div>
-            <div class="gf"><dt>Đơn giá</dt><dd><input type="number" class="form-control form-control-sm text-end" v-model.number="ctForm.gia"></dd></div>
+            <div class="gf"><dt>Đơn giá (bán)</dt><dd><input type="number" class="form-control form-control-sm text-end" v-model.number="ctForm.gia"></dd></div>
+            <div class="gf"><dt>Giá nhập (vốn)</dt><dd><input type="number" class="form-control form-control-sm text-end" v-model.number="ctForm.giaNhap"></dd></div>
             <div class="gf"><dt>Số lượng tồn</dt><dd><input type="number" class="form-control form-control-sm text-end" v-model.number="ctForm.ton"></dd></div>
             <div class="gf"><dt>Trạng thái</dt><dd class="d-flex gap-3 align-items-center">
               <label class="green-radio"><input type="radio" :value="true" v-model="ctForm.trangThai"> Đang bán</label>
               <label class="green-radio"><input type="radio" :value="false" v-model="ctForm.trangThai"> Ngừng bán</label>
             </dd></div>
           </dl>
+          <div class="ct-nhapkho" v-if="ctForm.idSpct">
+            <span>Nhập kho:</span>
+            <input type="number" min="1" class="form-control form-control-sm text-end" style="width:90px" v-model.number="ctNhap" placeholder="SL">
+            <button class="btn btn-sm btn-light" @click="ctNhapKho"><i class="bi bi-box-arrow-in-down"></i> Nhập</button>
+          </div>
         </div>
         <div class="green-actions">
-          <button class="btn btn-success w-100" :disabled="!ctSelectedKey" @click="ctLuu">Sửa</button>
+          <button class="btn btn-success w-100" @click="ctThem">Thêm mới</button>
+          <button class="btn btn-success w-100" @click="ctLuu">{{ ctForm.idSpct ? 'Lưu (Sửa)' : 'Tạo biến thể' }}</button>
           <button class="btn btn-success w-100" @click="ctLamMoi">Làm mới</button>
-          <button class="btn btn-light w-100" disabled>Ẩn</button>
-          <button class="btn btn-light w-100" disabled>Xuất json thông tin sản phẩm</button>
-          <button class="btn btn-light w-100" disabled>Import sản phẩm bằng list json/csv/excel</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ==================== TAB 3: THUỘC TÍNH ==================== -->
-    <div v-show="tab === 'thuoctinh'" class="sp-grid">
-      <div class="sp-master">
-        <div class="card sp-panel">
-          <header class="sp-panel-head">
-            <h6 class="sp-title">THUỘC TÍNH SẢN PHẨM</h6>
-            <div class="input-group input-group-sm sp-search">
-              <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-              <input class="form-control" v-model="ttSearch" placeholder="Tìm kiếm thuộc tính" />
-            </div>
-          </header>
-          <div class="table-scroll" style="height: 460px">
-            <table class="table table-sm table-hover align-middle sp-table mb-0">
-              <thead><tr><th class="text-center">STT</th><th>Loại thuộc tính</th><th>Tên thuộc tính</th></tr></thead>
-              <tbody>
-                <tr v-for="(r, i) in ttRows" :key="r.id" :class="{ 'row-active': r.id === ttSelectedId }" @click="selectTT(r)">
-                  <td class="text-center">{{ i + 1 }}</td><td class="fw-medium">{{ r.loai }}</td><td>{{ r.ten }}</td>
-                </tr>
-                <tr v-if="ttRows.length === 0"><td colspan="3" class="text-center text-muted py-3">Không có thuộc tính</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <footer class="sp-master-foot"><button class="btn btn-sm btn-outline-secondary" disabled>Xem danh sách bị ẩn</button></footer>
-        </div>
-      </div>
-
-      <div class="sp-detail">
-        <div class="sp-tab-r">Chi tiết thuộc tính</div>
-        <div class="sp-panel-green">
-          <h6 class="green-title">Thông tin thuộc tính</h6>
-          <dl class="green-fields">
-            <div class="gf"><dt>Loại sản phẩm</dt><dd><AppSelect v-model="ttForm.loaiSP" :options="loaiSanPhamList" /></dd></div>
-          </dl>
-          <div class="green-radio-group">
-            <div class="green-radio-label">Loại thuộc tính:</div>
-            <label class="green-radio" v-for="lt in loaiThuocTinhList" :key="lt">
-              <input type="radio" :value="lt" v-model="ttForm.loai"> {{ lt }}
-            </label>
-          </div>
-          <dl class="green-fields mt-2">
-            <div class="gf"><dt>Tên thuộc tính</dt><dd><input class="form-control form-control-sm" v-model="ttForm.ten"></dd></div>
-          </dl>
-        </div>
-        <div class="green-actions">
-          <button class="btn btn-success w-100" @click="ttThem">Thêm</button>
-          <button class="btn btn-success w-100" :disabled="!ttForm.id" @click="ttLuu">Sửa</button>
-          <button class="btn btn-success w-100" @click="ttLamMoi">Làm mới</button>
-          <button class="btn btn-outline-danger w-100" :disabled="!ttForm.id" @click="ttXoa">Xóa</button>
-          <button class="btn btn-light w-100" disabled>Xuất json thông tin sản phẩm</button>
-          <button class="btn btn-light w-100" disabled>Import sản phẩm bằng list json/csv/excel</button>
+          <button class="btn btn-outline-danger w-100" :disabled="!ctForm.idSpct" @click="ctAn">Ẩn (Xóa mềm)</button>
         </div>
       </div>
     </div>
@@ -341,6 +290,9 @@ function ttXoa() {
   background: #eef1f4; color: var(--c-text-muted); font-weight: 500; cursor: pointer;
 }
 .sp-tab.active { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
+.sp-tab-link { text-decoration: none; color: var(--c-primary); }
+.sp-tab-link:hover { background: var(--c-primary-subtle); }
+.ct-nhapkho { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.25); font-size: 13px; }
 
 .sp-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; align-items: start; }
 .sp-master { min-width: 0; }

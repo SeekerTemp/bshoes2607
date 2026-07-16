@@ -11,6 +11,8 @@ public interface SanPhamService {
     List<SanPhamDto> search(String keyword);
     SanPhamDto create(SanPhamDto dto);
     SanPhamDto update(SanPhamDto dto);
+    /** Assign a product to a category (idLoai=null removes it from any category). */
+    SanPhamDto setDanhMuc(int idSanPham, Integer idLoai);
     void softDelete(String ma);
     void restore(String ma);
 }

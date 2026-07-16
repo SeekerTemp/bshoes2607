@@ -4,6 +4,7 @@ import com.vn.test.bshoes.dto.BienTheDto;
 import com.vn.test.bshoes.dto.SanPhamDto;
 import com.vn.test.bshoes.entity.SanPham;
 import com.vn.test.bshoes.repository.ChatLieuRepository;
+import com.vn.test.bshoes.repository.LoaiSanPhamRepository;
 import com.vn.test.bshoes.repository.SanPhamChiTietRepository;
 import com.vn.test.bshoes.repository.SanPhamRepository;
 import com.vn.test.bshoes.repository.ThuongHieuRepository;
@@ -21,15 +22,18 @@ public class SanPhamServiceImpl implements SanPhamService {
     private final SanPhamChiTietRepository sanPhamChiTietRepository;
     private final ThuongHieuRepository thuongHieuRepository;
     private final ChatLieuRepository chatLieuRepository;
+    private final LoaiSanPhamRepository loaiSanPhamRepository;
 
     public SanPhamServiceImpl(SanPhamRepository repo,
                                SanPhamChiTietRepository sanPhamChiTietRepository,
                                ThuongHieuRepository thuongHieuRepository,
-                               ChatLieuRepository chatLieuRepository) {
+                               ChatLieuRepository chatLieuRepository,
+                               LoaiSanPhamRepository loaiSanPhamRepository) {
         this.repo = repo;
         this.sanPhamChiTietRepository = sanPhamChiTietRepository;
         this.thuongHieuRepository = thuongHieuRepository;
         this.chatLieuRepository = chatLieuRepository;
+        this.loaiSanPhamRepository = loaiSanPhamRepository;
     }
 
     private SanPhamDto toDto(SanPham s) {
@@ -42,6 +46,7 @@ public class SanPhamServiceImpl implements SanPhamService {
                     dto.setSize(v.getIdKichCo() != null ? v.getIdKichCo().getTenKichCo() : null);
                     dto.setTon(v.getSoLuongTon());
                     dto.setGia(v.getDonGia());
+                    dto.setGiaNhap(v.getGiaNhap());
                     dto.setImageUrl(v.getImageUrl());
                     dto.setTrangThai(v.getTrangThai());
                     return dto;
@@ -52,6 +57,8 @@ public class SanPhamServiceImpl implements SanPhamService {
         dto.setId(s.getId());
         dto.setMa(s.getMaSanPham());
         dto.setTen(s.getTenSanPham());
+        dto.setIdLoaiSanPham(s.getIdLoaiSanPham() != null ? s.getIdLoaiSanPham().getId() : null);
+        dto.setLoaiSP(s.getIdLoaiSanPham() != null ? s.getIdLoaiSanPham().getTenLoaiSanPham() : null);
         dto.setThuongHieu(s.getIdThuongHieu() != null ? s.getIdThuongHieu().getTenThuongHieu() : null);
         dto.setChatLieu(s.getIdChatLieu() != null ? s.getIdChatLieu().getTenChatLieu() : null);
         dto.setGia(!bienThe.isEmpty() ? bienThe.get(0).getGia() : null);
@@ -99,6 +106,9 @@ public class SanPhamServiceImpl implements SanPhamService {
         if (StringUtils.hasText(dto.getChatLieu())) {
             s.setIdChatLieu(chatLieuRepository.findByTenChatLieu(dto.getChatLieu()));
         }
+        if (dto.getIdLoaiSanPham() != null) {
+            s.setIdLoaiSanPham(loaiSanPhamRepository.findById(dto.getIdLoaiSanPham()).orElse(null));
+        }
         s = repo.save(s);
         s.setMaSanPham("SP" + s.getId());
         return toDto(repo.save(s));
@@ -116,6 +126,17 @@ public class SanPhamServiceImpl implements SanPhamService {
         if (StringUtils.hasText(dto.getChatLieu())) {
             s.setIdChatLieu(chatLieuRepository.findByTenChatLieu(dto.getChatLieu()));
         }
+        if (dto.getIdLoaiSanPham() != null) {
+            s.setIdLoaiSanPham(loaiSanPhamRepository.findById(dto.getIdLoaiSanPham()).orElse(null));
+        }
+        return toDto(repo.save(s));
+    }
+
+    @Override
+    @Transactional
+    public SanPhamDto setDanhMuc(int idSanPham, Integer idLoai) {
+        SanPham s = repo.findById(idSanPham).orElseThrow();
+        s.setIdLoaiSanPham(idLoai != null ? loaiSanPhamRepository.findById(idLoai).orElse(null) : null);
         return toDto(repo.save(s));
     }
 

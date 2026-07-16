@@ -99,7 +99,7 @@ export const posVouchers = [
   { value: 50000, label: 'Giảm 50k' },
 ]
 
-export const posHinhThuc = ['Tiền mặt', 'Chuyển khoản', 'Thẻ']
+export const posHinhThuc = ['Tiền mặt', 'Chuyển khoản', 'Thẻ', 'Tiền mặt + Chuyển khoản']
 
 // Invoices sitting on the queue (NetBeans "Danh sách hóa đơn" / tbl_hoaDon).
 // The first one is the one being edited ("Đang tạo"); the rest are waiting.

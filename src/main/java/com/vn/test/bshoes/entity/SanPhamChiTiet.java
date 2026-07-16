@@ -46,6 +46,9 @@ public class SanPhamChiTiet {
     @Column(name = "don_gia")
     private BigDecimal donGia;
 
+    @Column(name = "gia_nhap")
+    private BigDecimal giaNhap;
+
     @ColumnDefault("getdate()")
     @Column(name = "ngay_tao")
     private Instant ngayTao;

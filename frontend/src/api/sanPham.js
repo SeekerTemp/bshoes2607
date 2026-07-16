@@ -9,4 +9,5 @@ export const sanPhamApi = {
   update: (e) => http.put('/san-pham-ql', e).then(r => r.data),
   restore: (ma) => http.post(`/san-pham-ql/restore/${ma}`).then(r => r.data),
   remove: (ma) => http.delete(`/san-pham-ql/soft/${ma}`).then(r => r.data),
+  setDanhMuc: (id, idLoai) => http.put(`/san-pham-ql/${id}/danh-muc`, null, { params: idLoai != null ? { idLoai } : {} }).then(r => r.data),
 }

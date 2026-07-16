@@ -1,17 +1,20 @@
 <script setup>
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useLayout } from '../../composables/useLayout'
-const { sidebarCollapsed } = useLayout()
+import { useAuth } from '../../composables/useAuth'
+import { SCREENS } from '../../config/screens'
 
-const navItems = [
-  { to: '/', icon: 'bi-graph-up', label: 'Doanh Thu', exact: true },
-  { to: '/san-pham', icon: 'bi-box-seam', label: 'Sản Phẩm' },
-  { to: '/hoa-don', icon: 'bi-cart', label: 'Hóa Đơn' },
-  { to: '/nhan-vien', icon: 'bi-people', label: 'Nhân Viên' },
-  { to: '/khach-hang', icon: 'bi-person-badge', label: 'Khách Hàng' },
-  { to: '/lich-su', icon: 'bi-clock-history', label: 'Lịch Sử' },
-  { to: '/phieu-giam-gia', icon: 'bi-ticket-perforated', label: 'Khuyến Mãi' },
-  { to: '/he-thong', icon: 'bi-gear', label: 'Hệ Thống' }
-]
+const { sidebarCollapsed } = useLayout()
+const { allowed, logout } = useAuth()
+const router = useRouter()
+
+// only the screens this role is permitted to see (vai_tro.quyen)
+const navItems = computed(() =>
+  SCREENS.filter(s => allowed.value.includes(s.key))
+    .map(s => ({ to: s.to, icon: s.icon, label: s.label, exact: s.to === '/' }))
+)
+function doLogout() { logout(); router.push('/login') }
 </script>
 
 <template>
@@ -32,10 +35,10 @@ const navItems = [
       </router-link>
     </nav>
 
-    <router-link to="/login" class="nav-link-item logout-link" active-class="active" :title="sidebarCollapsed ? 'Đăng Nhập' : undefined">
+    <a href="#" class="nav-link-item logout-link" @click.prevent="doLogout" :title="sidebarCollapsed ? 'Đăng xuất' : undefined">
       <i class="bi bi-box-arrow-right"></i>
-      <span class="nav-label">Đăng Nhập</span>
-    </router-link>
+      <span class="nav-label">Đăng xuất</span>
+    </a>
   </aside>
 </template>
 

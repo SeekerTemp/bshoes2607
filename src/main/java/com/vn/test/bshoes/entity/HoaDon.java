@@ -45,6 +45,9 @@ public class HoaDon {
     @Column(name = "tong_tien_phai_tra")
     private BigDecimal tongTienPhaiTra;
 
+    @Column(name = "phi_ship")
+    private BigDecimal phiShip;
+
     @Nationalized
     @Column(name = "ten_nguoi_nhan", length = 100)
     private String tenNguoiNhan;

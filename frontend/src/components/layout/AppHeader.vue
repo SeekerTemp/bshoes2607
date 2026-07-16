@@ -1,6 +1,9 @@
 <script setup>
+import { RouterLink } from 'vue-router'
 import { useLayout } from '../../composables/useLayout'
+import { useAuth } from '../../composables/useAuth'
 const { toggleSidebar } = useLayout()
+const { user } = useAuth()
 </script>
 
 <template>
@@ -15,9 +18,15 @@ const { toggleSidebar } = useLayout()
       </div>
     </div>
 
-    <div class="user-chip d-flex align-items-center gap-2">
-      <i class="bi bi-person-circle"></i>
-      <span>admin</span>
+    <div class="d-flex align-items-center gap-2">
+      <RouterLink to="/home" class="store-link d-none d-sm-inline-flex align-items-center gap-1" title="Xem cửa hàng">
+        <i class="bi bi-shop"></i> <span>Xem cửa hàng</span>
+      </RouterLink>
+      <div class="user-chip d-flex align-items-center gap-2">
+        <i class="bi bi-person-circle"></i>
+        <span>{{ user?.ten || 'Khách' }}</span>
+        <span v-if="user?.vaiTro" class="badge bg-light text-dark ms-1">{{ user.vaiTro }}</span>
+      </div>
     </div>
   </header>
 </template>
@@ -68,4 +77,15 @@ const { toggleSidebar } = useLayout()
 .user-chip i {
   font-size: 1rem;
 }
+
+.store-link {
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.82rem;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  transition: background-color var(--transition);
+}
+.store-link:hover { background: rgba(255, 255, 255, 0.22); }
 </style>

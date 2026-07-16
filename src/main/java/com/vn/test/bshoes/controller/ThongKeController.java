@@ -1,7 +1,12 @@
 package com.vn.test.bshoes.controller;
 
 import com.vn.test.bshoes.dto.ThongKeDoanhThuDto;
+import com.vn.test.bshoes.dto.ThongKeDongTienDto;
+import com.vn.test.bshoes.dto.ThongKeRetentionDto;
+import com.vn.test.bshoes.dto.ThongKeRoiDto;
 import com.vn.test.bshoes.dto.ThongKeSanPhamDto;
+import com.vn.test.bshoes.dto.ThongKeTongQuanDto;
+import com.vn.test.bshoes.dto.ThongKeTrendingDto;
 import com.vn.test.bshoes.service.ThongKeService;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,5 +53,35 @@ public class ThongKeController {
     @GetMapping("/nam")
     public List<Integer> loatNam() {
         return service.loatNam();
+    }
+
+    /** Dashboard summary tiles (revenue, profit, order counts by status, units sold). */
+    @GetMapping("/tong-quan")
+    public ThongKeTongQuanDto tongQuan() {
+        return service.tongQuan();
+    }
+
+    /** Monthly cash flow for a year: doanh thu / giá vốn / lợi nhuận. */
+    @GetMapping("/dong-tien")
+    public List<ThongKeDongTienDto> dongTien(@RequestParam int nam) {
+        return service.dongTien(nam);
+    }
+
+    /** ROI per product (top 8). */
+    @GetMapping("/roi")
+    public List<ThongKeRoiDto> roiSanPham() {
+        return service.roiSanPham();
+    }
+
+    /** Customer retention (returning vs new). */
+    @GetMapping("/retention")
+    public ThongKeRetentionDto retention() {
+        return service.retention();
+    }
+
+    /** Trending products: growth vs prior year. */
+    @GetMapping("/trending")
+    public List<ThongKeTrendingDto> trending(@RequestParam int nam) {
+        return service.trending(nam);
     }
 }

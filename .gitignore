@@ -35,3 +35,8 @@ build/
 ### Project reference / raw assets (not needed in repo) ###
 /frontend/refui/
 /images/
+
+### JVM crash dumps + local backups ###
+hs_err_pid*.log
+replay_pid*.log
+*.orig.bak

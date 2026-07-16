@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 public interface KichCoRepository extends JpaRepository<KichCo, Integer> {
 
     @Query(value = "select * from kich_co where ten_kich_co = ?1", nativeQuery = true)
-    KichCo findByTen(String ten);
+    KichCo findByTenKichCo(String tenKichCo);
 
     @Modifying
     @Transactional

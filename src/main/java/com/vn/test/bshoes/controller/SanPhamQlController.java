@@ -37,6 +37,12 @@ public class SanPhamQlController {
     @PostMapping("/restore/{ma}")
     public void restore(@PathVariable String ma) { service.restore(ma); }
 
+    /** Assign a product to a category (idLoai omitted → remove from category). */
+    @PutMapping("/{id}/danh-muc")
+    public SanPhamDto setDanhMuc(@PathVariable int id, @RequestParam(required = false) Integer idLoai) {
+        return service.setDanhMuc(id, idLoai);
+    }
+
     @DeleteMapping("/soft/{ma}")
     public void softDelete(@PathVariable String ma) { service.softDelete(ma); }
 }

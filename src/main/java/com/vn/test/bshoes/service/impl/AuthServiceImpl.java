@@ -20,11 +20,14 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponse login(String taiKhoan, String matKhau) {
         NhanVien n = nhanVienRepository.findByTaiKhoanAndMatKhau(taiKhoan, matKhau);
         if (n == null) return null;
+        var vt = n.getIdVaiTro();
         return new LoginResponse(
                 n.getId(),
                 n.getMaNhanVien(),
                 n.getTenNhanVien(),
-                n.getIdVaiTro() != null ? n.getIdVaiTro().getTenVaiTro() : null
+                vt != null ? vt.getTenVaiTro() : null,
+                vt != null ? vt.getId() : null,
+                vt != null ? vt.getQuyen() : null
         );
     }
 }

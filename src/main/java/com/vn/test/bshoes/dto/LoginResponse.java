@@ -12,4 +12,6 @@ public class LoginResponse {
     private String ma;
     private String ten;
     private String vaiTro;
+    private Integer idVaiTro;
+    private String quyen;    // CSV of allowed screen keys; '*' = all
 }

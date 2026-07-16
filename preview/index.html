@@ -3,65 +3,331 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Thống kê — BShoes</title>
+    <title>Thống kê & Phân tích — BShoes</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/app.css">
+    <style>
+      /* dataviz roles (validated: blue/green/magenta categorical, brand-green single-hue) */
+      .viz { --s-blue:#2a78d6; --s-green:#008300; --s-magenta:#e87ba4; --brand:#0B895A;
+             --good:#0ca30c; --bad:#d03b3b; --ink:#1f2933; --muted:#898781; --grid:#e1e0d9; }
+      body { background:#f4f6f8; }
+      .card-x { background:#fff; border:1px solid #e9edf2; border-radius:12px; box-shadow:0 1px 2px rgba(16,24,40,.05); }
+      .card-x .hd { padding:12px 16px; border-bottom:1px solid #eef1f4; font-weight:700; font-size:14px; display:flex; justify-content:space-between; align-items:center; }
+      .card-x .bd { padding:14px 16px; }
+
+      /* KPI tiles */
+      .kpi { border-left:4px solid var(--brand); }
+      .kpi .lbl { color:#6b7280; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
+      .kpi .val { font-size:22px; font-weight:800; color:#1f2933; font-variant-numeric:tabular-nums; }
+      .kpi .ic { width:38px; height:38px; border-radius:10px; background:#E7F4EF; color:var(--brand); display:flex; align-items:center; justify-content:center; font-size:18px; }
+      .delta { font-size:12px; font-weight:700; }
+      .delta.up { color:var(--good); } .delta.down { color:var(--bad); }
+
+      .btn-green { background:var(--brand); color:#fff; } .btn-green:hover { background:#0E9F67; color:#fff; }
+      .seg .btn.active { background:var(--brand); color:#fff; border-color:var(--brand); }
+
+      .legend { display:flex; gap:14px; font-size:12px; color:#52514e; }
+      .legend i { width:10px; height:10px; border-radius:2px; display:inline-block; margin-right:5px; vertical-align:middle; }
+
+      table.mini { font-size:13px; } table.mini td, table.mini th { padding:6px 4px; }
+      .rank { width:22px; height:22px; border-radius:6px; background:#eef1f4; color:#556; font-weight:700; font-size:12px; display:inline-flex; align-items:center; justify-content:center; }
+      .thumb-sm { width:34px; height:34px; object-fit:contain; background:#f5f7fa; border-radius:6px; }
+      .bar-mini { height:6px; border-radius:999px; background:#eef1f4; overflow:hidden; }
+      .bar-mini > span { display:block; height:100%; background:var(--brand); }
+      .up-pill { color:var(--good); font-weight:700; font-size:12px; } .down-pill { color:var(--bad); font-weight:700; font-size:12px; }
+      .feat-card { border:1px solid #eef1f4; border-radius:10px; overflow:hidden; }
+      .feat-card .ph { aspect-ratio:16/10; background:#f5f7fa; display:flex; align-items:center; justify-content:center; position:relative; }
+      .feat-card .ph img { width:78%; height:78%; object-fit:contain; }
+      .feat-card .soon { position:absolute; top:8px; left:8px; background:#E8A317; color:#fff; font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; }
+    </style>
 </head>
 <body>
     <header id="app-header" class="app-header d-flex align-items-center px-3"></header>
     <div class="app-shell">
         <nav id="app-sidebar" class="app-sidebar"></nav>
-        <main class="app-content">
-            <div id="app">
-                <h4 class="mb-3">Thống kê doanh thu</h4>
-                <div class="row g-3 mb-4">
-                    <div class="col" v-for="c in cards" :key="c.label">
-                        <div class="card card-stat shadow-sm"><div class="card-body">
-                            <div class="text-muted small">{{ c.label }}</div>
-                            <div class="fs-4 fw-bold">{{ c.value }}</div>
-                        </div></div>
-                    </div>
+        <main class="app-content viz">
+          <div id="app">
+            <!-- header -->
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+              <div>
+                <h4 class="mb-0 fw-bold">Thống kê &amp; Phân tích</h4>
+                <div class="text-muted small">Tổng quan hiệu quả kinh doanh cửa hàng giày</div>
+              </div>
+              <div class="d-flex gap-2">
+                <div class="btn-group seg">
+                  <button class="btn btn-sm btn-outline-secondary" :class="{active:range==='m'}" @click="range='m'">Tháng</button>
+                  <button class="btn btn-sm btn-outline-secondary" :class="{active:range==='q'}" @click="range='q'">Quý</button>
+                  <button class="btn btn-sm btn-outline-secondary" :class="{active:range==='y'}" @click="range='y'">Năm</button>
                 </div>
-                <h5 class="mb-2">Sản phẩm bán chạy</h5>
-                <table class="table table-striped bg-white">
-                    <thead><tr>
-                        <th>Mã SP</th><th>Tên</th><th>Loại</th><th>Chất liệu</th><th>Màu</th>
-                        <th>Size</th><th class="text-end">Tồn</th><th class="text-end">Đã bán</th><th class="text-end">Doanh thu</th>
-                    </tr></thead>
-                    <tbody>
-                        <tr v-for="p in sanPham" :key="p.maSP">
-                            <td>{{ p.maSP }}</td><td>{{ p.tenSP }}</td><td>{{ p.loaiSP }}</td>
-                            <td>{{ p.chatLieu }}</td><td>{{ p.mauSac }}</td><td>{{ p.kichThuoc }}</td>
-                            <td class="text-end">{{ p.soLuongTon }}</td><td class="text-end">{{ p.soLuongBan }}</td>
-                            <td class="text-end">{{ vnd(p.doanhThu) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <button class="btn btn-sm btn-green" @click="exportExcel"><i class="bi bi-file-earmark-excel"></i> Xuất Excel</button>
+              </div>
             </div>
+
+            <!-- KPI row -->
+            <div class="row g-3 mb-3">
+              <div class="col-6 col-lg-2" v-for="k in kpis" :key="k.lbl">
+                <div class="card-x kpi h-100"><div class="bd d-flex align-items-start gap-2">
+                  <div class="ic"><i class="bi" :class="k.icon"></i></div>
+                  <div class="flex-grow-1">
+                    <div class="lbl">{{ k.lbl }}</div>
+                    <div class="val">{{ k.val }}</div>
+                    <div class="delta" :class="k.dir">
+                      <i class="bi" :class="k.dir==='up'?'bi-arrow-up-right':'bi-arrow-down-right'"></i> {{ k.delta }}
+                    </div>
+                  </div>
+                </div></div>
+              </div>
+            </div>
+
+            <!-- cash flow + retention -->
+            <div class="row g-3 mb-3">
+              <div class="col-lg-8">
+                <div class="card-x h-100">
+                  <div class="hd">
+                    <span><i class="bi bi-graph-up-arrow text-success"></i> Dòng tiền theo tháng</span>
+                    <div class="legend">
+                      <span><i style="background:#2a78d6"></i>Doanh thu</span>
+                      <span><i style="background:#e87ba4"></i>Giá vốn</span>
+                      <span><i style="background:#008300"></i>Lợi nhuận</span>
+                    </div>
+                  </div>
+                  <div class="bd"><canvas id="cashflow" height="110"></canvas></div>
+                </div>
+              </div>
+              <div class="col-lg-4">
+                <div class="card-x h-100">
+                  <div class="hd"><span><i class="bi bi-arrow-repeat text-success"></i> Giữ chân khách hàng</span></div>
+                  <div class="bd text-center">
+                    <canvas id="retention" height="150"></canvas>
+                    <div class="mt-2">
+                      <div class="d-flex justify-content-around">
+                        <div><div class="fw-bold fs-5" style="color:#008300">62%</div><div class="small text-muted">Khách quay lại</div></div>
+                        <div><div class="fw-bold fs-5" style="color:#2a78d6">38%</div><div class="small text-muted">Khách mới</div></div>
+                      </div>
+                      <div class="small text-muted mt-2">Tỷ lệ mua lại trong 90 ngày</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ROI + category revenue -->
+            <div class="row g-3 mb-3">
+              <div class="col-lg-6">
+                <div class="card-x h-100">
+                  <div class="hd"><span><i class="bi bi-percent text-success"></i> ROI theo sản phẩm</span><span class="small text-muted">Lợi nhuận / giá vốn</span></div>
+                  <div class="bd"><canvas id="roi" height="150"></canvas></div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="card-x h-100">
+                  <div class="hd"><span><i class="bi bi-bar-chart text-success"></i> Doanh thu theo danh mục</span></div>
+                  <div class="bd"><canvas id="cat" height="150"></canvas></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- best / worst / trending -->
+            <div class="row g-3 mb-3">
+              <div class="col-lg-4">
+                <div class="card-x h-100">
+                  <div class="hd"><span><i class="bi bi-trophy text-warning"></i> Bán chạy nhất</span></div>
+                  <div class="bd">
+                    <table class="table table-borderless mini mb-0">
+                      <tbody>
+                        <tr v-for="(p,i) in best" :key="p.ten">
+                          <td style="width:26px"><span class="rank">{{ i+1 }}</span></td>
+                          <td><img class="thumb-sm" :src="p.img"></td>
+                          <td><div class="fw-semibold">{{ p.ten }}</div><div class="bar-mini"><span :style="{width:p.pct+'%'}"></span></div></td>
+                          <td class="text-end fw-semibold">{{ p.ban }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-4">
+                <div class="card-x h-100">
+                  <div class="hd"><span><i class="bi bi-arrow-down-circle text-danger"></i> Bán chậm nhất</span></div>
+                  <div class="bd">
+                    <table class="table table-borderless mini mb-0">
+                      <tbody>
+                        <tr v-for="(p,i) in worst" :key="p.ten">
+                          <td style="width:26px"><span class="rank">{{ i+1 }}</span></td>
+                          <td><img class="thumb-sm" :src="p.img"></td>
+                          <td><div class="fw-semibold">{{ p.ten }}</div><div class="small text-muted">Tồn {{ p.ton }} · {{ p.ngay }} ngày</div></td>
+                          <td class="text-end fw-semibold">{{ p.ban }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-4">
+                <div class="card-x h-100">
+                  <div class="hd"><span><i class="bi bi-fire text-danger"></i> Đang lên xu hướng</span></div>
+                  <div class="bd">
+                    <table class="table table-borderless mini mb-0">
+                      <tbody>
+                        <tr v-for="p in trending" :key="p.ten">
+                          <td><img class="thumb-sm" :src="p.img"></td>
+                          <td><div class="fw-semibold">{{ p.ten }}</div><div class="small text-muted">{{ p.brand }}</div></td>
+                          <td class="text-end"><span class="up-pill"><i class="bi bi-graph-up-arrow"></i> +{{ p.growth }}%</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- featured / upcoming -->
+            <div class="card-x mb-4">
+              <div class="hd"><span><i class="bi bi-stars text-warning"></i> Sản phẩm nổi bật &amp; sắp ra mắt</span><a href="san-pham.html" class="small text-decoration-none" style="color:var(--brand)">Quản lý sản phẩm →</a></div>
+              <div class="bd">
+                <div class="row row-cols-2 row-cols-md-4 g-3">
+                  <div class="col" v-for="f in featured" :key="f.ten">
+                    <div class="feat-card h-100">
+                      <div class="ph"><span class="soon" v-if="f.soon">{{ f.soon }}</span><img :src="f.img"></div>
+                      <div class="p-2">
+                        <div class="small text-muted">{{ f.brand }}</div>
+                        <div class="fw-semibold" style="font-size:13.5px">{{ f.ten }}</div>
+                        <div class="fw-bold" style="color:var(--brand)">{{ f.gia }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </main>
     </div>
+
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script src="assets/shell.js"></script>
     <script>renderShell('dashboard');</script>
     <script>
-Vue.createApp({
-    data() { return {
-        cards: [
-            { label: 'Doanh thu tháng', value: '128.500.000 ₫' },
-            { label: 'Số đơn', value: 342 },
-            { label: 'Đơn thành công', value: 310 },
-            { label: 'Đơn chờ', value: 18 },
-            { label: 'Đơn huỷ', value: 14 },
-        ],
-        sanPham: [
-            { maSP:'SP1', tenSP:'Nike Air Zoom', loaiSP:'Thể thao', chatLieu:'Vải', mauSac:'Đen', kichThuoc:'42', soLuongTon:35, soLuongBan:120, doanhThu:240000000 },
-            { maSP:'SP2', tenSP:'Adidas Ultraboost', loaiSP:'Chạy bộ', chatLieu:'Primeknit', mauSac:'Trắng', kichThuoc:'41', soLuongTon:22, soLuongBan:98, doanhThu:196000000 },
-            { maSP:'SP3', tenSP:'Converse Classic', loaiSP:'Lifestyle', chatLieu:'Canvas', mauSac:'Đỏ', kichThuoc:'40', soLuongTon:60, soLuongBan:75, doanhThu:90000000 },
-        ]
-    }; },
-    methods: { vnd(n){ return (n||0).toLocaleString('vi-VN') + ' ₫'; } }
-}).mount('#app');
+    const IMG = n => '../images/_sport_shoes/img_shoe_' + n + '.png';
+    const vnd = n => (n||0).toLocaleString('vi-VN') + ' ₫';
+    const GRID = '#e1e0d9', MUTED = '#898781';
+
+    Vue.createApp({
+      data() {
+        return {
+          range: 'y',
+          kpis: [
+            { lbl:'Doanh thu',  val:'1,82 tỷ', delta:'12,4%', dir:'up',   icon:'bi-cash-stack' },
+            { lbl:'Lợi nhuận',  val:'642 tr',  delta:'9,1%',  dir:'up',   icon:'bi-graph-up' },
+            { lbl:'Đơn hàng',   val:'1.284',   delta:'6,2%',  dir:'up',   icon:'bi-receipt' },
+            { lbl:'Khách hàng', val:'537',     delta:'4,8%',  dir:'up',   icon:'bi-people' },
+            { lbl:'Giữ chân',   val:'62%',     delta:'3,0%',  dir:'up',   icon:'bi-arrow-repeat' },
+            { lbl:'Đơn TB',     val:'1,42 tr', delta:'1,3%',  dir:'down', icon:'bi-bag-check' },
+          ],
+          best: [
+            { ten:'Nike Air Zoom',     ban:340, pct:100, img:IMG('10007') },
+            { ten:'Adidas Ultraboost', ban:298, pct:88,  img:IMG('10008') },
+            { ten:'Vans Old Skool',    ban:265, pct:78,  img:IMG('10016') },
+            { ten:'Puma Suede',        ban:210, pct:62,  img:IMG('10015') },
+            { ten:'Reebok Classic',    ban:188, pct:55,  img:IMG('10012') },
+          ],
+          worst: [
+            { ten:'Dép Gucci cao cấp', ban:12, ton:120, ngay:96, img:IMG('10010') },
+            { ten:'Giày tây Vans',     ban:19, ton:88,  ngay:74, img:IMG('10011') },
+            { ten:'Sandal Puma da',    ban:24, ton:76,  ngay:61, img:IMG('10009') },
+            { ten:'Giày da công sở',   ban:31, ton:54,  ngay:48, img:IMG('10002') },
+          ],
+          trending: [
+            { ten:'Nike Air Max', brand:'Nike',   growth:48, img:IMG('10013') },
+            { ten:'Adidas Boost', brand:'Adidas', growth:36, img:IMG('10014') },
+            { ten:'Puma RS-X',    brand:'Puma',   growth:29, img:IMG('10009') },
+            { ten:'Vans SK8-Hi',  brand:'Vans',   growth:22, img:IMG('10011') },
+          ],
+          featured: [
+            { ten:'Nike Pegasus 41', brand:'Nike',   gia:'2.190.000 ₫', soon:'', img:IMG('10001') },
+            { ten:'Adidas Samba OG', brand:'Adidas', gia:'2.450.000 ₫', soon:'', img:IMG('10008') },
+            { ten:'Nike Vaporfly 3', brand:'Nike',   gia:'—', soon:'Sắp ra mắt · 08/2026', img:IMG('10013') },
+            { ten:'Puma Deviate 3',  brand:'Puma',   gia:'—', soon:'Sắp ra mắt · 09/2026', img:IMG('10015') },
+          ],
+        };
+      },
+      mounted() { this.$nextTick(this.drawCharts); },
+      methods: {
+        drawCharts() {
+          const money = v => (v/1e6).toLocaleString('vi-VN') + 'tr';
+          const baseScales = {
+            x: { grid:{ display:false }, border:{ display:false }, ticks:{ color:MUTED, font:{ size:11 } } },
+            y: { grid:{ color:GRID }, border:{ display:false }, ticks:{ color:MUTED, font:{ size:11 }, callback:money } },
+          };
+          const months = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
+          const rev  = [98,112,120,135,148,160,171,182,190,205,220,236].map(x=>x*1e6);
+          const cost = rev.map(v=>Math.round(v*0.63));
+          const prof = rev.map((v,i)=>v-cost[i]);
+
+          // 1) Cash flow — one axis (all VND), 3 series, legend in header + tooltip
+          new Chart(document.getElementById('cashflow'), {
+            type:'line',
+            data:{ labels:months, datasets:[
+              { label:'Doanh thu', data:rev,  borderColor:'#2a78d6', backgroundColor:'rgba(42,120,214,.10)', borderWidth:2, fill:true,  tension:.35, pointRadius:0, pointHoverRadius:5 },
+              { label:'Giá vốn',   data:cost, borderColor:'#e87ba4', backgroundColor:'transparent',          borderWidth:2, fill:false, tension:.35, pointRadius:0, pointHoverRadius:5, borderDash:[5,4] },
+              { label:'Lợi nhuận', data:prof, borderColor:'#008300', backgroundColor:'rgba(0,131,0,.08)',    borderWidth:2, fill:true,  tension:.35, pointRadius:0, pointHoverRadius:5 },
+            ]},
+            options:{ responsive:true, maintainAspectRatio:false, interaction:{ mode:'index', intersect:false },
+              plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c=>c.dataset.label+': '+vnd(c.raw) } } },
+              scales: baseScales }
+          });
+
+          // 2) Retention doughnut — 2 slices, labelled
+          new Chart(document.getElementById('retention'), {
+            type:'doughnut',
+            data:{ labels:['Khách quay lại','Khách mới'], datasets:[{ data:[62,38], backgroundColor:['#008300','#2a78d6'], borderWidth:2, borderColor:'#fff' }]},
+            options:{ responsive:true, maintainAspectRatio:false, cutout:'64%',
+              plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c=>c.label+': '+c.raw+'%' } } } }
+          });
+
+          // 3) ROI — horizontal bar, single hue (brand green)
+          const roi = [
+            { t:'Nike Air Zoom', v:67 }, { t:'Reebok Classic', v:58 }, { t:'Vans Old Skool', v:52 },
+            { t:'Puma Suede', v:44 }, { t:'Adidas Ultraboost', v:39 }, { t:'Sandal Puma', v:28 },
+          ].sort((a,b)=>b.v-a.v);
+          new Chart(document.getElementById('roi'), {
+            type:'bar',
+            data:{ labels:roi.map(r=>r.t), datasets:[{ data:roi.map(r=>r.v), backgroundColor:'#0B895A', borderRadius:4, barPercentage:.7 }]},
+            options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+              plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c=>'ROI '+c.raw+'%' } } },
+              scales:{ x:{ grid:{ color:GRID }, border:{ display:false }, ticks:{ color:MUTED, callback:v=>v+'%' } },
+                       y:{ grid:{ display:false }, border:{ display:false }, ticks:{ color:'#52514e', font:{ size:12 } } } } }
+          });
+
+          // 4) Category revenue — vertical bar, single hue
+          const cats = ['Thể thao','Giày da','Sandal','Dép','Giày tây','Chạy bộ'];
+          const crev = [520,310,180,140,240,360].map(x=>x*1e6);
+          new Chart(document.getElementById('cat'), {
+            type:'bar',
+            data:{ labels:cats, datasets:[{ data:crev, backgroundColor:'#0B895A', borderRadius:4, barPercentage:.65 }]},
+            options:{ responsive:true, maintainAspectRatio:false,
+              plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c=>vnd(c.raw) } } }, scales: baseScales }
+          });
+        },
+        exportExcel() {
+          // client-side .xls (Excel opens an HTML table) — the real app would stream a POI .xlsx
+          const rows = this.best.map((p,i)=>`<tr><td>${i+1}</td><td>${p.ten}</td><td>${p.ban}</td></tr>`).join('');
+          const kpi = this.kpis.map(k=>`<tr><td>${k.lbl}</td><td>${k.val}</td><td>${k.delta}</td></tr>`).join('');
+          const html = `<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body>
+            <h3>BShoes — Thống kê</h3>
+            <table border=1><tr><th>Chỉ số</th><th>Giá trị</th><th>Thay đổi</th></tr>${kpi}</table><br>
+            <table border=1><tr><th>#</th><th>Sản phẩm bán chạy</th><th>Đã bán</th></tr>${rows}</table>
+            </body></html>`;
+          const blob = new Blob([html], { type:'application/vnd.ms-excel' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'BShoes-ThongKe.xls';
+          a.click(); URL.revokeObjectURL(a.href);
+        }
+      }
+    }).mount('#app');
     </script>
 </body>
 </html>

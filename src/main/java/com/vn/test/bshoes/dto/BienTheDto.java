@@ -15,7 +15,8 @@ public class BienTheDto {
     private String mau;
     private String size;
     private Integer ton;
-    private BigDecimal gia;
+    private BigDecimal gia;       // giá bán (don_gia)
+    private BigDecimal giaNhap;   // giá vốn (cost)
     private String imageUrl;
     private Boolean trangThai;
 }

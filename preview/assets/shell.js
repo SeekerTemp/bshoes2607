@@ -6,6 +6,7 @@ function renderShell(active) {
     ['nhan-vien.html', 'nhanvien', 'Nhân Viên'],
     ['khach-hang.html', 'khachhang', 'Khách Hàng'],
     ['lich-su.html', 'lichsu', 'Lịch Sử'],
+    ['bao-hanh.html', 'baohanh', 'Bảo Hành'],
     ['phieu-giam-gia.html', 'phieu', 'Khuyến Mãi'],
     ['he-thong.html', 'hethong', 'Hệ Thống'],
     ['login.html', 'login', 'Đăng Nhập'],
@@ -13,7 +14,8 @@ function renderShell(active) {
   var header = document.getElementById('app-header');
   if (header) {
     header.innerHTML = '<span class="fs-4 fw-bold text-white">BShoes</span>' +
-      '<span class="ms-2 text-white-50">Quản lý cửa hàng giày</span>';
+      '<span class="ms-2 text-white-50">Quản lý cửa hàng giày</span>' +
+      '<a href="home.html" class="ms-auto text-white text-decoration-none small">Xem cửa hàng ↗</a>';
   }
   var side = document.getElementById('app-sidebar');
   if (side) {

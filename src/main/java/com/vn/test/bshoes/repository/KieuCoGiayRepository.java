@@ -10,9 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 public interface KieuCoGiayRepository extends JpaRepository<KieuCoGiay, Integer> {
 
-    @Query(value = "select * from kieu_co_giay where ten_co_giay = ?1", nativeQuery = true)
-    KieuCoGiay findByTen(String ten);
-
     @Modifying
     @Transactional
     @Query(value = "UPDATE kieu_co_giay SET ma_co_giay = ?1 WHERE id_kieu_co_giay = ?2", nativeQuery = true)

@@ -11,6 +11,7 @@ public interface SanPhamQlService {
     List<SanPhamDto> search(String keyword);
     SanPhamDto create(SanPhamDto dto);
     SanPhamDto update(SanPhamDto dto);
+    SanPhamDto setDanhMuc(int idSanPham, Integer idLoai);
     void softDelete(String ma);
     void restore(String ma);
 }

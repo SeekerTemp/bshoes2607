@@ -26,5 +26,5 @@ export function useLichSu() {
     )
   })
 
-  return { rows, keyword, trangThai, filtered }
+  return { rows, keyword, trangThai, filtered, load }
 }

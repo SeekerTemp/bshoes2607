@@ -55,6 +55,12 @@ public class SanPhamQlServiceImpl implements SanPhamQlService {
 
     @Override
     @Transactional
+    public SanPhamDto setDanhMuc(int idSanPham, Integer idLoai) {
+        return sanPhamService.setDanhMuc(idSanPham, idLoai);
+    }
+
+    @Override
+    @Transactional
     public void softDelete(String ma) {
         sanPhamService.softDelete(ma);
     }
