@@ -16,6 +16,9 @@ public interface SanPhamChiTietService {
     BienTheDto nhapKho(int id, int soLuong);
     void softDelete(int id);
 
+    /** Storefront listing — includes out-of-stock variants so khách có thể đặt trước. */
+    List<PosSanPhamDto> storeProducts();
+
     /** Look up one variant by its business code (for QR/barcode scan at POS). Cart-friendly shape. */
     PosSanPhamDto findPosByMa(String ma);
 }

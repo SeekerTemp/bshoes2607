@@ -7,6 +7,7 @@ export const SCREENS = [
   { key: 'thuoc-tinh', label: 'Thuộc Tính', icon: 'bi-tags', to: '/thuoc-tinh' },
   { key: 'hoa-don', label: 'Bán Hàng', icon: 'bi-cart', to: '/hoa-don' },
   { key: 'don-hang', label: 'Giao Hàng', icon: 'bi-truck', to: '/don-hang' },
+  { key: 'dat-truoc', label: 'Đặt Trước', icon: 'bi-bookmark-star', to: '/dat-truoc' },
   { key: 'nhan-vien', label: 'Nhân Viên', icon: 'bi-people', to: '/nhan-vien' },
   { key: 'khach-hang', label: 'Khách Hàng', icon: 'bi-person-badge', to: '/khach-hang' },
   { key: 'lich-su', label: 'Lịch Sử', icon: 'bi-clock-history', to: '/lich-su' },

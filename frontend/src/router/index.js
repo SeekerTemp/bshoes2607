@@ -13,6 +13,7 @@ const routes = [
   { path: '/khach-hang', name: 'khach-hang', component: () => import('../views/KhachHangView.vue') },
   { path: '/hoa-don', name: 'hoa-don', component: () => import('../views/HoaDonView.vue') },
   { path: '/don-hang', name: 'don-hang', component: () => import('../views/DonHangView.vue') },
+  { path: '/dat-truoc', name: 'dat-truoc', component: () => import('../views/DatTruocView.vue') },
   { path: '/lich-su', name: 'lich-su', component: () => import('../views/LichSuView.vue') },
   { path: '/bao-hanh', name: 'bao-hanh', component: () => import('../views/BaoHanhView.vue') },
   { path: '/phieu-giam-gia', name: 'phieu-giam-gia', component: () => import('../views/PhieuGiamGiaView.vue') },

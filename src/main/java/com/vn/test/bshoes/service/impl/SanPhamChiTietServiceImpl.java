@@ -124,13 +124,7 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
         repo.save(v);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public PosSanPhamDto findPosByMa(String ma) {
-        SanPhamChiTiet v = repo.findByMaSanPhamChiTiet(ma);
-        if (v == null) {
-            return null;
-        }
+    private PosSanPhamDto toPos(SanPhamChiTiet v) {
         PosSanPhamDto dto = new PosSanPhamDto();
         dto.setId(v.getId());
         dto.setTen(v.getIdSanPham() != null ? v.getIdSanPham().getTenSanPham() : null);
@@ -140,5 +134,18 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
         dto.setGia(v.getDonGia());
         dto.setImageUrl(v.getImageUrl());
         return dto;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PosSanPhamDto> storeProducts() {
+        return repo.findForStore().stream().map(this::toPos).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PosSanPhamDto findPosByMa(String ma) {
+        SanPhamChiTiet v = repo.findByMaSanPhamChiTiet(ma);
+        return v == null ? null : toPos(v);
     }
 }

@@ -430,19 +430,19 @@ insert into san_pham_chi_tiet (id_san_pham, id_kich_co, id_mau_sac, ma_san_pham_
 (1, 1, 1, 'SPCT001', 20, 200000, 120000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10001.png'),
 (2, 2, 2, 'SPCT002', 30, 250000, 150000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10002.png'),
 (3, 3, 3, 'SPCT003', 25, 320000, 190000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10003.png'),
-(4, 4, 4, 'SPCT004', 15, 350000, 210000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10004.png'),
+(4, 4, 4, 'SPCT004',  0, 350000, 210000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10004.png'),  -- hết hàng → demo đặt trước
 (5, 5, 5, 'SPCT005', 40, 400000, 240000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10005.png'),
-(6, 6, 6, 'SPCT006', 10, 450000, 270000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10006.png');
+(6, 6, 6, 'SPCT006',  0, 450000, 270000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10006.png');  -- hết hàng → demo đặt trước
 go
 
 -- 2.12 vai_tro  (quyen = CSV of allowed screen keys; '*' = tất cả)
 insert into vai_tro (ma_vai_tro, ten_vai_tro, quyen, trang_thai, trang_thai_xoa) values
 ('ADMIN', N'Quản trị', '*', 1, 0),
-('QL', N'Quản lý', 'dashboard,san-pham,danh-muc,thuoc-tinh,hoa-don,don-hang,nhan-vien,khach-hang,lich-su,bao-hanh,phieu-giam-gia,he-thong', 1, 0),
-('NV', N'Nhân viên bán hàng', 'dashboard,hoa-don,don-hang,bao-hanh', 1, 0),
+('QL', N'Quản lý', 'dashboard,san-pham,danh-muc,thuoc-tinh,hoa-don,don-hang,dat-truoc,nhan-vien,khach-hang,lich-su,bao-hanh,phieu-giam-gia,he-thong', 1, 0),
+('NV', N'Nhân viên bán hàng', 'dashboard,hoa-don,don-hang,dat-truoc,bao-hanh', 1, 0),
 ('KT', N'Kế toán', 'dashboard,lich-su,phieu-giam-gia', 1, 0),
 ('BH', N'Bảo hành', 'bao-hanh,lich-su', 1, 0),
-('NK', N'Nhập kho', 'san-pham,danh-muc,thuoc-tinh', 1, 0);
+('NK', N'Nhập kho', 'san-pham,danh-muc,thuoc-tinh,dat-truoc', 1, 0);
 go
 
 -- 2.13 nhan_vien
@@ -735,6 +735,42 @@ create table bao_hanh (
     foreign key (id_hoa_don) references hoa_don(id_hoa_don),
     foreign key (id_nhan_vien) references nhan_vien(id_nhan_vien)
 );
+go
+
+/* ============================================================================
+   5. PRE-ORDER (dat_truoc) — khách đăng ký đặt trước biến thể đang hết hàng.
+   Quy tắc: cho đặt trước khi san_pham_chi_tiet.so_luong_ton = 0 (không đổi kiểu
+   cột trang_thai). Trạng thái xử lý nằm ở Java service như bao_hanh.
+============================================================================ */
+create table dat_truoc (
+    id_dat_truoc int identity(1,1) primary key,
+    ma_dat_truoc varchar(20) unique,
+    id_san_pham_chi_tiet int,
+    id_khach_hang int,
+    id_hoa_don int,                    -- điền khi đã chuyển thành đơn hàng
+    ten_khach_hang nvarchar(100),
+    so_dien_thoai varchar(20),
+    email varchar(100),
+    so_luong int,
+    ngay_dang_ky datetime default getdate(),
+    ngay_du_kien datetime,
+    trang_thai nvarchar(50),           -- Chờ hàng / Đã có hàng / Đã chuyển đơn / Đã hủy
+    ghi_chu nvarchar(255),
+    ngay_tao datetime default getdate(),
+    ngay_cap_nhat datetime default getdate(),
+    trang_thai_xoa bit default 0,
+    foreign key (id_san_pham_chi_tiet) references san_pham_chi_tiet(id_san_pham_chi_tiet),
+    foreign key (id_khach_hang) references khach_hang(id_khach_hang),
+    foreign key (id_hoa_don) references hoa_don(id_hoa_don)
+);
+go
+
+insert into dat_truoc (ma_dat_truoc, id_san_pham_chi_tiet, id_khach_hang, ten_khach_hang, so_dien_thoai, email, so_luong, ngay_dang_ky, ngay_du_kien, trang_thai, ghi_chu) values
+-- SPCT004 + SPCT006 đang hết hàng → 'Chờ hàng'. SPCT005 hàng đã về → 'Đã có hàng' (chuyển đơn được ngay).
+('DT0001', 6, 1, N'Nguyễn Trung Nghĩa', '0968291160', N'nghia@gmail.com', 1, '2026-07-02', '2026-08-15', N'Chờ hàng',     N'Khách hỏi size 42, báo khi có hàng'),
+('DT0002', 4, 3, N'Đặng Thị Hồng',      '0923456789', N'hongdt@gmail.com', 2, '2026-07-05', '2026-08-20', N'Chờ hàng',     N'Đặt 2 đôi cho cả nhà'),
+('DT0003', 5, 4, N'Phan Minh Tuấn',     '0956789123', N'tuanpm@gmail.com', 1, '2026-06-20', '2026-07-30', N'Đã có hàng',   N'Đã gọi báo khách, chờ tới lấy'),
+('DT0004', 5, 5, N'Trương Thị Lan',     '0919876543', N'lantr@gmail.com', 1, '2026-06-10', '2026-07-10', N'Đã hủy',       N'Khách đổi ý');
 go
 
 insert into bao_hanh (ma_bao_hanh, id_san_pham_chi_tiet, id_khach_hang, id_hoa_don, id_nhan_vien, serial, mo_ta_loi, loai_yeu_cau, don_vi_bao_hanh, chi_phi, thay_linh_kien, ngay_bat_dau, ngay_ket_thuc, trang_thai) values

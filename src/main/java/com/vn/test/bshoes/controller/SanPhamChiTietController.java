@@ -21,6 +21,10 @@ public class SanPhamChiTietController {
     @GetMapping("/available")
     public List<BienTheDto> findAvailable() { return service.findAvailable(); }
 
+    /** Storefront catalogue — out-of-stock variants included (hiện nút "Đặt trước"). */
+    @GetMapping("/store")
+    public List<PosSanPhamDto> storeProducts() { return service.storeProducts(); }
+
     @GetMapping("/by-product/{idSanPham}")
     public List<BienTheDto> findByProduct(@PathVariable int idSanPham) { return service.findByProduct(idSanPham); }
 

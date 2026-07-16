@@ -21,6 +21,13 @@ public interface SanPhamChiTietRepository extends JpaRepository<SanPhamChiTiet, 
     @Query("select s from SanPhamChiTiet s where s.trangThai = true and s.soLuongTon > 0")
     List<SanPhamChiTiet> findAvailable();
 
+    /**
+     * Storefront listing: every variant on sale, including the ones with no stock —
+     * those are what customers đặt trước (pre-order).
+     */
+    @Query("select s from SanPhamChiTiet s where s.trangThai = true and (s.trangThaiXoa = false or s.trangThaiXoa is null)")
+    List<SanPhamChiTiet> findForStore();
+
     SanPhamChiTiet findByMaSanPhamChiTiet(String ma);
 
     /**
