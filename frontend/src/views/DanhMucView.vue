@@ -27,6 +27,15 @@ function countIn(cat) { return products.value.filter(p => p.idLoaiSanPham === ca
 const productsInCat = computed(() => selectedCat.value ? products.value.filter(p => p.idLoaiSanPham === selectedCat.value.id) : [])
 const productsNotInCat = computed(() => selectedCat.value ? products.value.filter(p => p.idLoaiSanPham !== selectedCat.value.id) : [])
 
+// "Xem theo": Danh mục (CRUD + gán) hoặc Thương hiệu / Kiểu dáng (chỉ xem, gán ở màn Sản phẩm)
+const dim = ref('category')   // 'category' | 'thuongHieu' | 'kieuDang'
+const selectedVal = ref('')
+const dimValues = computed(() =>
+  dim.value === 'category' ? [] : [...new Set(products.value.map(p => p[dim.value]).filter(Boolean))].sort())
+function countForVal(v) { return products.value.filter(p => p[dim.value] === v).length }
+const productsForVal = computed(() => selectedVal.value ? products.value.filter(p => p[dim.value] === selectedVal.value) : [])
+function pickDim(d) { dim.value = d; selectedVal.value = ''; selectedCat.value = null }
+
 async function loadCats() { try { cats.value = await loaiSanPhamApi.findAll() } catch (e) { cats.value = [] } }
 async function loadProducts() { try { products.value = await sanPhamApi.findAll() } catch (e) { products.value = [] } }
 
@@ -86,9 +95,17 @@ onMounted(async () => { await Promise.all([loadCats(), loadProducts()]) })
 <template>
   <AppShell>
     <PageHeader title="Danh mục sản phẩm" />
+
+    <!-- Xem theo: Danh mục (quản lý) / Thương hiệu / Kiểu dáng (xem theo) -->
+    <div class="btn-group btn-group-sm mb-3">
+      <button class="btn" :class="dim === 'category' ? 'btn-success' : 'btn-outline-secondary'" @click="pickDim('category')">Danh mục</button>
+      <button class="btn" :class="dim === 'thuongHieu' ? 'btn-success' : 'btn-outline-secondary'" @click="pickDim('thuongHieu')">Thương hiệu (hãng giày)</button>
+      <button class="btn" :class="dim === 'kieuDang' ? 'btn-success' : 'btn-outline-secondary'" @click="pickDim('kieuDang')">Kiểu dáng</button>
+    </div>
+
     <div class="dm-grid">
-      <!-- ===== left: category list + form ===== -->
-      <div class="d-flex flex-column gap-3">
+      <!-- ===== left (category mode): category list + form ===== -->
+      <div v-if="dim === 'category'" class="d-flex flex-column gap-3">
         <div class="card"><div class="card-body">
           <div class="d-flex gap-2 mb-3 flex-wrap">
             <input class="form-control form-control-sm" style="max-width:180px" v-model="kw" placeholder="Tìm danh mục...">
@@ -129,8 +146,25 @@ onMounted(async () => { await Promise.all([loadCats(), loadProducts()]) })
         </div></div>
       </div>
 
-      <!-- ===== right: products in the selected category ===== -->
+      <!-- ===== left (brand/style mode): distinct values ===== -->
+      <div v-else class="card"><div class="card-body">
+        <h6 class="fw-bold mb-3">{{ dim === 'thuongHieu' ? 'Thương hiệu (hãng giày)' : 'Kiểu dáng' }}</h6>
+        <div style="max-height:520px;overflow:auto;border:1px solid #e5e9ef;border-radius:8px">
+          <table class="table table-sm table-hover align-middle mb-0 dm-table">
+            <thead><tr><th style="width:44px">STT</th><th>Tên</th><th class="text-center">SP</th></tr></thead>
+            <tbody>
+              <tr v-for="(v,i) in dimValues" :key="v" @click="selectedVal = v" style="cursor:pointer" :class="{ sel: selectedVal === v }">
+                <td>{{ i+1 }}</td><td class="fw-semibold">{{ v }}</td><td class="text-center">{{ countForVal(v) }}</td>
+              </tr>
+              <tr v-if="dimValues.length === 0"><td colspan="3" class="text-center text-muted py-4">Chưa có dữ liệu</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div></div>
+
+      <!-- ===== right: products ===== -->
       <div class="card"><div class="card-body">
+       <template v-if="dim === 'category'">
         <div v-if="!selectedCat" class="text-muted text-center py-5">
           <i class="bi bi-diagram-3 fs-1 d-block mb-2 opacity-50"></i>
           Chọn một danh mục để xếp sản phẩm vào (hiển thị ở trang chủ)
@@ -161,6 +195,28 @@ onMounted(async () => { await Promise.all([loadCats(), loadProducts()]) })
             </table>
           </div>
         </div>
+       </template>
+       <template v-else>
+        <div v-if="!selectedVal" class="text-muted text-center py-5">
+          <i class="bi bi-bookmark-star fs-1 d-block mb-2 opacity-50"></i>
+          Chọn một {{ dim === 'thuongHieu' ? 'thương hiệu' : 'kiểu dáng' }} để xem sản phẩm
+        </div>
+        <div v-else>
+          <h6 class="fw-bold mb-1">Sản phẩm — <span style="color:#0B895A">{{ selectedVal }}</span></h6>
+          <div class="text-muted small mb-3">{{ productsForVal.length }} sản phẩm · gán {{ dim === 'thuongHieu' ? 'hãng' : 'kiểu dáng' }} tại màn Sản phẩm</div>
+          <div style="max-height:460px;overflow:auto;border:1px solid #e5e9ef;border-radius:8px">
+            <table class="table table-sm table-hover align-middle mb-0 dm-table">
+              <thead><tr><th style="width:44px">STT</th><th>Mã SP</th><th>Tên sản phẩm</th><th>Danh mục</th></tr></thead>
+              <tbody>
+                <tr v-for="(p,i) in productsForVal" :key="p.id">
+                  <td>{{ i+1 }}</td><td class="fw-semibold">{{ p.ma }}</td><td>{{ p.ten }}</td><td class="text-muted">{{ p.loaiSP || '—' }}</td>
+                </tr>
+                <tr v-if="productsForVal.length === 0"><td colspan="4" class="text-center text-muted py-4">Không có sản phẩm</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+       </template>
       </div></div>
     </div>
   </AppShell>

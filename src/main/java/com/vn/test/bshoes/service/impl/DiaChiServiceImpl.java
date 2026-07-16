@@ -26,6 +26,7 @@ public class DiaChiServiceImpl implements DiaChiService {
         return new DiaChiDto(
                 e.getId(),
                 e.getIdKhachHang() != null ? e.getIdKhachHang().getId() : null,
+                e.getDiaChiMacDinh(),
                 e.getThanhPho(),
                 e.getPhuong(),
                 e.getDiaChiThem(),
@@ -52,6 +53,7 @@ public class DiaChiServiceImpl implements DiaChiService {
     @Transactional
     public DiaChiDto create(DiaChiDto dto) {
         DiaChi e = new DiaChi();
+        e.setDiaChiMacDinh(dto.getDiaChiMacDinh());
         e.setThanhPho(dto.getThanhPho());
         e.setPhuong(dto.getPhuong());
         e.setDiaChiThem(dto.getDiaChiThem());
@@ -61,6 +63,18 @@ public class DiaChiServiceImpl implements DiaChiService {
             KhachHang kh = khachHangRepository.getReferenceById(dto.getIdKhachHang());
             e.setIdKhachHang(kh);
         }
+        return toDto(repo.save(e));
+    }
+
+    @Override
+    @Transactional
+    public DiaChiDto update(int id, DiaChiDto dto) {
+        DiaChi e = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Địa chỉ không tồn tại."));
+        if (dto.getDiaChiMacDinh() != null) e.setDiaChiMacDinh(dto.getDiaChiMacDinh());
+        if (dto.getThanhPho() != null) e.setThanhPho(dto.getThanhPho());
+        if (dto.getPhuong() != null) e.setPhuong(dto.getPhuong());
+        if (dto.getDiaChiThem() != null) e.setDiaChiThem(dto.getDiaChiThem());
+        if (dto.getTrangThai() != null) e.setTrangThai(dto.getTrangThai());
         return toDto(repo.save(e));
     }
 

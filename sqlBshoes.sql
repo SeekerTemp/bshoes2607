@@ -439,7 +439,7 @@ go
 insert into vai_tro (ma_vai_tro, ten_vai_tro, quyen, trang_thai, trang_thai_xoa) values
 ('ADMIN', N'Quản trị', '*', 1, 0),
 ('QL', N'Quản lý', 'dashboard,san-pham,danh-muc,thuoc-tinh,hoa-don,don-hang,nhan-vien,khach-hang,lich-su,bao-hanh,phieu-giam-gia,he-thong', 1, 0),
-('NV', N'Nhân viên bán hàng', 'dashboard,hoa-don,don-hang,khach-hang,bao-hanh', 1, 0),
+('NV', N'Nhân viên bán hàng', 'dashboard,hoa-don,don-hang,bao-hanh', 1, 0),
 ('KT', N'Kế toán', 'dashboard,lich-su,phieu-giam-gia', 1, 0),
 ('BH', N'Bảo hành', 'bao-hanh,lich-su', 1, 0),
 ('NK', N'Nhập kho', 'san-pham,danh-muc,thuoc-tinh', 1, 0);

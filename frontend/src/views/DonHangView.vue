@@ -4,6 +4,7 @@
 import { ref, computed, onMounted } from 'vue'
 import AppShell from '../components/layout/AppShell.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
+import AddKhachHangModal from '../components/ui/AddKhachHangModal.vue'
 import { hoaDonApi } from '../api/hoaDon'
 import { useToast } from '../composables/useToast'
 import { useAuth } from '../composables/useAuth'
@@ -54,12 +55,17 @@ async function traHang(r) {
   catch (e) { notify('Không thể trả hàng', 'warning') }
 }
 async function refresh(id) { await load(); if (sel.value && sel.value.id === id) await selectRow({ id }) }
+const showAddKH = ref(false)
+function onCustomerCreated(kh) { notify('Đã thêm khách hàng: ' + (kh?.ten || ''), 'success') }
 onMounted(load)
 </script>
 
 <template>
   <AppShell>
-    <PageHeader title="Theo dõi đơn hàng &amp; giao hàng" />
+    <div class="d-flex justify-content-between align-items-center">
+      <PageHeader title="Theo dõi đơn hàng &amp; giao hàng" />
+      <button class="btn btn-sm btn-success" @click="showAddKH = true"><i class="bi bi-person-plus"></i> Thêm khách hàng</button>
+    </div>
     <div class="dh-tabs mb-2">
       <button v-for="t in tabs" :key="t.key" class="dh-tab" :class="{ active: tab === t.key }" @click="tab = t.key">
         {{ t.label }}<span class="n">{{ countFor(t) }}</span>
@@ -121,6 +127,8 @@ onMounted(load)
         </div>
       </div></div>
     </div>
+
+    <AddKhachHangModal v-model:open="showAddKH" @created="onCustomerCreated" />
   </AppShell>
 </template>
 

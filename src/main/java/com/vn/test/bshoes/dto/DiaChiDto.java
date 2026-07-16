@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 public class DiaChiDto {
     private Integer id;
     private Integer idKhachHang;
+    private String diaChiMacDinh;   // địa chỉ chính (số nhà, đường)
     private String thanhPho;
     private String phuong;
     private String diaChiThem;

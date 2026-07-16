@@ -60,6 +60,7 @@ public class SanPhamServiceImpl implements SanPhamService {
         dto.setIdLoaiSanPham(s.getIdLoaiSanPham() != null ? s.getIdLoaiSanPham().getId() : null);
         dto.setLoaiSP(s.getIdLoaiSanPham() != null ? s.getIdLoaiSanPham().getTenLoaiSanPham() : null);
         dto.setThuongHieu(s.getIdThuongHieu() != null ? s.getIdThuongHieu().getTenThuongHieu() : null);
+        dto.setKieuDang(s.getIdKieuDang() != null ? s.getIdKieuDang().getTenKieuDang() : null);
         dto.setChatLieu(s.getIdChatLieu() != null ? s.getIdChatLieu().getTenChatLieu() : null);
         dto.setGia(!bienThe.isEmpty() ? bienThe.get(0).getGia() : null);
         dto.setImageUrl(!bienThe.isEmpty() ? bienThe.get(0).getImageUrl() : null);

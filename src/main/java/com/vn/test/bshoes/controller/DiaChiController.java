@@ -28,6 +28,9 @@ public class DiaChiController {
     @PostMapping
     public DiaChiDto create(@RequestBody DiaChiDto dto) { return service.create(dto); }
 
+    @PutMapping("/{id}")
+    public DiaChiDto update(@PathVariable int id, @RequestBody DiaChiDto dto) { return service.update(id, dto); }
+
     @DeleteMapping("/{id}")
     public void delete(@PathVariable int id) { service.delete(id); }
 }

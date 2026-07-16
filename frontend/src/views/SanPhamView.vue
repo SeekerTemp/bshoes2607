@@ -31,10 +31,17 @@ const ctImgOpen = ref(false)
 
 /* ============================ TAB 1 — Sản phẩm ============================ */
 const spSearch = ref('')
+// "Xem theo": group/filter products by Danh mục / Thương hiệu (hãng) / Kiểu dáng
+const spDim = ref('all')     // 'all' | 'loaiSP' | 'thuongHieu' | 'kieuDang'
+const spDimVal = ref('')
+const spDimValues = computed(() =>
+  spDim.value === 'all' ? [] : [...new Set(filtered.value.map(p => p[spDim.value]).filter(Boolean))].sort())
+function onSpDimChange() { spDimVal.value = '' }
 const spRows = computed(() => {
   const k = spSearch.value.trim().toLowerCase()
   return filtered.value.filter(p =>
-    !k || p.ma.toLowerCase().includes(k) || p.ten.toLowerCase().includes(k))
+    (!k || p.ma.toLowerCase().includes(k) || p.ten.toLowerCase().includes(k)) &&
+    (spDim.value === 'all' || !spDimVal.value || p[spDim.value] === spDimVal.value))
 })
 function firstVariant(p) { return (p.bienThe && p.bienThe[0]) || {} }
 
@@ -139,11 +146,24 @@ async function ctAn() {
     <div v-show="tab === 'sanpham'" class="sp-grid">
       <div class="sp-master">
         <div class="card sp-panel">
-          <header class="sp-panel-head">
+          <header class="sp-panel-head flex-wrap gap-2">
             <h6 class="sp-title">SẢN PHẨM</h6>
-            <div class="input-group input-group-sm sp-search">
-              <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-              <input class="form-control" v-model="spSearch" placeholder="Tìm kiếm sản phẩm" />
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+              <span class="small text-muted">Xem theo:</span>
+              <select class="form-select form-select-sm" style="width:140px" v-model="spDim" @change="onSpDimChange">
+                <option value="all">Tất cả</option>
+                <option value="loaiSP">Danh mục</option>
+                <option value="thuongHieu">Thương hiệu</option>
+                <option value="kieuDang">Kiểu dáng</option>
+              </select>
+              <select v-if="spDim !== 'all'" class="form-select form-select-sm" style="width:150px" v-model="spDimVal">
+                <option value="">-- Tất cả --</option>
+                <option v-for="v in spDimValues" :key="v" :value="v">{{ v }}</option>
+              </select>
+              <div class="input-group input-group-sm sp-search">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input class="form-control" v-model="spSearch" placeholder="Tìm kiếm sản phẩm" />
+              </div>
             </div>
           </header>
           <div class="table-scroll" style="height: 460px">

@@ -16,7 +16,8 @@ public class SanPhamDto {
     private String ten;
     private Integer idLoaiSanPham;   // category id
     private String loaiSP;           // category name
-    private String thuongHieu;
+    private String thuongHieu;       // brand (hãng giày)
+    private String kieuDang;         // style (kiểu dáng)
     private String chatLieu;
     private BigDecimal gia;
     private String moTa;

@@ -9,5 +9,6 @@ public interface DiaChiService {
     DiaChiDto findById(int id);
     List<DiaChiDto> findByKhachHang(int idKhachHang);
     DiaChiDto create(DiaChiDto dto);
+    DiaChiDto update(int id, DiaChiDto dto);
     void delete(int id);
 }
