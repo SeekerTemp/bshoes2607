@@ -10,7 +10,8 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PosSanPhamDto {
-    private Integer id;
+    private Integer id;              // id_san_pham_chi_tiet (biến thể)
+    private Integer idSanPham;       // sản phẩm cha — storefront cần để mở trang chi tiết
     private String ten;
     private String mau;
     private String size;

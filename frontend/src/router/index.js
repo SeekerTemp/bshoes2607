@@ -6,10 +6,11 @@ const routes = [
   { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
   { path: '/home', name: 'home', component: () => import('../views/HomeView.vue') },
   { path: '/gio-hang', name: 'gio-hang', component: () => import('../views/GioHangView.vue') },
+  // chi tiết SP ở storefront (công khai). Không đụng /san-pham của màn quản trị:
+  // '/san-pham' và '/san-pham/:id' là 2 path khác nhau nên không che nhau.
+  { path: '/san-pham/:id', name: 'san-pham-detail', component: () => import('../views/SanPhamDetailView.vue') },
   { path: '/', name: 'dashboard', component: () => import('../views/DashboardView.vue') },
   { path: '/san-pham', name: 'san-pham', component: () => import('../views/SanPhamView.vue') },
-  { path: '/danh-muc', name: 'danh-muc', component: () => import('../views/DanhMucView.vue') },
-  { path: '/thuoc-tinh', name: 'thuoc-tinh', component: () => import('../views/ThuocTinhView.vue') },
   { path: '/nhan-vien', name: 'nhan-vien', component: () => import('../views/NhanVienView.vue') },
   { path: '/khach-hang', name: 'khach-hang', component: () => import('../views/KhachHangView.vue') },
   { path: '/hoa-don', name: 'hoa-don', component: () => import('../views/HoaDonView.vue') },
@@ -18,7 +19,6 @@ const routes = [
   { path: '/lich-su', name: 'lich-su', component: () => import('../views/LichSuView.vue') },
   { path: '/bao-hanh', name: 'bao-hanh', component: () => import('../views/BaoHanhView.vue') },
   { path: '/phieu-giam-gia', name: 'phieu-giam-gia', component: () => import('../views/PhieuGiamGiaView.vue') },
-  { path: '/phan-quyen', name: 'phan-quyen', component: () => import('../views/PhanQuyenView.vue') },
   { path: '/he-thong', name: 'he-thong', component: () => import('../views/HeThongView.vue') },
   { path: '/style-guide', name: 'style-guide', component: () => import('../views/StyleGuideView.vue') },
   { path: '/:pathMatch(.*)*', redirect: '/' }
@@ -26,8 +26,8 @@ const routes = [
 
 const router = createRouter({ history: createWebHistory(), routes })
 
-// Public routes bypass auth; storefront + giỏ hàng + login are open to everyone.
-const PUBLIC = ['login', 'home', 'gio-hang', 'style-guide']
+// Public routes bypass auth; storefront + chi tiết SP + giỏ hàng + login are open to everyone.
+const PUBLIC = ['login', 'home', 'gio-hang', 'san-pham-detail', 'style-guide']
 
 router.beforeEach((to) => {
   const { isAuthed, allowed } = useAuth()

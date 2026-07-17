@@ -3,11 +3,9 @@
 // Left: category CRUD. Right: the products that belong to the selected category,
 // with add / remove (assigns san_pham.id_loai_san_pham on the server).
 import { ref, computed, onMounted } from 'vue'
-import AppShell from '../components/layout/AppShell.vue'
-import PageHeader from '../components/ui/PageHeader.vue'
-import { loaiSanPhamApi } from '../api/catalog'
-import { sanPhamApi } from '../api/sanPham'
-import { useToast } from '../composables/useToast'
+import { loaiSanPhamApi } from '../../api/catalog'
+import { sanPhamApi } from '../../api/sanPham'
+import { useToast } from '../../composables/useToast'
 
 const { notify } = useToast()
 const cats = ref([])
@@ -93,8 +91,7 @@ onMounted(async () => { await Promise.all([loadCats(), loadProducts()]) })
 </script>
 
 <template>
-  <AppShell>
-    <PageHeader title="Danh mục sản phẩm" />
+  <div>
 
     <!-- Xem theo: Danh mục (quản lý) / Thương hiệu / Kiểu dáng (xem theo) -->
     <div class="btn-group btn-group-sm mb-3">
@@ -219,7 +216,7 @@ onMounted(async () => { await Promise.all([loadCats(), loadProducts()]) })
        </template>
       </div></div>
     </div>
-  </AppShell>
+  </div>
 </template>
 
 <style scoped>

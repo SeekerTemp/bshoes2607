@@ -436,13 +436,17 @@ insert into san_pham_chi_tiet (id_san_pham, id_kich_co, id_mau_sac, ma_san_pham_
 go
 
 -- 2.12 vai_tro  (quyen = CSV of allowed screen keys; '*' = tất cả)
+-- Đây chỉ là TEMPLATE: bộ quyền mặc định chép sang nhan_vien_quyen khi tạo NV / đổi
+-- vai trò. Quyền hiệu lực của từng người nằm ở bảng nhan_vien_quyen.
+-- Danh mục + Thuộc tính giờ là tab trong Sản Phẩm, Phân quyền là tab trong Nhân Viên
+-- => không còn key danh-muc / thuoc-tinh / phan-quyen.
 insert into vai_tro (ma_vai_tro, ten_vai_tro, quyen, trang_thai, trang_thai_xoa) values
 ('ADMIN', N'Quản trị', '*', 1, 0),
-('QL', N'Quản lý', 'dashboard,san-pham,danh-muc,thuoc-tinh,hoa-don,don-hang,dat-truoc,nhan-vien,khach-hang,lich-su,bao-hanh,phieu-giam-gia,he-thong', 1, 0),
+('QL', N'Quản lý', 'dashboard,san-pham,hoa-don,don-hang,dat-truoc,nhan-vien,khach-hang,lich-su,bao-hanh,phieu-giam-gia,he-thong', 1, 0),
 ('NV', N'Nhân viên bán hàng', 'dashboard,hoa-don,don-hang,dat-truoc,bao-hanh', 1, 0),
 ('KT', N'Kế toán', 'dashboard,lich-su,phieu-giam-gia', 1, 0),
 ('BH', N'Bảo hành', 'bao-hanh,lich-su', 1, 0),
-('NK', N'Nhập kho', 'san-pham,danh-muc,thuoc-tinh,dat-truoc', 1, 0);
+('NK', N'Nhập kho', 'san-pham,dat-truoc', 1, 0);
 go
 
 -- 2.13 nhan_vien
@@ -771,6 +775,32 @@ insert into dat_truoc (ma_dat_truoc, id_san_pham_chi_tiet, id_khach_hang, ten_kh
 ('DT0002', 4, 3, N'Đặng Thị Hồng',      '0923456789', N'hongdt@gmail.com', 2, '2026-07-05', '2026-08-20', N'Chờ hàng',     N'Đặt 2 đôi cho cả nhà'),
 ('DT0003', 5, 4, N'Phan Minh Tuấn',     '0956789123', N'tuanpm@gmail.com', 1, '2026-06-20', '2026-07-30', N'Đã có hàng',   N'Đã gọi báo khách, chờ tới lấy'),
 ('DT0004', 5, 5, N'Trương Thị Lan',     '0919876543', N'lantr@gmail.com', 1, '2026-06-10', '2026-07-10', N'Đã hủy',       N'Khách đổi ý');
+go
+
+/* ============================================================================
+   6. PHÂN QUYỀN THEO NHÂN VIÊN (nhan_vien_quyen)
+   1 dòng = 1 nhân viên vào được 1 màn hình. Rows là SỰ THẬT; vai_tro.quyen chỉ
+   là template để chép sang đây khi tạo NV / đổi vai trò, sau đó tick thêm/bớt
+   tự do cho từng người.
+
+   Ngoại lệ duy nhất: vai trò ADMIN (quyen = '*') tính động = tất cả màn, KHÔNG
+   đọc bảng này — để thêm màn mới về sau admin không tự khóa mình ngoài hệ thống.
+   Vì vậy NV001/003/005 (ADMIN) không cần seed dòng nào.
+============================================================================ */
+create table nhan_vien_quyen (
+    id_nhan_vien int not null,
+    man_hinh varchar(30) not null,
+    primary key (id_nhan_vien, man_hinh),
+    foreign key (id_nhan_vien) references nhan_vien(id_nhan_vien)
+);
+go
+
+-- NV002, NV004, NV006 mang vai trò NV -> chép template 'Nhân viên bán hàng'.
+-- NV002 được mở rộng thêm 'khach-hang': minh họa "template + mở rộng riêng".
+insert into nhan_vien_quyen (id_nhan_vien, man_hinh) values
+(2, 'dashboard'), (2, 'hoa-don'), (2, 'don-hang'), (2, 'dat-truoc'), (2, 'bao-hanh'), (2, 'khach-hang'),
+(4, 'dashboard'), (4, 'hoa-don'), (4, 'don-hang'), (4, 'dat-truoc'), (4, 'bao-hanh'),
+(6, 'dashboard'), (6, 'hoa-don'), (6, 'don-hang'), (6, 'dat-truoc'), (6, 'bao-hanh');
 go
 
 insert into bao_hanh (ma_bao_hanh, id_san_pham_chi_tiet, id_khach_hang, id_hoa_don, id_nhan_vien, serial, mo_ta_loi, loai_yeu_cau, don_vi_bao_hanh, chi_phi, thay_linh_kien, ngay_bat_dau, ngay_ket_thuc, trang_thai) values

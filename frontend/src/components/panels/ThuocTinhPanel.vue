@@ -3,10 +3,8 @@
 // A "Loại thuộc tính" filter (Tất cả + each of the 8 catalogs) drives the list: pick
 // a type and only that type's attributes show. Right panel is the add/edit form.
 import { ref, computed, onMounted } from 'vue'
-import AppShell from '../components/layout/AppShell.vue'
-import PageHeader from '../components/ui/PageHeader.vue'
-import { ATTR_TYPES, catalogApi } from '../api/catalog'
-import { useToast } from '../composables/useToast'
+import { ATTR_TYPES, catalogApi } from '../../api/catalog'
+import { useToast } from '../../composables/useToast'
 
 const { notify } = useToast()
 const filterKey = ref('all')          // 'all' | one of ATTR_TYPES[].key
@@ -92,8 +90,7 @@ onMounted(load)
 </script>
 
 <template>
-  <AppShell>
-    <PageHeader title="Thuộc tính sản phẩm" />
+  <div>
     <div class="tt-grid">
       <!-- list + type filter -->
       <div class="card"><div class="card-body">
@@ -155,7 +152,7 @@ onMounted(load)
         </div>
       </div></div>
     </div>
-  </AppShell>
+  </div>
 </template>
 
 <style scoped>

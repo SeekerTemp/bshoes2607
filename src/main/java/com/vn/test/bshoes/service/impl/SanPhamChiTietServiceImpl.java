@@ -127,6 +127,7 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
     private PosSanPhamDto toPos(SanPhamChiTiet v) {
         PosSanPhamDto dto = new PosSanPhamDto();
         dto.setId(v.getId());
+        dto.setIdSanPham(v.getIdSanPham() != null ? v.getIdSanPham().getId() : null);
         dto.setTen(v.getIdSanPham() != null ? v.getIdSanPham().getTenSanPham() : null);
         dto.setMau(v.getIdMauSac() != null ? v.getIdMauSac().getTenMauSac() : null);
         dto.setSize(v.getIdKichCo() != null ? v.getIdKichCo().getTenKichCo() : null);

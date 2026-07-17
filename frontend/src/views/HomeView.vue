@@ -1,11 +1,14 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { bienTheApi } from '../api/bienThe'
-import { datTruocApi } from '../api/datTruoc'
 import { useCart } from '../composables/useCart'
 import { useToast } from '../composables/useToast'
 import ToastHost from '../components/ui/ToastHost.vue'   // storefront không nằm trong AppShell nên phải tự gắn
+import DatTruocModal from '../components/ui/DatTruocModal.vue'
 import { vnd } from '../utils/format'
+
+const router = useRouter()
 
 const IMG = n => `/images/shoes/img_shoe_${n}.png`
 const activeCat = ref(0)
@@ -44,15 +47,15 @@ async function loadProducts() {
     const rows = await bienTheApi.store()
     if (rows && rows.length) {
       products.value = rows.map((p, i) => ({
-        id: p.id, ten: p.ten, brand: brandOf(p.ten), gia: p.gia, ton: p.ton ?? 0,
+        id: p.id, idSanPham: p.idSanPham, ten: p.ten, brand: brandOf(p.ten), gia: p.gia, ton: p.ton ?? 0,
         mauSize: [p.mau, p.size].filter(Boolean).join(' / '),
         sale: [50, 30, 40, 0, 35, 45, 20, 15, 30, 25][i % 10], ban: 60 + (i * 13) % 90,
         img: p.imageUrl || IMG(10007 + (i % 10)),
       }))
-    } else products.value = mockProducts
+    } else products.value = mockProducts.map(p => ({ ...p, idSanPham: p.id }))
   } catch (e) {
     console.warn('API offline, using mock storefront', e)
-    products.value = mockProducts
+    products.value = mockProducts.map(p => ({ ...p, idSanPham: p.id }))
   }
 }
 onMounted(loadProducts)
@@ -70,40 +73,13 @@ function add(p) {
 }
 
 // ---- đặt trước (pre-order) ----
-const preOrder = ref(null)      // sản phẩm đang đặt, null = đóng modal
-const preForm = ref({ tenKhachHang: '', soDienThoai: '', email: '', soLuong: 1, ngayDuKien: '', ghiChu: '' })
-const preWaiting = ref(0)       // số người đang chờ cùng mẫu này
-const preSaving = ref(false)
-const preDone = ref(null)       // mã phiếu sau khi đăng ký xong
-const preError = ref('')
-
-async function openPreOrder(p) {
-  preOrder.value = p
-  preDone.value = null
-  preError.value = ''
-  preWaiting.value = 0
-  preForm.value = { tenKhachHang: '', soDienThoai: '', email: '', soLuong: 1, ngayDuKien: '', ghiChu: '' }
-  try {
-    const r = await datTruocApi.demChoHang(p.id)
-    preWaiting.value = r?.choHang ?? 0
-  } catch (e) { /* backend offline — cứ để 0 */ }
-}
+const preOrder = ref(null)      // biến thể đang đặt, null = đóng modal
+function openPreOrder(p) { preOrder.value = p }
 function closePreOrder() { preOrder.value = null }
 
-async function submitPreOrder() {
-  preError.value = ''
-  if (!preForm.value.tenKhachHang.trim()) { preError.value = 'Vui lòng nhập họ tên.'; return }
-  if (!/^0\d{8,10}$/.test(preForm.value.soDienThoai.trim())) { preError.value = 'Số điện thoại không hợp lệ.'; return }
-  preSaving.value = true
-  try {
-    const d = await datTruocApi.dangKy({ idSanPhamChiTiet: preOrder.value.id, ...preForm.value })
-    preDone.value = d
-    await loadProducts()
-  } catch (e) {
-    preError.value = e?.response?.data?.message || 'Đăng ký đặt trước thất bại, vui lòng thử lại.'
-  } finally {
-    preSaving.value = false
-  }
+// ---- xem chi tiết ----
+function xemChiTiet(p) {
+  if (p.idSanPham) router.push(`/san-pham/${p.idSanPham}`)
 }
 </script>
 
@@ -177,7 +153,7 @@ async function submitPreOrder() {
         <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3">
           <div class="col" v-for="p in sorted" :key="p.id">
             <div class="p-card" :class="{ soldout: p.ton === 0 }">
-              <div class="p-thumb">
+              <div class="p-thumb" @click="xemChiTiet(p)" style="cursor:pointer">
                 <span class="sale" v-if="p.sale && p.ton > 0">-{{ p.sale }}%</span>
                 <span class="tag-pre" v-if="p.ton === 0">HẾT HÀNG</span>
                 <i class="bi bi-heart wish"></i>
@@ -185,7 +161,7 @@ async function submitPreOrder() {
               </div>
               <div class="p-body">
                 <div class="p-brand">{{ p.brand }}</div>
-                <div class="p-name">{{ p.ten }}</div>
+                <div class="p-name p-link" @click="xemChiTiet(p)">{{ p.ten }}</div>
                 <div class="p-star my-1"><i class="bi bi-star-fill" v-for="s in 5" :key="s"></i><span class="text-muted ms-1" style="font-size:11px">({{ p.ban }})</span></div>
                 <div class="d-flex align-items-baseline gap-2">
                   <span class="p-price">{{ vnd(p.gia) }}</span>
@@ -204,81 +180,8 @@ async function submitPreOrder() {
       </div>
     </div>
 
-    <!-- modal đặt trước -->
-    <div v-if="preOrder" class="pre-back" @click.self="closePreOrder">
-      <div class="pre-modal">
-        <div class="pre-head">
-          <div><i class="bi bi-bookmark-star"></i> Đặt trước sản phẩm</div>
-          <button class="btn-x" @click="closePreOrder"><i class="bi bi-x-lg"></i></button>
-        </div>
-
-        <!-- xong -->
-        <div v-if="preDone" class="pre-body text-center py-4">
-          <i class="bi bi-check-circle-fill" style="font-size:44px;color:#0B895A"></i>
-          <h5 class="fw-bold mt-2 mb-1">Đăng ký thành công!</h5>
-          <p class="text-muted mb-2">Mã phiếu của bạn: <span class="fw-bold" style="color:#0B895A">{{ preDone.ma }}</span></p>
-          <p class="text-muted small mb-3">
-            BShoes sẽ gọi lại số <b>{{ preDone.soDienThoai }}</b> ngay khi hàng về
-            <span v-if="preDone.ngayDuKien">(dự kiến {{ String(preDone.ngayDuKien).slice(0, 10) }})</span>.
-          </p>
-          <button class="btn btn-cart px-4" @click="closePreOrder">Đóng</button>
-        </div>
-
-        <!-- form -->
-        <div v-else class="pre-body">
-          <div class="pre-prod mb-3">
-            <img :src="preOrder.img" :alt="preOrder.ten">
-            <div>
-              <div class="fw-semibold" style="font-size:14px">{{ preOrder.ten }}</div>
-              <div class="text-muted small" v-if="preOrder.mauSize">{{ preOrder.mauSize }}</div>
-              <div class="p-price mt-1">{{ vnd(preOrder.gia) }}</div>
-            </div>
-          </div>
-          <div class="pre-note mb-3">
-            <i class="bi bi-info-circle"></i>
-            Sản phẩm đang hết hàng. Để lại thông tin, cửa hàng sẽ báo ngay khi có hàng — <b>không cần trả trước</b>.
-            <div v-if="preWaiting > 0" class="mt-1">Hiện có <b>{{ preWaiting }}</b> khách đang chờ mẫu này.</div>
-          </div>
-
-          <div class="row g-2">
-            <div class="col-12">
-              <label class="lbl">Họ và tên <span class="text-danger">*</span></label>
-              <input class="form-control form-control-sm" v-model="preForm.tenKhachHang" placeholder="Nguyễn Văn A">
-            </div>
-            <div class="col-7">
-              <label class="lbl">Số điện thoại <span class="text-danger">*</span></label>
-              <input class="form-control form-control-sm" v-model="preForm.soDienThoai" placeholder="09xxxxxxxx">
-            </div>
-            <div class="col-5">
-              <label class="lbl">Số lượng</label>
-              <input type="number" min="1" class="form-control form-control-sm" v-model.number="preForm.soLuong">
-            </div>
-            <div class="col-12">
-              <label class="lbl">Email (tuỳ chọn)</label>
-              <input class="form-control form-control-sm" v-model="preForm.email" placeholder="email@example.com">
-            </div>
-            <div class="col-12">
-              <label class="lbl">Mong muốn nhận hàng trước ngày</label>
-              <input type="date" class="form-control form-control-sm" v-model="preForm.ngayDuKien">
-            </div>
-            <div class="col-12">
-              <label class="lbl">Ghi chú</label>
-              <textarea rows="2" class="form-control form-control-sm" v-model="preForm.ghiChu" placeholder="Ví dụ: cần đúng size 42, gọi sau 18h..."></textarea>
-            </div>
-          </div>
-
-          <div class="alert alert-danger py-1 px-2 small mt-2 mb-0" v-if="preError">{{ preError }}</div>
-
-          <div class="d-flex gap-2 mt-3">
-            <button class="btn btn-outline-secondary flex-shrink-0" @click="closePreOrder">Huỷ</button>
-            <button class="btn btn-cart flex-fill" :disabled="preSaving" @click="submitPreOrder">
-              <i class="bi bi-bookmark-check"></i> {{ preSaving ? 'Đang gửi...' : 'Đăng ký đặt trước' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
+    <!-- modal đặt trước (dùng chung với trang chi tiết) -->
+    <DatTruocModal :product="preOrder" @close="closePreOrder" @done="loadProducts" />
     <!-- footer -->
     <footer class="shop-foot pt-4"><div class="container">
       <div class="row g-4 pb-4">
@@ -348,15 +251,9 @@ async function submitPreOrder() {
 .p-thumb .tag-pre { position:absolute; top:8px; left:8px; background:#556; color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:6px; }
 .btn-pre { background:#fff; color:#0B895A; border:1.5px solid #0B895A; border-radius:8px; font-size:12px; font-weight:600; }
 .btn-pre:hover { background:#0B895A; color:#fff; }
-.pre-back { position:fixed; inset:0; background:rgba(15,28,23,.55); display:flex; align-items:center; justify-content:center; z-index:1080; padding:16px; }
-.pre-modal { background:#fff; border-radius:14px; width:100%; max-width:440px; max-height:92vh; overflow:auto; box-shadow:0 18px 48px rgba(0,0,0,.28); }
-.pre-head { background:#0B895A; color:#fff; padding:12px 16px; font-weight:700; display:flex; justify-content:space-between; align-items:center; border-radius:14px 14px 0 0; }
-.pre-head .btn-x { background:none; border:0; color:#fff; opacity:.85; }
-.pre-body { padding:16px; }
-.pre-prod { display:flex; gap:12px; align-items:center; background:#f7f9fb; border-radius:10px; padding:10px; }
-.pre-prod img { width:72px; height:72px; object-fit:contain; flex-shrink:0; }
-.pre-note { background:#FFF4E0; color:#7a5b00; font-size:12.5px; border-radius:8px; padding:8px 10px; }
-.lbl { font-size:12px; font-weight:600; color:#6b7280; margin-bottom:2px; }
+/* CSS của modal đặt trước đã chuyển sang components/ui/DatTruocModal.vue */
+.p-link { cursor:pointer; }
+.p-link:hover { color:#0B895A; }
 .shop-foot { background:#fff; border-top:1px solid #e5e9ef; }
 .shop-foot h6 { font-weight:700; font-size:14px; }
 .shop-foot a { color:#6b7280; font-size:13px; display:block; padding:3px 0; }

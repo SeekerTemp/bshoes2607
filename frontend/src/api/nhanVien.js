@@ -7,4 +7,9 @@ export const nhanVienApi = {
   update: (e) => http.put('/nhan-vien', e).then(r => r.data),
   remove: (id) => http.delete(`/nhan-vien/${id}`),
   search: (ten, gioiTinh) => http.get('/nhan-vien/search', { params: { ten, gioiTinh } }).then(r => r.data),
+
+  // --- phân quyền theo từng nhân viên ---
+  bangQuyen: () => http.get('/nhan-vien/quyen').then(r => r.data),
+  luuQuyen: (id, manHinhs) => http.put(`/nhan-vien/${id}/quyen`, manHinhs).then(r => r.data),
+  apTemplate: (id) => http.post(`/nhan-vien/${id}/quyen/ap-template`).then(r => r.data),
 }

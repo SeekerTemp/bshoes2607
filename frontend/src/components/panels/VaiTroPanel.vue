@@ -1,16 +1,13 @@
 <script setup>
-// Phân quyền: configure which UI screens each vai trò (role) can access.
-// Each nhân viên inherits their role's permission set (vai_tro.quyen).
+// Vai trò = TEMPLATE quyền, không phải quyền hiệu lực. Sửa ở đây chỉ đổi bộ quyền
+// mặc định dùng để vật chất hóa rows nhan_vien_quyen khi tạo NV / đổi vai trò;
+// nhân viên đang tồn tại không đổi theo. Quyền thật của từng người ở tab "Phân quyền".
 import { ref, computed, onMounted } from 'vue'
-import AppShell from '../components/layout/AppShell.vue'
-import PageHeader from '../components/ui/PageHeader.vue'
-import { vaiTroApi } from '../api/vaiTro'
-import { SCREENS } from '../config/screens'
-import { useToast } from '../composables/useToast'
-import { useAuth } from '../composables/useAuth'
+import { vaiTroApi } from '../../api/vaiTro'
+import { SCREENS } from '../../config/screens'
+import { useToast } from '../../composables/useToast'
 
 const { notify } = useToast()
-const { user } = useAuth()
 const roles = ref([])
 const selected = ref(null)
 const checked = ref(new Set())
@@ -42,18 +39,20 @@ async function save() {
   try {
     await vaiTroApi.updateQuyen(selected.value.id, quyen)
     selected.value.quyen = quyen
-    notify('Đã lưu quyền cho ' + selected.value.ten, 'success')
-    if (user.value && user.value.idVaiTro === selected.value.id) {
-      notify('Bạn vừa đổi quyền vai trò của chính mình — đăng nhập lại để áp dụng', 'info')
-    }
+    // Sửa template KHÔNG đụng tới nhân viên đang tồn tại — nói rõ để khỏi tưởng đã áp xong.
+    notify(`Đã lưu template "${selected.value.ten}". Nhân viên đang có không đổi theo — dùng "Áp lại template" ở tab Phân quyền.`, 'success')
   } catch (e) { notify('Lưu thất bại', 'warning') }
 }
 onMounted(load)
 </script>
 
 <template>
-  <AppShell>
-    <PageHeader title="Phân quyền nhân viên" />
+  <div>
+    <div class="alert alert-light border small py-2 mb-3">
+      <i class="bi bi-info-circle" style="color:#0B895A"></i>
+      Đây là <b>template</b>: bộ quyền mặc định chép cho nhân viên khi tạo mới hoặc đổi vai trò.
+      Sửa ở đây không đổi quyền của nhân viên đang có — quyền thật nằm ở tab <b>Phân quyền</b>.
+    </div>
     <div class="pq-grid">
       <!-- roles -->
       <div class="card"><div class="card-body">
@@ -73,7 +72,7 @@ onMounted(load)
         <div v-if="!selected" class="text-muted text-center py-5"><i class="bi bi-shield-lock fs-1 d-block mb-2 opacity-50"></i>Chọn một vai trò để phân quyền</div>
         <div v-else>
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="fw-bold mb-0">Màn hình cho phép truy cập — <span style="color:#0B895A">{{ selected.ten }}</span></h6>
+            <h6 class="fw-bold mb-0">Màn hình mặc định — <span style="color:#0B895A">{{ selected.ten }}</span></h6>
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" id="all" :checked="isAll" @change="toggleAll">
               <label class="form-check-label small" for="all">Chọn tất cả</label>
@@ -90,12 +89,12 @@ onMounted(load)
             </div>
           </div>
           <div class="d-flex justify-content-end mt-3">
-            <button class="btn btn-success px-4" @click="save"><i class="bi bi-save"></i> Lưu quyền</button>
+            <button class="btn btn-success px-4" @click="save"><i class="bi bi-save"></i> Lưu template</button>
           </div>
         </div>
       </div></div>
     </div>
-  </AppShell>
+  </div>
 </template>
 
 <style scoped>

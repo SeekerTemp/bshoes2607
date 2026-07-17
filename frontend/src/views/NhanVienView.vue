@@ -10,11 +10,15 @@ import ConfirmDialog from '../components/ui/ConfirmDialog.vue'
 import FormField from '../components/ui/FormField.vue'
 import AppSelect from '../components/ui/AppSelect.vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
+import PhanQuyenPanel from '../components/panels/PhanQuyenPanel.vue'
+import VaiTroPanel from '../components/panels/VaiTroPanel.vue'
 import { useNhanVien } from '../composables/useNhanVien'
 import { useToast } from '../composables/useToast'
 
 const { keyword, filtered, add, update, remove } = useNhanVien()
 const { notify } = useToast()
+
+const tab = ref('ds')   // 'ds' | 'quyen' | 'vaitro'
 
 const columns = [
   { key: 'ma', label: 'Mã NV' },
@@ -76,19 +80,31 @@ function doDelete() {
   <AppShell>
     <PageHeader title="Nhân viên">
       <template #actions>
-        <AppButton icon="plus-lg" @click="openCreate">Thêm nhân viên</AppButton>
+        <AppButton v-if="tab === 'ds'" icon="plus-lg" @click="openCreate">Thêm nhân viên</AppButton>
       </template>
     </PageHeader>
 
-    <SearchBar v-model="keyword" class="mb-3" placeholder="Tìm theo mã / tên / tài khoản..." />
+    <div class="nv-tabs mb-3">
+      <button class="nv-tab" :class="{ active: tab === 'ds' }" @click="tab = 'ds'">Danh sách</button>
+      <button class="nv-tab" :class="{ active: tab === 'quyen' }" @click="tab = 'quyen'">Phân quyền</button>
+      <button class="nv-tab" :class="{ active: tab === 'vaitro' }" @click="tab = 'vaitro'">Vai trò (template)</button>
+    </div>
 
-    <DataTable :columns="columns" :rows="filtered">
-      <template #cell-trangThai="{ value }"><StatusBadge :active="value" /></template>
-      <template #actions="{ row }">
-        <AppButton size="sm" variant="outline-secondary" icon="pencil" @click="openEdit(row)">Sửa</AppButton>
-        <AppButton size="sm" variant="outline-danger" icon="trash" class="ms-1" @click="askDelete(row)">Xoá</AppButton>
-      </template>
-    </DataTable>
+    <div v-show="tab === 'ds'">
+      <SearchBar v-model="keyword" class="mb-3" placeholder="Tìm theo mã / tên / tài khoản..." />
+
+      <DataTable :columns="columns" :rows="filtered">
+        <template #cell-trangThai="{ value }"><StatusBadge :active="value" /></template>
+        <template #actions="{ row }">
+          <AppButton size="sm" variant="outline-secondary" icon="pencil" @click="openEdit(row)">Sửa</AppButton>
+          <AppButton size="sm" variant="outline-danger" icon="trash" class="ms-1" @click="askDelete(row)">Xoá</AppButton>
+        </template>
+      </DataTable>
+    </div>
+
+    <!-- v-if để panel chỉ gọi API khi thực sự mở tab -->
+    <PhanQuyenPanel v-if="tab === 'quyen'" />
+    <VaiTroPanel v-if="tab === 'vaitro'" />
 
     <AppModal v-model:open="modalOpen" :title="form.id ? 'Sửa nhân viên' : 'Thêm nhân viên'">
       <FormField label="Tên"><input class="form-control" v-model="form.ten"></FormField>
@@ -118,3 +134,13 @@ function doDelete() {
     <ConfirmDialog v-model:open="confirmOpen" :message="`Xoá nhân viên ${target?.ma}?`" @confirm="doDelete" />
   </AppShell>
 </template>
+
+<style scoped>
+/* cùng pattern tab với KhachHangView / SanPhamView */
+.nv-tabs { display: flex; gap: 4px; }
+.nv-tab {
+  border: 1px solid #e5e9ef; background: #eef1f4; color: #6b7280;
+  border-radius: 8px; padding: 8px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.nv-tab.active { background: var(--c-primary, #0B895A); color: #fff; border-color: var(--c-primary, #0B895A); }
+</style>

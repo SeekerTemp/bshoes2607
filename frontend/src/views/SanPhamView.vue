@@ -8,6 +8,8 @@ import AppShell from '../components/layout/AppShell.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
 import AppSelect from '../components/ui/AppSelect.vue'
 import ImagePicker from '../components/ui/ImagePicker.vue'
+import DanhMucPanel from '../components/panels/DanhMucPanel.vue'
+import ThuocTinhPanel from '../components/panels/ThuocTinhPanel.vue'
 import { useSanPham } from '../composables/useSanPham'
 import { useToast } from '../composables/useToast'
 import { vnd } from '../utils/format'
@@ -20,7 +22,7 @@ import {
 const { filtered, load, add, update, remove, thuongHieuList, chatLieuList } = useSanPham()
 const { notify } = useToast()
 
-const tab = ref('sanpham') // 'sanpham' | 'chitiet'  (attributes now live in the /thuoc-tinh screen)
+const tab = ref('sanpham') // 'sanpham' | 'chitiet' | 'danhmuc' | 'thuoctinh'
 
 const PLACEHOLDER = '/images/shoes/img_shoe_10001.png'
 function onImgError(e) { e.target.style.visibility = 'hidden' }
@@ -139,7 +141,8 @@ async function ctAn() {
     <div class="sp-tabs">
       <button class="sp-tab" :class="{ active: tab === 'sanpham' }" @click="tab = 'sanpham'">Sản phẩm</button>
       <button class="sp-tab" :class="{ active: tab === 'chitiet' }" @click="tab = 'chitiet'">Sản phẩm chi tiết</button>
-      <router-link to="/thuoc-tinh" class="sp-tab sp-tab-link">Thuộc tính ↗</router-link>
+      <button class="sp-tab" :class="{ active: tab === 'danhmuc' }" @click="tab = 'danhmuc'">Danh mục</button>
+      <button class="sp-tab" :class="{ active: tab === 'thuoctinh' }" @click="tab = 'thuoctinh'">Thuộc tính</button>
     </div>
 
     <!-- ==================== TAB 1: SẢN PHẨM ==================== -->
@@ -294,6 +297,11 @@ async function ctAn() {
         </div>
       </div>
     </div>
+
+    <!-- Danh mục / Thuộc tính: gộp vào đây thay vì màn riêng. Lazy bằng v-if để
+         panel chỉ gọi API khi người dùng thực sự mở tab. -->
+    <div v-if="tab === 'danhmuc'"><DanhMucPanel /></div>
+    <div v-if="tab === 'thuoctinh'"><ThuocTinhPanel /></div>
 
     <ImagePicker v-model:open="spImgOpen" v-model="spForm.imageUrl" />
     <ImagePicker v-model:open="ctImgOpen" v-model="ctForm.imageUrl" />
