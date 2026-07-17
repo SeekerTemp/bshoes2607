@@ -26,6 +26,24 @@ Trên Windows nếu console báo `UnicodeEncodeError` thì đặt `PYTHONIOENCOD
 | `gen_docx.py` | Nội dung 2 file Word |
 | `gen_ws2_xlsx.py` | Nội dung file Excel ước lượng |
 | `verify_docx.py` | Đọc ngược file đã sinh để kiểm chứng định dạng |
+| `gen_dbml.py` | Sinh sơ đồ DBML cho dbdiagram.io thẳng từ `sqlBshoes.sql` |
+| `audit_schema.py` | Đối chiếu cột của JPA entity với DDL |
+| `audit_seed.py` | Kiểm khóa ngoại trong dữ liệu seed |
+
+## Kiểm tra CSDL khi chưa có SQL Server
+
+`ddl-auto=none` nên Hibernate không tự sửa schema: entity khai một cột mà DDL không có là
+chết ngay câu SQL đầu tiên. Chưa cài được SQL Server thì hai script này thay cho việc chạy thật:
+
+```bash
+python audit_schema.py ../..                 # entity vs DDL
+python audit_seed.py ../../sqlBshoes.sql     # FK trong seed co tro toi id ton tai khong
+python gen_dbml.py ../../sqlBshoes.sql ../BShoes-dbdiagram.txt
+```
+
+`audit_seed.py` mô phỏng IDENTITY bằng cách đếm số dòng insert mỗi bảng, nên bắt được đúng
+loại lỗi từng xảy ra thật: `hoa_don_chi_tiet` trỏ `id_hoa_don` 1..24 trong khi IDENTITY đã
+lệch 3 vì HD001 đến HD003 chèn trước.
 
 ## Định dạng đã chốt (2026-07-17)
 

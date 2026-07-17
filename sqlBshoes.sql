@@ -520,6 +520,24 @@ insert into hoa_don (id_khach_hang, id_phieu_giam_gia, id_nhan_vien, ma_hoa_don,
 (3, 2, 3, 'HD202512001', 4250000, 1700000, 2550000, N'Khương Thị Hương', N'0956890123', N'Quảng Ninh', N'Chuyển khoản', N'Mua giày Gucci Limited', N'Nghia', N'Nghia', '2025-12-15 14:55:00', '2025-12-15 14:55:00', 1, 1);
 go
 
+/* 27 hóa đơn ở trên đều trạng thái 1 (Thành công), nên màn Giao Hàng, luồng trả hàng và
+   mục "Đơn của tôi" ngoài cửa hàng online sẽ trống trơn trên DB mới. Ba hóa đơn dưới đây
+   phủ nốt các trạng thái còn lại để demo được ngay.
+
+   Quy ước cờ loai_hoa_don (mọi truy vấn doanh thu ở ThongKe lọc loai_hoa_don = 1):
+     Chờ giao COD  -> 0, chưa thu tiền
+     Đã giao       -> 1, thu tiền khi giao
+     Trả hàng      -> 0, đã hoàn tiền cho khách
+   Số điện thoại trùng khách hàng có sẵn để tra cứu "Đơn của tôi" ra kết quả. */
+insert into hoa_don (id_khach_hang, id_phieu_giam_gia, id_nhan_vien, ma_hoa_don, tong_tien_ban_dau, tien_giam_gia, phi_ship, tong_tien_phai_tra, ten_nguoi_nhan, so_dien_thoai, dia_chi, phuong_thuc_thanh_toan, ghi_chu, nguoi_tao_ma, nguoi_cap_nhat, ngay_tao_ma, ngay_cap_nhat, trang_thai, loai_hoa_don) values
+-- id 28: khách đặt online, đang chờ giao. Kho đã giữ hàng, chưa thu tiền.
+(1, NULL, NULL, 'HD028', 200000, 0, 30000, 230000, N'Nguyễn Trung Nghĩa', '0968291160', N'Hải Dương', N'COD', N'Khách đặt online, giao giờ hành chính', N'Nguyễn Trung Nghĩa', N'Nguyễn Trung Nghĩa', '2026-07-14 09:20:00', '2026-07-14 09:20:00', 3, 0),
+-- id 29: đã giao xong, thu tiền khi giao nên loai_hoa_don = 1.
+(3, NULL, 2, 'HD029', 250000, 0, 30000, 280000, N'Đặng Thị Hồng', '0923456789', N'Bắc Ninh', N'COD', N'Khách đặt online, đã nhận hàng', N'Lê Thị B', N'Lê Thị B', '2026-07-08 16:05:00', '2026-07-11 10:00:00', 4, 1),
+-- id 30: khách trả hàng, kho đã hoàn, tiền đã trả lại nên rút khỏi doanh thu.
+(4, NULL, 2, 'HD030', 320000, 0, 0, 320000, N'Phan Minh Tuấn', '0956789123', N'Hải Dương', N'Tiền mặt', N'Khách trả hàng do sai size', N'Lê Thị B', N'Lê Thị B', '2026-07-05 13:40:00', '2026-07-09 09:15:00', 5, 0);
+go
+
 -- 2.18 hoa_don_chi_tiet
 -- NOTE: the legacy seed linked every monthly invoice's lines to id_hoa_don 1..24, but the
 -- three HD001-003 rows shifted the IDENTITY ids by 3 (so lines landed on the wrong invoices
@@ -631,7 +649,11 @@ insert into hoa_don_chi_tiet (id_san_pham_chi_tiet, id_hoa_don, gia_giam, so_luo
 -- HD202512001 (id 27)
 (5, 27, 5000, 72, '2025-12-15', '2025-12-15', N'admin', N'admin', 1, 0, 2880000),
 (3, 27, 5000, 72, '2025-12-15', '2025-12-15', N'admin', N'admin', 1, 0, 2304000),
-(1, 27, 5000, 72, '2025-12-15', '2025-12-15', N'admin', N'admin', 1, 0, 1440000);
+(1, 27, 5000, 72, '2025-12-15', '2025-12-15', N'admin', N'admin', 1, 0, 1440000),
+-- Dòng hàng cho 3 hóa đơn 28, 29, 30 ở trên. Chỉ dùng biến thể còn hàng (SPCT001, 002, 003).
+(1, 28, 0, 1, '2026-07-14', '2026-07-14', N'admin', N'admin', 1, 0, 200000),
+(2, 29, 0, 1, '2026-07-08', '2026-07-08', N'admin', N'admin', 1, 0, 250000),
+(3, 30, 0, 1, '2026-07-05', '2026-07-05', N'admin', N'admin', 1, 0, 320000);
 go
 
 -- 2.19 lich_su_hoa_don — demo history: one "created" row per invoice.
@@ -641,6 +663,14 @@ select id_nhan_vien, id_hoa_don,
        N'Tạo mới hóa đơn: ' + ma_hoa_don,
        ngay_tao_ma, nguoi_tao_ma, nguoi_cap_nhat, ngay_tao_ma, ngay_cap_nhat, 1, 0
 from hoa_don;
+go
+
+-- Lịch sử đổi trạng thái cho 3 hóa đơn demo ở trên, để màn Lịch Sử có dữ liệu thật.
+-- Từ đây trở đi service Java tự ghi lịch sử mỗi lần đổi trạng thái.
+insert into lich_su_hoa_don (id_nhan_vien, id_hoa_don, ghi_chu, thoi_gian_thay_doi, nguoi_tao_ma, nguoi_cap_nhat, ngay_tao_ma, ngay_cap_nhat, trang_thai, trang_thai_xoa) values
+(NULL, 28, N'Khách đặt hàng online, chờ giao: HD028', '2026-07-14 09:20:00', N'Nguyễn Trung Nghĩa', N'Nguyễn Trung Nghĩa', '2026-07-14 09:20:00', '2026-07-14 09:20:00', 1, 0),
+(2, 29, N'Đã giao hàng, đã thu tiền: HD029', '2026-07-11 10:00:00', N'Lê Thị B', N'Lê Thị B', '2026-07-11 10:00:00', '2026-07-11 10:00:00', 1, 0),
+(2, 30, N'Trả hàng, hoàn tiền: HD030', '2026-07-09 09:15:00', N'Lê Thị B', N'Lê Thị B', '2026-07-09 09:15:00', '2026-07-09 09:15:00', 0, 0);
 go
 
 /* ============================================================================

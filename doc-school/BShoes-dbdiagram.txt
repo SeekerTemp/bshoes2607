@@ -1,14 +1,14 @@
 // ==========================================================
 // BShoes — Hệ thống Quản lý & Bán hàng cửa hàng giày
 // DBML cho https://dbdiagram.io (dán toàn bộ file vào editor bên trái)
-// SINH TỰ ĐỘNG từ sqlBshoes.sql — 20 bảng
+// SINH TỰ ĐỘNG từ sqlBshoes.sql — 22 bảng
 // ==========================================================
 
 Project BShoes {
   database_type: 'SQL Server'
   Note: '''
   # BShoes — Quản lý cửa hàng giày
-  20 bảng, chia 6 nhóm chức năng.
+  22 bảng, chia 7 nhóm chức năng.
   '''
 }
 
@@ -45,6 +45,11 @@ Table nhan_vien {
   ngay_cap_nhat            DATETIME         [default: `getdate()`]
   trang_thai               bit
   trang_thai_xoa           bit              [default: `0`]
+}
+
+Table nhan_vien_quyen {
+  id_nhan_vien             int
+  man_hinh                 varchar(30)
 }
 
 // ==========================================================
@@ -302,6 +307,29 @@ Table bao_hanh {
 }
 
 // ==========================================================
+// ĐẶT TRƯỚC
+// ==========================================================
+
+Table dat_truoc {
+  id_dat_truoc             int              [pk, increment]
+  ma_dat_truoc             varchar(20)      [unique]
+  id_san_pham_chi_tiet     int
+  id_khach_hang            int
+  id_hoa_don               int
+  ten_khach_hang           nvarchar(100)
+  so_dien_thoai            varchar(20)
+  email                    varchar(100)
+  so_luong                 int
+  ngay_dang_ky             datetime         [default: `getdate()`]
+  ngay_du_kien             datetime
+  trang_thai               nvarchar(50)
+  ghi_chu                  nvarchar(255)
+  ngay_tao                 datetime         [default: `getdate()`]
+  ngay_cap_nhat            datetime         [default: `getdate()`]
+  trang_thai_xoa           bit              [default: `0`]
+}
+
+// ==========================================================
 // QUAN HỆ (Ref)
 // ==========================================================
 Ref: san_pham.id_loai_san_pham > loai_san_pham.id_loai_san_pham
@@ -327,10 +355,15 @@ Ref: bao_hanh.id_san_pham_chi_tiet > san_pham_chi_tiet.id_san_pham_chi_tiet
 Ref: bao_hanh.id_khach_hang > khach_hang.id_khach_hang
 Ref: bao_hanh.id_hoa_don > hoa_don.id_hoa_don
 Ref: bao_hanh.id_nhan_vien > nhan_vien.id_nhan_vien
+Ref: dat_truoc.id_san_pham_chi_tiet > san_pham_chi_tiet.id_san_pham_chi_tiet
+Ref: dat_truoc.id_khach_hang > khach_hang.id_khach_hang
+Ref: dat_truoc.id_hoa_don > hoa_don.id_hoa_don
+Ref: nhan_vien_quyen.id_nhan_vien > nhan_vien.id_nhan_vien
 
 TableGroup A_TaiKhoan_PhanQuyen {
   vai_tro
   nhan_vien
+  nhan_vien_quyen
 }
 
 TableGroup B_DanhMuc_ThuocTinh {
@@ -364,4 +397,8 @@ TableGroup E_BanHang {
 
 TableGroup F_SauBanHang {
   bao_hanh
+}
+
+TableGroup G_DatTruoc {
+  dat_truoc
 }

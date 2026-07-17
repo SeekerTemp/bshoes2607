@@ -356,9 +356,14 @@ public class HoaDonServiceImpl implements HoaDonService {
             throw new IllegalStateException("Chỉ đơn 'Chờ giao' mới có thể đánh dấu 'Đã giao'.");
         }
         h.setTrangThai(4);
+        // Đơn COD (đặt online) lúc tạo có loai_hoa_don = false vì chưa thu tiền. Giao xong
+        // là đã thu. Không set ở đây thì đơn COD vĩnh viễn không vào doanh thu, do mọi truy
+        // vấn của ThongKe đều lọc loai_hoa_don = 1. Đơn quầy trả trước vốn đã true nên
+        // dòng này không đổi gì.
+        h.setLoaiHoaDon(true);
         h.setNgayCapNhat(Instant.now());
         hoaDonRepository.save(h);
-        writeHistory(h, "Đã giao hàng - " + h.getMaHoaDon(), true);
+        writeHistory(h, "Đã giao hàng, đã thu tiền - " + h.getMaHoaDon(), true);
         return toDto(h);
     }
 
@@ -449,9 +454,13 @@ public class HoaDonServiceImpl implements HoaDonService {
         }
         if (idNhanVien != null) nhanVienRepository.findById(idNhanVien).ifPresent(h::setIdNhanVien);
         h.setTrangThai(5);
+        // Trả hàng là trả lại tiền cho khách, nên phải rút hóa đơn khỏi doanh thu. Doanh thu
+        // ở ThongKe cộng theo loai_hoa_don = 1 mà không nhìn trang_thai, để nguyên true thì
+        // đơn đã hoàn tiền vẫn bị tính là có thu.
+        h.setLoaiHoaDon(false);
         h.setNgayCapNhat(Instant.now());
         hoaDonRepository.save(h);
-        writeHistory(h, "Trả hàng - " + h.getMaHoaDon(), false);
+        writeHistory(h, "Trả hàng, hoàn tiền - " + h.getMaHoaDon(), false);
         return toDto(h);
     }
 
