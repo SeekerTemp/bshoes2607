@@ -5,22 +5,27 @@ import com.vn.test.bshoes.entity.NhanVien;
 import com.vn.test.bshoes.entity.VaiTro;
 import com.vn.test.bshoes.repository.NhanVienRepository;
 import com.vn.test.bshoes.repository.VaiTroRepository;
+import com.vn.test.bshoes.service.NhanVienQuyenService;
 import com.vn.test.bshoes.service.NhanVienService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class NhanVienServiceImpl implements NhanVienService {
 
     private final NhanVienRepository repo;
     private final VaiTroRepository vaiTroRepository;
+    private final NhanVienQuyenService quyenService;
 
-    public NhanVienServiceImpl(NhanVienRepository repo, VaiTroRepository vaiTroRepository) {
+    public NhanVienServiceImpl(NhanVienRepository repo, VaiTroRepository vaiTroRepository,
+                               NhanVienQuyenService quyenService) {
         this.repo = repo;
         this.vaiTroRepository = vaiTroRepository;
+        this.quyenService = quyenService;
     }
 
     private NhanVienDto toDto(NhanVien e) {
@@ -80,13 +85,18 @@ public class NhanVienServiceImpl implements NhanVienService {
         applyVaiTro(dto, e);
         e = repo.save(e);
         e.setMaNhanVien("NV" + e.getId());
-        return toDto(repo.save(e));
+        e = repo.save(e);
+        // Không có bước này thì NV mới có 0 dòng trong nhan_vien_quyen -> đăng nhập vào
+        // không thấy màn nào. Vật chất hóa bộ quyền mặc định của vai trò ngay khi tạo.
+        quyenService.apTemplate(e.getId());
+        return toDto(e);
     }
 
     @Override
     @Transactional
     public NhanVienDto update(NhanVienDto dto) {
         NhanVien e = repo.findById(dto.getId()).orElseThrow();
+        Integer vaiTroCu = e.getIdVaiTro() != null ? e.getIdVaiTro().getId() : null;
         e.setTenNhanVien(dto.getTen());
         e.setTaiKhoan(dto.getTaiKhoan());
         e.setEmail(dto.getEmail());
@@ -96,7 +106,14 @@ public class NhanVienServiceImpl implements NhanVienService {
         e.setGioiTinh(dto.getGioiTinh());
         if (dto.getTrangThai() != null) e.setTrangThai(dto.getTrangThai());
         applyVaiTro(dto, e);
-        return toDto(repo.save(e));
+        e = repo.save(e);
+        // Đổi vai trò = đổi hẳn bộ quyền: xóa rows cũ, chép template vai trò mới.
+        // Phần mở rộng riêng của vai trò cũ mất, có chủ ý (xem spec 2026-07-17).
+        Integer vaiTroMoi = e.getIdVaiTro() != null ? e.getIdVaiTro().getId() : null;
+        if (!Objects.equals(vaiTroCu, vaiTroMoi)) {
+            quyenService.apTemplate(e.getId());
+        }
+        return toDto(e);
     }
 
     @Override
