@@ -19,7 +19,7 @@ import java.io.Serializable;
  * Riêng vai trò ADMIN không đọc bảng này (xem NhanVienQuyenService).
  */
 @Entity
-@Table(name = "nhan_vien_quyen")
+@Table(name = "nhan_vien_quyen", schema = "dbo")
 @IdClass(NhanVienQuyen.Key.class)
 @Data
 @NoArgsConstructor

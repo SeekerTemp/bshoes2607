@@ -35,7 +35,7 @@ public class KhachHang {
     @Column(name = "gioi_tinh", length = 10)
     private String gioiTinh;
 
-    @Nationalized
+    // Cột DDL là varchar, không @Nationalized (xem ghi chú cùng chỗ ở HoaDon).
     @Column(name = "so_dien_thoai", length = 20)
     private String soDienThoai;
 

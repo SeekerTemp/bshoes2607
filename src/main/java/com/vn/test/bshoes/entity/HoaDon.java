@@ -52,7 +52,9 @@ public class HoaDon {
     @Column(name = "ten_nguoi_nhan", length = 100)
     private String tenNguoiNhan;
 
-    @Nationalized
+    // Cột DDL là varchar (số điện thoại chỉ có chữ số) nên không @Nationalized: bind
+    // NVARCHAR vào cột VARCHAR làm SQL Server ép kiểu ngầm cả cột, mất index seek ở
+    // truy vấn tra đơn theo số điện thoại.
     @Column(name = "so_dien_thoai", length = 20)
     private String soDienThoai;
 
