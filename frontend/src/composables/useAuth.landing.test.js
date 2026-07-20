@@ -33,4 +33,7 @@ describe('landingFor', () => {
   it('falls back to /login when nothing is allowed', () => {
     expect(landingFor('')).toBe('/login')
   })
+  it('falls back to /login when keys match no known screen', () => {
+    expect(landingFor('khong-ton-tai,cai-gi-do')).toBe('/login')
+  })
 })

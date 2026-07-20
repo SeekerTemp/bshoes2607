@@ -33,13 +33,9 @@ export function landingFor(quyen) {
 
 export function useAuth() {
   const isAuthed = computed(() => !!user.value)
-  const allowed = computed(() => {
-    if (!user.value) return []
-    const q = (user.value.quyen || '').trim()
-    if (q === '*') return SCREENS.map(s => s.key)
-    return q.split(',').map(s => s.trim()).filter(Boolean)
-  })
+  const allowed = computed(() => expandQuyen(user.value?.quyen))
   function can(key) { return allowed.value.includes(key) }
+  const landingRoute = computed(() => landingFor(user.value?.quyen))
 
   async function login(taiKhoan, matKhau) {
     const u = await authApi.login(taiKhoan, matKhau)   // 401 → throws
@@ -52,5 +48,5 @@ export function useAuth() {
   }
   function logout() { persist(null) }
 
-  return { user, isAuthed, allowed, can, login, loginDemo, logout }
+  return { user, isAuthed, allowed, can, landingRoute, login, loginDemo, logout }
 }
