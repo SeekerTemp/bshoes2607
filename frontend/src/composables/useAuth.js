@@ -13,6 +13,24 @@ function persist(u) {
   else localStorage.removeItem(KEY)
 }
 
+// Pure: expand a quyen CSV ('*' or 'a,b,c') into an ordered list of allowed screen keys.
+export function expandQuyen(quyen) {
+  const q = (quyen || '').trim()
+  if (q === '*') return SCREENS.map(s => s.key)
+  return q.split(',').map(s => s.trim()).filter(Boolean)
+}
+
+// Pure: the path this quyen should land on after login.
+// includes 'dashboard' (or '*', which expands to include it) -> '/';
+// else the first SCREENS entry that is allowed; else '/login'.
+export function landingFor(quyen) {
+  const keys = expandQuyen(quyen)
+  if (!keys.length) return '/login'
+  if (keys.includes('dashboard')) return '/'
+  const first = SCREENS.find(s => keys.includes(s.key))
+  return first ? first.to : '/login'
+}
+
 export function useAuth() {
   const isAuthed = computed(() => !!user.value)
   const allowed = computed(() => {
