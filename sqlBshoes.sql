@@ -456,14 +456,10 @@ insert into nhan_vien (id_vai_tro, ma_nhan_vien, ten_nhan_vien, tai_khoan, email
 (1, N'NV003', N'Trần Văn C', N'vanc', N'vanc@p_example.com', N'123456', N'111222333', N'0911222333', N'Đà Nẵng', N'Nhân viên', '1991-03-03', N'Nam', N'admin', N'admin', 1, 0),
 (3, N'NV004', N'Phạm Thị D', N'thid', N'thid@p_example.com', N'123456', N'444555666', N'0944555666', N'Quảng Ninh', N'Nhân viên', '1993-04-04', N'Nữ', N'admin', N'admin', 1, 0),
 (1, N'NV005', N'Ngô Văn E', N'vane', N'vane@p_example.com', N'123456', N'777888999', N'0977888999', N'Hà Nam', N'Nhân viên', '1990-05-05', N'Nam', N'admin', N'admin', 1, 0),
-(3, N'NV006', N'Hồ Thị F', N'thif', N'thif@p_example.com', N'123456', N'000111222', N'0900111222', N'Hải Dương', N'Nhân viên', '1994-06-06', N'Nữ', N'admin', N'admin', 1, 0);
-go
-
--- Tài khoản test cho luồng đăng nhập theo vai trò (branch test-auth).
--- banhang: vai trò NV, quyền KHÔNG có 'dashboard' -> đăng nhập rơi vào /hoa-don.
--- quanly : vai trò QL, quyền KHÔNG có 'dashboard' -> đăng nhập rơi vào /san-pham.
--- Quyền hiệu lực nằm ở nhan_vien_quyen (seed ngay dưới bảng đó), khớp tai_khoan.
-insert into nhan_vien (id_vai_tro, ma_nhan_vien, ten_nhan_vien, tai_khoan, email, mat_khau, cccd, so_dien_thoai, dia_chi, chuc_vu, ngay_sinh, gioi_tinh, nguoi_tao_ma, nguoi_cap_nhat, trang_thai, trang_thai_xoa) values
+(3, N'NV006', N'Hồ Thị F', N'thif', N'thif@p_example.com', N'123456', N'000111222', N'0900111222', N'Hải Dương', N'Nhân viên', '1994-06-06', N'Nữ', N'admin', N'admin', 1, 0),
+-- Tài khoản test luồng đăng nhập theo vai trò (branch test-auth): NV007 banhang
+-- (NV, KHÔNG có 'dashboard' -> /hoa-don), NV008 quanly (QL, KHÔNG 'dashboard' -> /san-pham).
+-- Quyền hiệu lực seed ở mục 6 (nhan_vien_quyen), dùng đúng id 7/8 theo thứ tự insert này.
 (3, N'NV007', N'Test Bán Hàng', N'banhang', N'banhang@p_example.com', N'123456', N'700700700', N'0900700700', N'Hà Nội', N'Nhân viên', '1995-07-07', N'Nam', N'admin', N'admin', 1, 0),
 (2, N'NV008', N'Test Quản Lý', N'quanly', N'quanly@p_example.com', N'123456', N'800800800', N'0900800800', N'Hà Nội', N'Quản lý', '1988-08-08', N'Nữ', N'admin', N'admin', 1, 0);
 go
@@ -839,23 +835,11 @@ go
 insert into nhan_vien_quyen (id_nhan_vien, man_hinh) values
 (2, 'dashboard'), (2, 'hoa-don'), (2, 'don-hang'), (2, 'dat-truoc'), (2, 'bao-hanh'), (2, 'khach-hang'),
 (4, 'dashboard'), (4, 'hoa-don'), (4, 'don-hang'), (4, 'dat-truoc'), (4, 'bao-hanh'),
-(6, 'dashboard'), (6, 'hoa-don'), (6, 'don-hang'), (6, 'dat-truoc'), (6, 'bao-hanh');
-go
-
--- Quyền cho tài khoản test đăng nhập theo vai trò (khớp theo tai_khoan cho chắc,
--- không phụ thuộc id identity). banhang & quanly đều KHÔNG có 'dashboard'.
-insert into nhan_vien_quyen (id_nhan_vien, man_hinh)
-select nv.id_nhan_vien, q.man_hinh
-from nhan_vien nv
-cross apply (values ('hoa-don'), ('don-hang'), ('bao-hanh')) q(man_hinh)
-where nv.tai_khoan = 'banhang';
-go
-
-insert into nhan_vien_quyen (id_nhan_vien, man_hinh)
-select nv.id_nhan_vien, q.man_hinh
-from nhan_vien nv
-cross apply (values ('san-pham'), ('khach-hang'), ('phieu-giam-gia')) q(man_hinh)
-where nv.tai_khoan = 'quanly';
+(6, 'dashboard'), (6, 'hoa-don'), (6, 'don-hang'), (6, 'dat-truoc'), (6, 'bao-hanh'),
+-- Tài khoản test (mục 2.13): id 7 = banhang (NV), id 8 = quanly (QL). Đều KHÔNG có
+-- 'dashboard' -> đăng nhập rơi vào màn được phép đầu tiên (/hoa-don, /san-pham).
+(7, 'hoa-don'), (7, 'don-hang'), (7, 'bao-hanh'),
+(8, 'san-pham'), (8, 'khach-hang'), (8, 'phieu-giam-gia');
 go
 
 insert into bao_hanh (ma_bao_hanh, id_san_pham_chi_tiet, id_khach_hang, id_hoa_don, id_nhan_vien, serial, mo_ta_loi, loai_yeu_cau, don_vi_bao_hanh, chi_phi, thay_linh_kien, ngay_bat_dau, ngay_ket_thuc, trang_thai) values
