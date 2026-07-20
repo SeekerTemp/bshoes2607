@@ -40,3 +40,6 @@ build/
 hs_err_pid*.log
 replay_pid*.log
 *.orig.bak
+
+# local test credentials note (not for VCS)
+credential.txt
