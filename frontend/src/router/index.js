@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
-import { SCREENS } from '../config/screens'
 
 const routes = [
   { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
@@ -30,14 +29,13 @@ const router = createRouter({ history: createWebHistory(), routes })
 const PUBLIC = ['login', 'home', 'gio-hang', 'san-pham-detail', 'style-guide']
 
 router.beforeEach((to) => {
-  const { isAuthed, allowed } = useAuth()
+  const { isAuthed, allowed, landingRoute } = useAuth()
   if (PUBLIC.includes(to.name)) return true
   if (!isAuthed.value) return { name: 'login', query: { redirect: to.fullPath } }
-  // permission gate: redirect to the first screen this role can access
-  const keys = allowed.value
-  if (to.name && keys.length && !keys.includes(to.name)) {
-    const first = SCREENS.find(s => keys.includes(s.key))
-    return first ? first.to : { name: 'login' }
+  // permission gate: a screen this role can't access -> send to its role landing
+  // (landingRoute is '/login' when the role has no permissions at all).
+  if (to.name && !allowed.value.includes(to.name)) {
+    return landingRoute.value
   }
   return true
 })
