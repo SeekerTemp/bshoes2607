@@ -7,13 +7,22 @@ import { useAuth } from '../composables/useAuth'
 
 const router = useRouter()
 const route = useRoute()
-const { login: doLogin, loginDemo } = useAuth()
+const { login: doLogin, loginDemo, can, landingRoute } = useAuth()
 const username = ref('')
 const password = ref('')
 const err = ref('')
 const busy = ref(false)
 
-function go() { router.push(route.query.redirect || '/') }
+function go() {
+  const redirect = route.query.redirect
+  if (redirect) {
+    // The guard only ever sets redirect to a protected screen route, whose name
+    // matches a SCREENS key — so can(name) is the right authorization check.
+    const resolved = router.resolve(redirect)
+    if (resolved?.name && can(resolved.name)) { router.push(redirect); return }
+  }
+  router.push(landingRoute.value)
+}
 
 async function login() {
   err.value = ''
@@ -33,7 +42,8 @@ function demo() { loginDemo(); go() }
 <template>
   <div class="login-page d-flex align-items-center justify-content-center">
     <div class="login-card">
-      <h4 class="text-center fw-bold mb-4" style="color: var(--c-primary)">Đăng nhập</h4>
+      <h4 class="text-center fw-bold mb-1" style="color: var(--c-primary)">Đăng nhập nhân viên</h4>
+      <p class="text-center text-muted small mb-4">Khu vực quản trị — dành cho nhân viên BShoes</p>
 
       <form @submit.prevent="login">
         <FormField label="Tài khoản">
@@ -52,6 +62,11 @@ function demo() { loginDemo(); go() }
       </form>
 
       <button class="btn btn-outline-secondary w-100 mt-2" @click="demo">Vào demo (Admin)</button>
+
+      <div class="text-center text-muted small my-3">— hoặc —</div>
+      <router-link to="/home" class="btn btn-link w-100 p-0 text-decoration-none">
+        <i class="bi bi-bag-heart"></i> Tiếp tục mua sắm như khách →
+      </router-link>
 
       <p class="text-muted small text-center mt-3 mb-0">
         Tài khoản mẫu: <b>vanan / 123456</b> (ADMIN). Quyền theo vai trò được cấu hình ở màn Phân quyền.
