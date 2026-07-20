@@ -43,7 +43,7 @@ function demo() { loginDemo(); go() }
   <div class="login-page d-flex align-items-center justify-content-center">
     <div class="login-card">
       <h4 class="text-center fw-bold mb-1" style="color: var(--c-primary)">Đăng nhập nhân viên</h4>
-      <p class="text-center text-muted small mb-4">Khu vực quản trị — dành cho nhân viên BShoes</p>
+      <p class="text-center text-muted small mb-4">Khu vực quản trị · dành cho nhân viên BShoes</p>
 
       <form @submit.prevent="login">
         <FormField label="Tài khoản">
@@ -63,7 +63,7 @@ function demo() { loginDemo(); go() }
 
       <button class="btn btn-outline-secondary w-100 mt-2" @click="demo">Vào demo (Admin)</button>
 
-      <div class="text-center text-muted small my-3">— hoặc —</div>
+      <div class="text-center text-muted small my-3">· hoặc ·</div>
       <router-link to="/home" class="btn btn-link w-100 p-0 text-decoration-none">
         <i class="bi bi-bag-heart"></i> Tiếp tục mua sắm như khách →
       </router-link>
