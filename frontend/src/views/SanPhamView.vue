@@ -12,6 +12,7 @@ import DanhMucPanel from '../components/panels/DanhMucPanel.vue'
 import ThuocTinhPanel from '../components/panels/ThuocTinhPanel.vue'
 import { useSanPham } from '../composables/useSanPham'
 import { useToast } from '../composables/useToast'
+import { crudErrorMessage } from '../composables/useCrud'
 import { vnd } from '../utils/format'
 import { bienTheApi } from '../api/bienThe'
 import {
@@ -72,14 +73,30 @@ function spLamMoi() {
   if (spSelectedId.value) { const p = filtered.value.find(x => x.id === spSelectedId.value); if (p) selectSP(p) }
   else spForm.value = blankSP()
 }
-function spLuu() {
+async function spLuu() {
   if (!spForm.value.ten) { notify('Nhập tên sản phẩm', 'warning'); return }
-  if (spForm.value.id) { update({ ...spForm.value }); notify('Đã cập nhật sản phẩm', 'success') }
-  else { add({ ...spForm.value }); notify('Đã thêm sản phẩm', 'success'); spThem() }
+  try {
+    if (spForm.value.id) {
+      await update({ ...spForm.value })
+      notify('Đã cập nhật sản phẩm', 'success')
+    } else {
+      await add({ ...spForm.value })
+      notify('Đã thêm sản phẩm', 'success')
+      spThem()
+    }
+  } catch (e) {
+    notify(crudErrorMessage(e), 'warning')
+  }
 }
-function spAn() {
+async function spAn() {
   if (!spForm.value.id) { notify('Chọn sản phẩm để ẩn', 'warning'); return }
-  if (confirm(`Ẩn (xóa mềm) sản phẩm ${spForm.value.ma}?`)) { remove(spForm.value.ma); spThem() }
+  if (!confirm(`Ẩn (xóa mềm) sản phẩm ${spForm.value.ma}?`)) return
+  try {
+    await remove(spForm.value.ma)
+    spThem()
+  } catch (e) {
+    notify(crudErrorMessage(e), 'warning')
+  }
 }
 
 /* ============= TAB 2 — Sản phẩm chi tiết (biến thể), wired to backend ============= */

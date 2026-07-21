@@ -6,7 +6,7 @@ import { thuongHieuApi, chatLieuApi } from '../api/thuocTinh'
 import { sanPham, thuongHieuList as mockThuongHieu, chatLieuList as mockChatLieu } from '../mock/data'
 
 export function useSanPham() {
-  const crud = useCrud(sanPhamApi, sanPham, { searchKeys: ['ma', 'ten'], codePrefix: 'SP', codeField: 'ma' })
+  const crud = useCrud(sanPhamApi, sanPham, { searchKeys: ['ma', 'ten'] })
 
   // The views consume these as plain arrays (thuongHieuList.map(...)), so keep
   // them as stable array references seeded from mock and filled in place from

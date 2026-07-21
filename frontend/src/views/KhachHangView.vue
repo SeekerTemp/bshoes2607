@@ -12,6 +12,7 @@ import AppSelect from '../components/ui/AppSelect.vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
 import { useKhachHang } from '../composables/useKhachHang'
 import { useToast } from '../composables/useToast'
+import { crudErrorMessage } from '../composables/useCrud'
 import { diaChiApi } from '../api/diaChi'
 
 const { keyword, filtered, add, update, remove } = useKhachHang()
@@ -50,14 +51,18 @@ function openEdit(row) {
   modalOpen.value = true
 }
 
-function save() {
-  if (form.value.id) {
-    update(form.value)
-  } else {
-    add(form.value)
+async function save() {
+  try {
+    if (form.value.id) {
+      await update(form.value)
+    } else {
+      await add(form.value)
+    }
+    modalOpen.value = false
+    notify('Đã lưu', 'success')
+  } catch (e) {
+    notify(crudErrorMessage(e), 'warning')
   }
-  modalOpen.value = false
-  notify('Đã lưu', 'success')
 }
 
 function askDelete(row) {
@@ -65,10 +70,14 @@ function askDelete(row) {
   confirmOpen.value = true
 }
 
-function doDelete() {
-  remove(target.value.id)
-  confirmOpen.value = false
-  notify('Đã xoá', 'success')
+async function doDelete() {
+  try {
+    await remove(target.value.id)
+    confirmOpen.value = false
+    notify('Đã xoá', 'success')
+  } catch (e) {
+    notify(crudErrorMessage(e), 'warning')
+  }
 }
 
 /* ===== Địa chỉ (tab 2) — CRUD addresses per customer ===== */

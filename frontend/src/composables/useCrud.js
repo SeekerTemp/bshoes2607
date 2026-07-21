@@ -1,20 +1,19 @@
 import { ref, computed, onMounted } from 'vue'
 
 // Generic CRUD composable: loads rows from a REST api module, falling back to a
-// local mock seed when the backend is offline. Public interface is unchanged:
-// { rows, keyword, filtered, add, update, remove }.
+// local mock seed when the backend is offline (read-only display only). Public
+// interface is unchanged: { rows, keyword, filtered, add, update, remove }.
 //
 // `api` is an object exposing findAll()/create()/update()/remove() (each returns
-// a promise). `seed` is the mock array used both as offline data and as the
-// fallback when a network call fails.
-export function useCrud(api, seed, { searchKeys = [], codePrefix = '', codeField = '' } = {}) {
+// a promise). `seed` is the mock array used only as offline fallback for `load()`.
+//
+// Writes (add/update/remove) are HONEST: they await the API call and let errors
+// propagate to the caller. There is no silent local-memory fallback for writes —
+// a failed write must reject so the UI can surface the failure instead of
+// reporting fake success.
+export function useCrud(api, seed, { searchKeys = [] } = {}) {
   const rows = ref([])
   const keyword = ref('')
-  let seq = 0
-
-  function syncSeq() {
-    seq = rows.value.reduce((m, r) => Math.max(m, r.id || 0), 0)
-  }
 
   async function load() {
     try {
@@ -23,7 +22,6 @@ export function useCrud(api, seed, { searchKeys = [], codePrefix = '', codeField
       console.warn('API offline, using mock', e)
       rows.value = JSON.parse(JSON.stringify(seed))
     }
-    syncSeq()
   }
   onMounted(load)
 
@@ -33,42 +31,26 @@ export function useCrud(api, seed, { searchKeys = [], codePrefix = '', codeField
     return rows.value.filter(r => searchKeys.some(key => String(r[key] ?? '').toLowerCase().includes(k)))
   })
 
-  function localInsert(item) {
-    item.id = ++seq
-    if (codePrefix && codeField) item[codeField] = codePrefix + item.id
-    rows.value.push(item)
-  }
-
   async function add(item) {
-    try {
-      await api.create(item)
-      await load()
-    } catch (e) {
-      console.warn('API offline, adding locally', e)
-      localInsert(item)
-    }
+    await api.create(item)
+    await load()
   }
 
   async function update(item) {
-    try {
-      await api.update(item)
-      await load()
-    } catch (e) {
-      console.warn('API offline, updating locally', e)
-      const i = rows.value.findIndex(r => r.id === item.id)
-      if (i !== -1) rows.value.splice(i, 1, item)
-    }
+    await api.update(item)
+    await load()
   }
 
   async function remove(id) {
-    try {
-      await api.remove(id)
-      await load()
-    } catch (e) {
-      console.warn('API offline, removing locally', e)
-      rows.value = rows.value.filter(r => r.id !== id)
-    }
+    await api.remove(id)
+    await load()
   }
 
   return { rows, keyword, filtered, add, update, remove, load }
+}
+
+// Extracts a human-readable message from an API error, in priority order:
+// backend-provided message, then the error's own message, then a fallback.
+export function crudErrorMessage(err) {
+  return err?.response?.data?.message || err?.message || 'Lỗi không xác định'
 }

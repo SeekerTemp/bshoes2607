@@ -4,5 +4,5 @@ import { phieuGiamGiaApi } from '../api/phieuGiamGia'
 import { phieuGiamGia } from '../mock/data'
 
 export function usePhieuGiamGia() {
-  return useCrud(phieuGiamGiaApi, phieuGiamGia, { searchKeys: ['ma', 'ten'], codePrefix: 'PGG', codeField: 'ma' })
+  return useCrud(phieuGiamGiaApi, phieuGiamGia, { searchKeys: ['ma', 'ten'] })
 }

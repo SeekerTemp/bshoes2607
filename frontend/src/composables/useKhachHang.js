@@ -4,5 +4,5 @@ import { khachHangApi } from '../api/khachHang'
 import { khachHang } from '../mock/data'
 
 export function useKhachHang() {
-  return useCrud(khachHangApi, khachHang, { searchKeys: ['ma', 'ten', 'sdt'], codePrefix: 'KH', codeField: 'ma' })
+  return useCrud(khachHangApi, khachHang, { searchKeys: ['ma', 'ten', 'sdt'] })
 }

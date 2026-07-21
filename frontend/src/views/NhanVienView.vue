@@ -14,6 +14,7 @@ import PhanQuyenPanel from '../components/panels/PhanQuyenPanel.vue'
 import VaiTroPanel from '../components/panels/VaiTroPanel.vue'
 import { useNhanVien } from '../composables/useNhanVien'
 import { useToast } from '../composables/useToast'
+import { crudErrorMessage } from '../composables/useCrud'
 
 const { keyword, filtered, add, update, remove } = useNhanVien()
 const { notify } = useToast()
@@ -54,14 +55,18 @@ function openEdit(row) {
   modalOpen.value = true
 }
 
-function save() {
-  if (form.value.id) {
-    update(form.value)
-  } else {
-    add(form.value)
+async function save() {
+  try {
+    if (form.value.id) {
+      await update(form.value)
+    } else {
+      await add(form.value)
+    }
+    modalOpen.value = false
+    notify('Đã lưu', 'success')
+  } catch (e) {
+    notify(crudErrorMessage(e), 'warning')
   }
-  modalOpen.value = false
-  notify('Đã lưu', 'success')
 }
 
 function askDelete(row) {
@@ -69,10 +74,14 @@ function askDelete(row) {
   confirmOpen.value = true
 }
 
-function doDelete() {
-  remove(target.value.id)
-  confirmOpen.value = false
-  notify('Đã xoá', 'success')
+async function doDelete() {
+  try {
+    await remove(target.value.id)
+    confirmOpen.value = false
+    notify('Đã xoá', 'success')
+  } catch (e) {
+    notify(crudErrorMessage(e), 'warning')
+  }
 }
 </script>
 

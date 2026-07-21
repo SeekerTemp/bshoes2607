@@ -4,5 +4,5 @@ import { nhanVienApi } from '../api/nhanVien'
 import { nhanVien } from '../mock/data'
 
 export function useNhanVien() {
-  return useCrud(nhanVienApi, nhanVien, { searchKeys: ['ma', 'ten', 'taiKhoan'], codePrefix: 'NV', codeField: 'ma' })
+  return useCrud(nhanVienApi, nhanVien, { searchKeys: ['ma', 'ten', 'taiKhoan'] })
 }
