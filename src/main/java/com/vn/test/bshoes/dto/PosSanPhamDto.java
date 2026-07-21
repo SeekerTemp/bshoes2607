@@ -18,4 +18,6 @@ public class PosSanPhamDto {
     private Integer ton;
     private BigDecimal gia;
     private String imageUrl;
+    private Integer idLoaiSanPham;   // danh mục sản phẩm — storefront cần để lọc theo danh mục
+    private String loaiSP;           // tên danh mục hiển thị
 }

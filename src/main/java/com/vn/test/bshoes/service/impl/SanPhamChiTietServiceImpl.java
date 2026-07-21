@@ -134,6 +134,10 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
         dto.setTon(v.getSoLuongTon());
         dto.setGia(v.getDonGia());
         dto.setImageUrl(v.getImageUrl());
+        if (v.getIdSanPham() != null && v.getIdSanPham().getIdLoaiSanPham() != null) {
+            dto.setIdLoaiSanPham(v.getIdSanPham().getIdLoaiSanPham().getId());
+            dto.setLoaiSP(v.getIdSanPham().getIdLoaiSanPham().getTenLoaiSanPham());
+        }
         return dto;
     }
 

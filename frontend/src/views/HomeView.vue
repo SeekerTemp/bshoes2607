@@ -2,28 +2,44 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { bienTheApi } from '../api/bienThe'
+import { loaiSanPhamApi } from '../api/catalog'
 import { useCart } from '../composables/useCart'
 import { useToast } from '../composables/useToast'
 import ToastHost from '../components/ui/ToastHost.vue'   // storefront không nằm trong AppShell nên phải tự gắn
 import DatTruocModal from '../components/ui/DatTruocModal.vue'
 import { vnd } from '../utils/format'
+import { filterByCategory } from '../utils/catalog'
 
 const router = useRouter()
 
 const IMG = n => `/images/shoes/img_shoe_${n}.png`
-const activeCat = ref(0)
+const activeCat = ref(0)   // 0 = "Tất cả" (không lọc)
 const sort = ref('hot')
 const { soLuong: cartCount, add: addToCart } = useCart()
 const { notify } = useToast()
 
-const categories = [
-  { name: 'Giày thể thao', img: IMG('10001'), sale: 50, count: 42 },
-  { name: 'Giày da', img: IMG('10002'), sale: 30, count: 28 },
-  { name: 'Sandal', img: IMG('10003'), sale: 40, count: 19 },
-  { name: 'Dép thời trang', img: IMG('10004'), sale: 25, count: 23 },
-  { name: 'Giày tây', img: IMG('10005'), sale: 35, count: 31 },
-  { name: 'Giày chạy bộ', img: IMG('10006'), sale: 45, count: 37 },
-]
+// SALE hiển thị trên tile chỉ mang tính trang trí (backend loai_san_pham
+// không lưu %giảm giá riêng) — lặp vòng qua danh sách này theo thứ tự danh mục.
+const DECOR_SALE = [50, 30, 40, 25, 35, 45]
+const categories = ref([])
+
+async function loadCategories() {
+  try {
+    const rows = await loaiSanPhamApi.findAll()
+    categories.value = (rows || []).map((c, i) => ({
+      id: c.id,
+      name: c.ten,
+      img: IMG(10001 + (i % 6)),
+      sale: DECOR_SALE[i % DECOR_SALE.length],
+    }))
+  } catch (e) {
+    console.warn('API offline, categories unavailable', e)
+    categories.value = []
+  }
+}
+function categoryCount(id) {
+  return products.value.filter(p => p.idLoaiSanPham === id).length
+}
 
 const mockProducts = [
   { id: 1, ten: 'Giày thể thao Nike Air Zoom', brand: 'Nike', gia: 200000, sale: 50, ban: 120, ton: 12, img: IMG('10007') },
@@ -49,6 +65,7 @@ async function loadProducts() {
       products.value = rows.map((p, i) => ({
         id: p.id, idSanPham: p.idSanPham, ten: p.ten, brand: brandOf(p.ten), gia: p.gia, ton: p.ton ?? 0,
         mauSize: [p.mau, p.size].filter(Boolean).join(' / '),
+        idLoaiSanPham: p.idLoaiSanPham,
         sale: [50, 30, 40, 0, 35, 45, 20, 15, 30, 25][i % 10], ban: 60 + (i * 13) % 90,
         img: p.imageUrl || IMG(10007 + (i % 10)),
       }))
@@ -58,13 +75,13 @@ async function loadProducts() {
     products.value = mockProducts.map(p => ({ ...p, idSanPham: p.id }))
   }
 }
-onMounted(loadProducts)
+onMounted(() => { loadProducts(); loadCategories() })
 
 const sorted = computed(() => {
-  const a = [...products.value]
-  if (sort.value === 'asc') return a.sort((x, y) => x.gia - y.gia)
-  if (sort.value === 'desc') return a.sort((x, y) => y.gia - x.gia)
-  return a.sort((x, y) => y.ban - x.ban)
+  const a = filterByCategory(products.value, activeCat.value)
+  if (sort.value === 'asc') return [...a].sort((x, y) => x.gia - y.gia)
+  if (sort.value === 'desc') return [...a].sort((x, y) => y.gia - x.gia)
+  return [...a].sort((x, y) => y.ban - x.ban)
 })
 const oldPrice = p => Math.round(p.gia / (1 - p.sale / 100))
 function add(p) {
@@ -110,7 +127,8 @@ function xemChiTiet(p) {
 
     <!-- category nav -->
     <nav class="catnav"><div class="container d-flex flex-wrap">
-      <a v-for="(c,i) in categories" :key="c.name" href="#products" :class="{active:i===activeCat}" @click.prevent="activeCat=i">{{ c.name }}</a>
+      <a href="#products" :class="{active:activeCat===0}" @click.prevent="activeCat=0">Tất cả</a>
+      <a v-for="c in categories" :key="c.id" href="#products" :class="{active:c.id===activeCat}" @click.prevent="activeCat=c.id">{{ c.name }}</a>
     </div></nav>
 
     <div class="container py-4">
@@ -132,10 +150,10 @@ function xemChiTiet(p) {
           <a href="#products" class="text-decoration-none" style="color:#0B895A">Xem tất cả <i class="bi bi-chevron-right"></i></a>
         </div>
         <div class="row row-cols-3 row-cols-md-6 g-2">
-          <div class="col" v-for="c in categories" :key="c.name">
-            <a href="#products" class="cat-tile">
+          <div class="col" v-for="c in categories" :key="c.id">
+            <a href="#products" class="cat-tile" @click.prevent="activeCat=c.id">
               <div class="cat-thumb"><img :src="c.img" :alt="c.name"><span class="sale">SALE -{{ c.sale }}%</span></div>
-              <div class="cat-name">{{ c.name }}</div><div class="text-muted" style="font-size:11px">{{ c.count }} mẫu</div>
+              <div class="cat-name">{{ c.name }}</div><div class="text-muted" style="font-size:11px">{{ categoryCount(c.id) }} mẫu</div>
             </a>
           </div>
         </div>
