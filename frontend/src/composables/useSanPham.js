@@ -27,14 +27,10 @@ export function useSanPham() {
   loadAttributes()
 
   // san-pham-ql deletes by `ma` (soft delete), not numeric id.
+  // Honest: propagate errors so the view can surface them (no silent local fallback).
   async function remove(ma) {
-    try {
-      await sanPhamApi.remove(ma)
-      await crud.load()
-    } catch (e) {
-      console.warn('API offline, removing locally', e)
-      crud.rows.value = crud.rows.value.filter(r => r.ma !== ma)
-    }
+    await sanPhamApi.remove(ma)
+    await crud.load()
   }
 
   return { ...crud, remove, thuongHieuList, chatLieuList }
