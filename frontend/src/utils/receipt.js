@@ -80,7 +80,7 @@ export function buildReceiptHtml(receipt) {
 }
 
 /**
- * Build the receipt HTML, inject it into a hidden iframe and print it.
+ * Inject an already-built HTML document into a hidden iframe and print it.
  * Hardened vs. the original inline version: no silent empty catch (failures are
  * logged and reported to the caller via the return value), and printing waits for
  * the iframe document to actually be ready (onload + readyState + rAF) instead of
@@ -90,18 +90,9 @@ export function buildReceiptHtml(receipt) {
  * or the iframe/document could not be prepared). Callers should notify the user
  * on a falsy return.
  */
-export function printReceipt(receipt) {
-  const items = receipt && Array.isArray(receipt.items) ? receipt.items : []
-  if (!receipt || items.length === 0) {
-    console.error('printReceipt: nothing to print (no items)', receipt)
-    return false
-  }
-
-  let html
-  try {
-    html = buildReceiptHtml(receipt)
-  } catch (e) {
-    console.error('printReceipt: failed to build receipt HTML', e)
+export function printHtml(html) {
+  if (!html) {
+    console.error('printHtml: nothing to print (empty html)')
     return false
   }
 
@@ -118,7 +109,7 @@ export function printReceipt(receipt) {
     doc.write(html)
     doc.close()
   } catch (e) {
-    console.error('printReceipt: failed to write receipt document into iframe', e)
+    console.error('printHtml: failed to write document into iframe', e)
     cleanup()
     return false
   }
@@ -131,7 +122,7 @@ export function printReceipt(receipt) {
       iframe.contentWindow.focus()
       iframe.contentWindow.print()
     } catch (e) {
-      console.error('printReceipt: window.print() failed', e)
+      console.error('printHtml: window.print() failed', e)
     } finally {
       setTimeout(cleanup, 1000)
     }
@@ -148,14 +139,14 @@ export function printReceipt(receipt) {
     try {
       ready = iframe.contentWindow.document.readyState === 'complete'
     } catch (e) {
-      console.error('printReceipt: readiness check failed', e)
+      console.error('printHtml: readiness check failed', e)
       fire()
       return
     }
     if (ready) {
       requestAnimationFrame(fire)
     } else if (attempts >= MAX_ATTEMPTS) {
-      console.error('printReceipt: gave up waiting for iframe readiness, printing anyway')
+      console.error('printHtml: gave up waiting for iframe readiness, printing anyway')
       fire()
     } else {
       setTimeout(waitReady, 30)
@@ -165,4 +156,27 @@ export function printReceipt(receipt) {
   waitReady()
 
   return true
+}
+
+/**
+ * Build the receipt HTML and print it via printHtml(). See printHtml() for the
+ * hardened iframe/print behavior. Returns false without touching the DOM if the
+ * receipt has no items or fails to build.
+ */
+export function printReceipt(receipt) {
+  const items = receipt && Array.isArray(receipt.items) ? receipt.items : []
+  if (!receipt || items.length === 0) {
+    console.error('printReceipt: nothing to print (no items)', receipt)
+    return false
+  }
+
+  let html
+  try {
+    html = buildReceiptHtml(receipt)
+  } catch (e) {
+    console.error('printReceipt: failed to build receipt HTML', e)
+    return false
+  }
+
+  return printHtml(html)
 }

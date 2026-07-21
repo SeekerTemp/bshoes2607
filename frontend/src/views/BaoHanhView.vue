@@ -1,9 +1,18 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import AppShell from '../components/layout/AppShell.vue'
+import AppModal from '../components/ui/AppModal.vue'
+import ConfirmDialog from '../components/ui/ConfirmDialog.vue'
+import FormField from '../components/ui/FormField.vue'
+import AppSelect from '../components/ui/AppSelect.vue'
 import { baoHanhApi } from '../api/baoHanh'
+import { khachHangApi } from '../api/khachHang'
+import { nhanVienApi } from '../api/nhanVien'
 import { useToast } from '../composables/useToast'
+import { crudErrorMessage } from '../composables/useCrud'
 import { vnd } from '../utils/format'
+import { printHtml } from '../utils/receipt'
+import { buildWarrantyHtml } from '../utils/warranty'
 
 const { notify } = useToast()
 
@@ -68,7 +77,77 @@ async function saveStatus() {
     notify('Cập nhật cục bộ (backend offline)', 'warning')
   }
 }
-onMounted(load)
+
+// --- Thêm mới đơn bảo hành ---
+const khachHangOptions = ref([])
+const nhanVienOptions = ref([])
+const modalOpen = ref(false)
+function blankForm() {
+  return {
+    idKhachHang: null, idNhanVien: null, serial: '', loai: '',
+    donVi: '', moTa: '', chiPhi: 0, thayLinhKien: false, trangThai: statuses[0],
+  }
+}
+const form = ref(blankForm())
+
+async function loadOptions() {
+  try {
+    const list = await khachHangApi.findAll()
+    khachHangOptions.value = (list || []).map(k => ({ value: k.id, label: k.ten }))
+  } catch (e) {
+    console.warn('Không tải được danh sách khách hàng', e)
+  }
+  try {
+    const list = await nhanVienApi.findAll()
+    nhanVienOptions.value = (list || []).map(n => ({ value: n.id, label: n.ten }))
+  } catch (e) {
+    console.warn('Không tải được danh sách nhân viên', e)
+  }
+}
+
+function openCreate() {
+  form.value = blankForm()
+  modalOpen.value = true
+}
+
+async function saveCreate() {
+  try {
+    await baoHanhApi.create(form.value)
+    notify('Đã tạo đơn bảo hành', 'success')
+    modalOpen.value = false
+    await load()
+  } catch (e) {
+    notify(crudErrorMessage(e), 'warning')
+  }
+}
+
+// --- Hủy đơn / phiếu bảo hành ---
+const confirmOpen = ref(false)
+function askDeleteSel() {
+  if (!sel.value) return
+  confirmOpen.value = true
+}
+async function doDeleteSel() {
+  if (!sel.value) return
+  try {
+    await baoHanhApi.remove(sel.value.id)
+    notify('Đã hủy đơn bảo hành', 'success')
+    confirmOpen.value = false
+    sel.value = null
+    await load()
+  } catch (e) {
+    notify(crudErrorMessage(e), 'warning')
+  }
+}
+
+// --- In phiếu bảo hành ---
+function printWarranty() {
+  if (!sel.value) return
+  const ok = printHtml(buildWarrantyHtml(sel.value))
+  if (!ok) notify('Không thể in phiếu bảo hành', 'warning')
+}
+
+onMounted(() => { load(); loadOptions() })
 </script>
 
 <template>
@@ -110,7 +189,7 @@ onMounted(load)
                   <th class="text-center">STT</th><th>Mã BH</th><th>Model (giày)</th><th>Serial</th><th>Thời hạn</th><th class="text-center">Thay đế</th><th>Đơn vị</th><th>Trạng thái</th>
                 </tr></thead>
                 <tbody>
-                  <tr class="add-row"><td colspan="8" @click="notify('Thêm mới đơn bảo hành (demo)','info')"><i class="bi bi-plus-lg"></i> Thêm mới đơn bảo hành</td></tr>
+                  <tr class="add-row"><td colspan="8" @click="openCreate"><i class="bi bi-plus-lg"></i> Thêm mới đơn bảo hành</td></tr>
                   <tr v-for="(r,i) in filtered" :key="r.id" :class="{sel:sel && sel.id===r.id}" @click="sel=r">
                     <td class="text-center">{{ i+1 }}</td><td class="fw-semibold">{{ r.ma }}</td><td>{{ r.model }}</td>
                     <td>{{ r.serial }}</td><td>{{ fmtDate(r.hetHan) }}</td><td class="text-center">{{ r.thayLinhKien ? 'Có' : '—' }}</td>
@@ -123,7 +202,7 @@ onMounted(load)
             <div class="side-actions d-flex flex-column gap-2">
               <button class="btn btn-outline-secondary btn-sm" @click="load">Làm mới</button>
               <button class="btn btn-outline-secondary btn-sm" @click="notify('Import (demo)','info')">Import</button>
-              <button class="btn btn-outline-danger btn-sm" @click="notify('Hủy phiếu (demo)','info')">Hủy phiếu</button>
+              <button class="btn btn-outline-danger btn-sm" :disabled="!sel" @click="askDeleteSel">Hủy phiếu</button>
             </div>
           </div>
         </section>
@@ -171,14 +250,41 @@ onMounted(load)
             <div class="d-grid gap-2">
               <div class="row g-2">
                 <div class="col-6"><button class="btn btn-green btn-sm w-100" @click="saveStatus">Xác nhận xử lý</button></div>
-                <div class="col-6"><button class="btn btn-outline-danger btn-sm w-100" @click="notify('Hủy đơn (demo)','info')">Hủy đơn</button></div>
+                <div class="col-6"><button class="btn btn-outline-danger btn-sm w-100" @click="askDeleteSel">Hủy đơn</button></div>
               </div>
-              <button class="btn btn-outline-secondary btn-sm" @click="notify('In phiếu bảo hành ' + sel.ma,'info')"><i class="bi bi-printer"></i> In phiếu bảo hành</button>
+              <button class="btn btn-outline-secondary btn-sm" @click="printWarranty"><i class="bi bi-printer"></i> In phiếu bảo hành</button>
             </div>
           </div>
         </aside>
       </div>
     </div>
+
+    <AppModal v-model:open="modalOpen" title="Thêm mới đơn bảo hành">
+      <div class="row">
+        <div class="col-6"><FormField label="Khách hàng"><AppSelect v-model.number="form.idKhachHang" :options="khachHangOptions" /></FormField></div>
+        <div class="col-6"><FormField label="Nhân viên xử lý"><AppSelect v-model.number="form.idNhanVien" :options="nhanVienOptions" /></FormField></div>
+      </div>
+      <div class="row">
+        <div class="col-6"><FormField label="Serial"><input class="form-control" v-model="form.serial"></FormField></div>
+        <div class="col-6"><FormField label="Loại lỗi"><input class="form-control" v-model="form.loai"></FormField></div>
+      </div>
+      <FormField label="Đơn vị bảo hành"><input class="form-control" v-model="form.donVi"></FormField>
+      <FormField label="Mô tả lỗi"><textarea class="form-control" rows="2" v-model="form.moTa"></textarea></FormField>
+      <div class="row">
+        <div class="col-6"><FormField label="Chi phí"><input type="number" class="form-control" v-model.number="form.chiPhi"></FormField></div>
+        <div class="col-6"><FormField label="Trạng thái"><AppSelect v-model="form.trangThai" :options="statuses" /></FormField></div>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" v-model="form.thayLinhKien" id="bh-thaylk">
+        <label class="form-check-label" for="bh-thaylk">Thay đế / linh kiện</label>
+      </div>
+      <template #footer>
+        <button class="btn btn-secondary" @click="modalOpen = false">Huỷ</button>
+        <button class="btn btn-green" @click="saveCreate">Lưu</button>
+      </template>
+    </AppModal>
+
+    <ConfirmDialog v-model:open="confirmOpen" title="Hủy đơn bảo hành" :message="`Hủy đơn bảo hành ${sel?.ma}?`" @confirm="doDeleteSel" />
   </AppShell>
 </template>
 
