@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Sinh 2 file Word workshop theo format người dùng chốt ngày 2026-07-17.
+Sinh 2 file Word workshop theo format chốt ngày 2026-07-17.
 Định dạng nằm ở docx_format.py; file này chỉ lo nội dung.
+
+Mô hình dữ liệu 3 cấp: RQ (request) -> PB (user story) -> Task, đánh số theo Sprint.
 
 Chạy:  python gen_docx.py <thư mục xuất>
 """
@@ -9,7 +11,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from bshoes_data import *
 from docx import Document
-from docx_format import setup, title, Chuong, ket_luan, kiem_tra_gach_ngang
+from docx_format import setup, title, Chuong, ket_luan
 
 OUTDIR = sys.argv[1]
 
@@ -22,10 +24,18 @@ SPRINT_DATES = {
     6: "17/08/2026 đến 30/08/2026",
 }
 SPRINT_OWNER = {1: "DEV1 + DEV2", 2: "DEV1 + DEV2", 3: "DEV1 + DEV2 + DEV3",
-                4: "DEV1 + DEV3", 5: "DEV2 + DEV3", 6: "DEV1 + DEV2"}
+                4: "DEV1 + DEV2 + DEV3", 5: "DEV2 + DEV3", 6: "DEV1 + DEV2"}
 
-TONG_GIO = sum(t[4] for t in TASKS)
-TONG_SP = sum(fib((p[7] + p[8] + p[9] + p[10]) * C_DEFAULT * ED_TOTAL / 36) for p in PBS)
+TONG_GIO = sum(t["est"] for t in TASKS)
+TONG_SP = sum(fib((p["tuong_tac"] + p["quy_tac"] + p["thuc_the"] + p["thao_tac"]) * C_DEFAULT * ED_TOTAL / 36) for p in PBS)
+
+
+def pbs_of(rq_id):
+    return [p for p in PBS if p["rq"] == rq_id]
+
+
+def tasks_of(pb_id):
+    return [t for t in TASKS if t["story"] == pb_id]
 
 
 # =====================================================================
@@ -38,7 +48,7 @@ title(doc, "Kế hoạch dự án " + PROJECT, "WORKSHOP 1, phiên bản %s" % V
 c1 = Chuong(doc, 1, "Tổng quan dự án")
 c1.para("Chương này giới thiệu bối cảnh dự án BShoes, công nghệ sử dụng và cách nhóm "
         "phân vai. Đây là căn cứ để hiểu vì sao kế hoạch ở các chương sau được chia nhỏ "
-        "và ưu tiên kiểm thử.")
+        "theo ba cấp yêu cầu và ưu tiên kiểm thử.")
 
 c1.h2(1, "Thông tin chung")
 c1.para("BShoes là hệ thống quản lý và bán hàng cho cửa hàng giày, được chuyển từ ứng dụng "
@@ -49,8 +59,9 @@ c1.bang("Thông tin chung của dự án", ["Mục", "Nội dung"], [
     ["Phiên bản", VERSION],
     ["Khung làm việc", "Scrum, 6 Sprint, mỗi Sprint 2 tuần"],
     ["Công nghệ", "Spring Boot (JPA) + SQL Server; Vue 3 SPA; Chart.js"],
-    ["Tổng khối lượng", "%d yêu cầu, %d product backlog, %d task, %d giờ"
-                        % (len(REQS), len(PBS), len(TASKS), TONG_GIO)],
+    ["Cấu trúc backlog", "3 cấp: %d Request (RQ), %d Product Backlog (PB), %d Task"
+                         % (len(RQS), len(PBS), len(TASKS))],
+    ["Tổng khối lượng", "%d giờ công" % TONG_GIO],
     ["Thời hạn hoàn thành", DEADLINE],
 ], [4, 12])
 
@@ -64,110 +75,140 @@ c1.bang("Phân vai trong nhóm", ["Vai trò", "Thành viên", "Trách nhiệm"],
 
 # ---------------------------------------------------------- Chương 2
 c2 = Chuong(doc, 2, "Danh sách chức năng của hệ thống")
-c2.para("Chương này liệt kê toàn bộ chức năng hệ thống cần có, nhóm theo nghiệp vụ. Danh "
-        "sách là đầu vào để bóc tách thành product backlog ở chương 3.")
+c2.para("Chương này liệt kê toàn bộ chức năng hệ thống cần có. BShoes gồm 6 chức năng lõi "
+        "phục vụ bán hàng tại quầy và 3 chức năng mở rộng hướng dữ liệu và hướng khách hàng. "
+        "Danh sách là đầu vào để bóc tách thành Product Backlog ở chương 3.")
 
-c2.h2(1, "Nhóm chức năng nghiệp vụ")
+c2.h2(1, "Sáu chức năng lõi")
 for txt, items in [
-    ("Đăng nhập và phân quyền", [
-        "Đăng nhập bằng tài khoản nhân viên",
-        "Phân quyền truy cập màn hình cho từng nhân viên",
-        "Vai trò đóng vai trò bộ quyền mặc định",
-    ]),
-    ("Bán hàng tại quầy (POS)", [
-        "Tạo hóa đơn chờ, tối đa 3 hóa đơn cùng lúc",
-        "Thêm hàng vào giỏ, hệ thống tự trừ kho",
-        "Áp phiếu giảm giá, thanh toán tiền mặt, chuyển khoản hoặc kết hợp",
-        "In hóa đơn, hủy đơn và hoàn kho, quét QR để thêm nhanh",
-    ]),
-    ("Quản lý sản phẩm", [
+    ("Đăng nhập", ["Đăng nhập bằng tài khoản nhân viên, lấy đúng quyền theo vai trò"]),
+    ("Quản lý Nhân viên và Phân quyền Nhân viên", [
+        "CRUD nhân viên, gán vai trò",
+        "Vai trò là bộ quyền mặc định, phân quyền truy cập tới từng nhân viên"]),
+    ("Quản lý sản phẩm và Quản lý danh mục sản phẩm", [
         "Sản phẩm, biến thể theo màu và size, nhập kho",
-        "Danh mục và thuộc tính, gộp chung trong màn quản lý sản phẩm",
-    ]),
-    ("Giao hàng và bảo hành", [
-        "Tạo đơn giao kèm phí ship, cập nhật đã giao",
-        "Trả hàng và hoàn kho",
+        "Danh mục và 8 nhóm thuộc tính, gộp chung trong màn quản lý sản phẩm"]),
+    ("Bán hàng tại quầy (POS), Xuất hóa đơn, Xuất báo cáo nhân viên", [
+        "Tạo hóa đơn chờ, thêm hàng vào giỏ và tự trừ kho, quét QR",
+        "Áp phiếu giảm giá, thanh toán tiền mặt, chuyển khoản hoặc kết hợp",
+        "In hóa đơn, hủy đơn và hoàn kho"]),
+    ("Quản lý đơn đặt hàng, xem lịch sử đặt hàng", [
+        "Tạo đơn giao kèm phí ship, cập nhật đã giao, trả hàng và hoàn kho",
+        "Tra cứu và xem lịch sử đơn hàng"]),
+    ("Quản lý khách hàng", [
+        "CRUD khách hàng và địa chỉ giao hàng",
+        "Xem lịch sử mua hàng của khách"]),
+]:
+    c2.bullet_head(txt)
+    for it in items:
+        c2.bullet_item(it)
+
+c2.h2(2, "Ba chức năng mở rộng")
+c2.para("Ba chức năng mở rộng nhằm truyền tải định hướng kinh doanh hướng người dùng và "
+        "hướng dữ liệu, giúp chủ doanh nghiệp đánh giá tình hình kinh doanh thực tế.")
+for txt, items in [
+    ("Xem Dashboard báo cáo kinh doanh, Xuất báo cáo doanh thu", [
+        "KPI, dòng tiền, ROI, giữ chân khách, sản phẩm bán chạy",
+        "Xuất báo cáo ra Excel"]),
+    ("Sau bán hàng: Dịch vụ hậu mãi và bảo hành, Quản lý khuyến mãi", [
         "Tiếp nhận và xử lý bảo hành theo trạng thái, in phiếu",
-    ]),
-    ("Cửa hàng online cho khách", [
-        "Trang chủ và trang chi tiết sản phẩm",
-        "Giỏ hàng và đặt hàng giao tận nhà, thanh toán khi nhận",
-        "Đặt trước mẫu đang hết hàng",
-        "Tra cứu đơn theo số điện thoại và xác nhận đã nhận",
-    ]),
-    ("Quản trị và phân tích", [
-        "Quản lý nhân viên, khách hàng và địa chỉ giao hàng",
-        "Khuyến mãi bằng phiếu giảm giá",
-        "Thống kê KPI, dòng tiền, ROI, giữ chân khách, xuất Excel",
-    ]),
+        "Quản lý phiếu giảm giá và khuyến mãi"]),
+    ("Xem sản phẩm và Mua hàng (Client - Khách hàng), Preorder sản phẩm", [
+        "Trang chủ, trang chi tiết, giỏ hàng, đặt hàng giao tận nhà (COD)",
+        "Đặt trước mẫu đang hết hàng, tra cứu đơn theo số điện thoại"]),
 ]:
     c2.bullet_head(txt)
     for it in items:
         c2.bullet_item(it)
 
 # ---------------------------------------------------------- Chương 3
-c3 = Chuong(doc, 3, "Quy trình làm việc và bảng phân rã yêu cầu")
-c3.para("Chương này mô tả cách nhóm biến yêu cầu của actor thành công việc cụ thể cho lập "
-        "trình viên. Toàn bộ backlog được tổ chức theo ba cấp, trình bày ở mục 3.2.")
-
-c3.h2(1, "Quy trình làm việc của nhóm")
-for i, s in enumerate([
-    "Xác nhận vị trí và vai trò cho từng thành viên trong nhóm",
-    "Thu thập yêu cầu từ actor (REQ) và liệt kê những công việc cần làm",
-    "PO bóc tách mỗi REQ thành các product backlog (use case) và sắp thứ tự ưu tiên",
-    "PO cùng nhóm chia mỗi product backlog thành các task kèm ước tính giờ và người phụ trách",
-    "Dev nhận task và hoàn thành đúng thời hạn của Sprint",
-    "SM theo dõi tiến độ và review chất lượng, QC test, PO nghiệm thu Done",
-], 1):
-    c3.so_thu_tu(s, i)
-
-c3.h2(2, "Bảng phân rã ba cấp")
-c3.para("Cấp 1 là REQ, tức yêu cầu đến từ actor. Cấp 2 là PB, do PO bóc tách thành use case, "
-        "mỗi REQ có nhiều PB. Cấp 3 là TASK, mỗi PB có nhiều task để Dev thực hiện. Các bảng "
-        "dưới đây trình bày đầy đủ %d yêu cầu, %d product backlog và %d task."
-        % (len(REQS), len(PBS), len(TASKS)))
-
-for idx, (rq, actor, desc) in enumerate(REQS, 1):
-    c3.h3(2, idx, "%s. Actor: %s" % (rq, actor))
-    c3.para(desc)
-    rows = []
-    for pb in [p for p in PBS if p[1] == rq]:
-        tks = [t for t in TASKS if t[1] == pb[0]]
-        for i, t in enumerate(tks):
-            rows.append([pb[0] if i == 0 else "", pb[3] if i == 0 else "",
-                         t[0], t[2], t[4], t[5]])
-    c3.bang("Phân rã %s thành product backlog và task" % rq,
-            ["PB", "User Story (use case)", "Task", "Nội dung task", "Giờ", "Phụ trách"],
-            rows, [1.6, 5.2, 1.4, 5.2, 1.2, 1.8])
+c3 = Chuong(doc, 3, "Product Backlog cấp Request")
+c3.para("Chương này liệt kê các yêu cầu gốc từ actor dưới dạng user story chuẩn As a, "
+        "I want, So that. Mỗi Request (RQ) là một dòng của Product Backlog và là gốc để "
+        "bóc tách thành các user story chi tiết ở chương 4.")
+c3.h2(1, "Bảng Product Backlog")
+c3.para("Product Backlog có %d Request, sắp theo giá trị nghiệp vụ. Business Value và Độ "
+        "ưu tiên cho biết hạng mục nào cần làm trước. Bảng 3.1 trình bày đầy đủ các Request "
+        "kèm lý do (So that)." % len(RQS))
+rows = [[r["id"], "Là %s" % r["role"], r["goal"], r["so_that"], r["priority"], r["bv"], "New"] for r in RQS]
+c3.bang("Product Backlog cấp Request (RQ)",
+        ["ID", "As a/an (vai trò)", "I want to (mục tiêu)", "So that (lý do)", "Ưu tiên", "Business Value", "State"],
+        rows, [1.3, 2.4, 4.8, 4.2, 1.2, 1.7, 1.4])
 
 # ---------------------------------------------------------- Chương 4
-doc.add_page_break()
-c4 = Chuong(doc, 4, "Phân chia công việc theo Sprint")
-c4.para("Chương này xếp các product backlog vào 6 Sprint, mỗi Sprint 2 tuần. Nguyên tắc xếp "
-        "là làm nền tảng trước, nghiệp vụ bán hàng ở giữa, phân tích số liệu sau cùng, để "
-        "tính năng sinh ra tiền được kiểm thử sớm nhất.")
+c4 = Chuong(doc, 4, "Quy trình làm việc và phân rã yêu cầu")
+c4.para("Chương này mô tả cách nhóm biến Request của actor thành công việc cụ thể cho lập "
+        "trình viên. Toàn bộ backlog được tổ chức theo ba cấp RQ, PB và Task, trình bày ở mục 4.2.")
 
-c4.h2(1, "Bảng phân chia Sprint")
-rows = []
-for sp, goal in SPRINTS:
-    pbs = [p[0] for p in PBS if p[6] == sp]
-    hrs = sum(t[4] for t in TASKS if t[1] in pbs)
-    rows.append(["Sprint %d" % sp, SPRINT_DATES[sp], goal, ", ".join(pbs), SPRINT_OWNER[sp], hrs])
-c4.bang("Phân chia công việc theo Sprint",
-        ["Sprint", "Thời gian", "Mục tiêu", "Product Backlog", "Phụ trách", "Giờ"],
-        rows, [1.6, 3.4, 5.0, 3.6, 2.4, 1.0])
+c4.h2(1, "Quy trình làm việc của nhóm")
+for i, s in enumerate([
+    "Xác nhận vị trí và vai trò cho từng thành viên trong nhóm",
+    "Thu thập Request từ actor (RQ) dưới dạng As a, I want, So that",
+    "PO bóc tách mỗi RQ thành các Product Backlog (user story) và sắp thứ tự ưu tiên",
+    "PO cùng nhóm chia mỗi PB thành các Task kèm ước tính giờ và người phụ trách",
+    "Dev nhận Task và hoàn thành đúng thời hạn của Sprint",
+    "SM theo dõi tiến độ và review chất lượng, QC test, PO nghiệm thu Done",
+], 1):
+    c4.so_thu_tu(s, i)
 
-c4.h2(2, "Kiểm thử và dự phòng")
-c4.bullet_head("Kiểm thử và nghiệm thu tổng thể")
-c4.bullet_item("31/08/2026 đến 13/09/2026, do QC và PO thực hiện")
-c4.bullet_head("Dự phòng sửa lỗi và hoàn thiện tài liệu")
-c4.bullet_item("14/09/2026 đến 30/09/2026")
+c4.h2(2, "Bảng phân rã ba cấp")
+c4.para("Cấp 1 là RQ, yêu cầu đến từ actor. Cấp 2 là PB, do PO bóc tách thành user story, "
+        "mỗi RQ có nhiều PB. Cấp 3 là Task, mỗi PB có nhiều Task để Dev thực hiện. Các bảng "
+        "dưới đây trình bày đầy đủ %d Request, %d Product Backlog và %d Task."
+        % (len(RQS), len(PBS), len(TASKS)))
+
+for idx, r in enumerate(RQS, 1):
+    c4.h3(2, idx, "%s: %s (actor: %s)" % (r["id"], r["ten"], r["role"]))
+    c4.para("Là %s, tôi muốn %s, %s." % (r["role"], r["goal"], r["so_that"]))
+    rows = []
+    for pb in pbs_of(r["id"]):
+        tks = tasks_of(pb["id"])
+        for i, t in enumerate(tks):
+            rows.append([pb["id"] if i == 0 else "", pb["user_story"] if i == 0 else "",
+                         t["id"], t["task"], t["est"], t["who"]])
+    c4.bang("Phân rã %s thành user story và task" % r["id"],
+            ["PB", "User Story", "Task", "Nội dung task", "Giờ", "Phụ trách"],
+            rows, [1.4, 4.6, 1.2, 5.0, 1.0, 1.6])
 
 # ---------------------------------------------------------- Chương 5
-c5 = Chuong(doc, 5, "Sơ đồ chức năng")
-c5.para("Chương này trình bày cây chức năng của hệ thống theo dạng phân cấp, giúp nhìn nhanh "
+doc.add_page_break()
+c5 = Chuong(doc, 5, "Release Backlog và phân chia Sprint")
+c5.para("Chương này xếp các user story vào 6 Sprint theo Release Backlog. Nguyên tắc xếp là "
+        "làm nền tảng và bán hàng tại quầy (POS) trước làm khung chuẩn, mở rộng cửa hàng "
+        "online cho khách ở Sprint sau, phân tích số liệu sau cùng.")
+
+c5.h2(1, "Bảng Release Backlog")
+c5.para("Release Backlog gom user story theo Backlog (chính là Request) và gán mỗi story "
+        "vào một Sprint kèm Business Value. Bảng 5.1 là toàn bộ %d user story." % len(PBS))
+rows = []
+for r in RQS:
+    for pb in pbs_of(r["id"]):
+        rows.append([r["id"], r["ten"], pb["user_story"], pb["id"], pb["priority"], pb["bv"], "Sprint %d" % pb["sprint"]])
+c5.bang("Release Backlog: user story theo Backlog và Sprint",
+        ["Backlog ID", "Backlog", "User Story", "Story ID", "Ưu tiên", "Business Value", "Sprint"],
+        rows, [1.4, 2.6, 5.2, 1.4, 1.2, 1.7, 1.5])
+
+c5.h2(2, "Bảng phân chia Sprint")
+rows = []
+for sp, goal in SPRINTS:
+    pbs = [p["id"] for p in PBS if p["sprint"] == sp]
+    hrs = sum(t["est"] for t in TASKS if t["sprint"] == sp)
+    rows.append(["Sprint %d" % sp, SPRINT_DATES[sp], goal, ", ".join(pbs), SPRINT_OWNER[sp], hrs])
+c5.bang("Phân chia công việc theo Sprint",
+        ["Sprint", "Thời gian", "Mục tiêu", "Product Backlog", "Phụ trách", "Giờ"],
+        rows, [1.4, 3.2, 4.6, 3.6, 2.4, 1.0])
+
+c5.h2(3, "Kiểm thử và dự phòng")
+c5.bullet_head("Kiểm thử và nghiệm thu tổng thể")
+c5.bullet_item("31/08/2026 đến 13/09/2026, do QC và PO thực hiện")
+c5.bullet_head("Dự phòng sửa lỗi và hoàn thiện tài liệu")
+c5.bullet_item("14/09/2026 đến 30/09/2026")
+
+# ---------------------------------------------------------- Chương 6
+c6 = Chuong(doc, 6, "Sơ đồ chức năng")
+c6.para("Chương này trình bày cây chức năng của hệ thống theo dạng phân cấp, giúp nhìn nhanh "
         "phạm vi sản phẩm.")
-c5.h2(1, "Cây chức năng phân cấp")
+c6.h2(1, "Cây chức năng phân cấp")
 tree = [
     ("Đăng nhập và phân quyền theo từng nhân viên", [
         "Đăng nhập", "Lưới phân quyền nhân viên", "Vai trò làm bộ quyền mặc định"]),
@@ -188,20 +229,19 @@ tree = [
     ("Thống kê và phân tích", ["KPI", "Dòng tiền", "ROI", "Giữ chân khách", "Bán chạy và bán chậm", "Xuất Excel"]),
 ]
 for nhanh, la in tree:
-    c5.bullet_head(nhanh)
+    c6.bullet_head(nhanh)
     for x in la:
-        c5.bullet_item(x)
+        c6.bullet_item(x)
 
 ket_luan(doc, [
-    "Kế hoạch chia dự án BShoes thành %d yêu cầu từ actor, bóc tách tiếp thành %d product "
-    "backlog và %d task, tổng cộng %d giờ, trải trên 6 Sprint và kết thúc trước hạn %s."
-    % (len(REQS), len(PBS), len(TASKS), TONG_GIO, DEADLINE),
-    "Cách chia này bám đúng điểm mạnh và điểm yếu của nhóm: các thành viên hợp tác tốt nhưng "
-    "trình độ IT còn hạn chế, nên mỗi task được giữ ở mức nhỏ, có người phụ trách rõ ràng và "
-    "luôn kèm task kiểm thử ở những phần dễ sai như trừ kho, thanh toán và phân quyền.",
-    "Rủi ro lớn nhất là nhóm chưa có hạ tầng kiểm thử tự động và CI, thể hiện ở điểm môi "
-    "trường ED chỉ đạt %d trên %d. Nhóm chấp nhận rủi ro này và bù lại bằng cách tăng thời "
-    "gian kiểm thử thủ công cùng khoảng dự phòng hai tuần cuối." % (ED_TOTAL, ED_MAX),
+    "Kế hoạch chia dự án BShoes thành %d Request từ actor, bóc tách tiếp thành %d Product "
+    "Backlog và %d Task, tổng cộng %d giờ, trải trên 6 Sprint và kết thúc trước hạn %s."
+    % (len(RQS), len(PBS), len(TASKS), TONG_GIO, DEADLINE),
+    "Khung chuẩn là bán hàng tại quầy: Sprint 1 đến Sprint 3 dựng nền tảng, quản lý sản phẩm "
+    "và POS. Cửa hàng online cho khách xem và mua hàng là phần mở rộng ở Sprint 5, phân tích "
+    "số liệu ở Sprint 6.",
+    "ID được chuẩn hóa ba cấp RQ, PB, Task và đánh số lại theo thứ tự Sprint, nên mỗi Task "
+    "truy vết đủ Story ID, Backlog ID và Sprint, không còn lệch giữa task và story.",
 ])
 
 f1 = os.path.join(OUTDIR, "WORKSHOP_1_BShoes.docx")
@@ -222,11 +262,11 @@ c1.para("Chương này trả lời hai câu hỏi của workshop: product backlo
 
 c1.h2(1, "Mục tiêu của Product Backlog")
 c1.para("Product backlog của BShoes là danh sách toàn bộ yêu cầu, tính năng và cải tiến cần "
-        "thực hiện, được bóc tách từ %d yêu cầu của các actor thành %d hạng mục và sắp xếp "
+        "thực hiện, được bóc tách từ %d Request của các actor thành %d user story và sắp xếp "
         "theo giá trị nghiệp vụ. Mục tiêu là giúp nhóm luôn nhìn rõ việc cần làm và tập trung "
         "trước vào hạng mục mang lại giá trị cao nhất cho cửa hàng, cụ thể là bán được hàng và "
         "trừ kho chính xác. Với một nhóm còn hạn chế về IT, backlog còn đóng vai trò bảng phân "
-        "công minh bạch, tránh việc hai người cùng sửa một chỗ." % (len(REQS), len(PBS)))
+        "công minh bạch, tránh việc hai người cùng sửa một chỗ." % (len(RQS), len(PBS)))
 
 c1.h2(2, "Mục tiêu của Sản phẩm")
 c1.para("Xây dựng hệ thống quản lý và bán hàng cho cửa hàng giày BShoes, cho phép nhân viên "
@@ -243,9 +283,9 @@ c2.para("Chương này nêu mục tiêu từng Sprint kèm khối lượng quy �
 c2.h2(1, "Bảng mục tiêu Sprint")
 rows = []
 for sp, goal in SPRINTS:
-    pbs = [p[0] for p in PBS if p[6] == sp]
-    pts = sum(fib((p[7] + p[8] + p[9] + p[10]) * C_DEFAULT * ED_TOTAL / 36) for p in PBS if p[6] == sp)
-    hrs = sum(t[4] for t in TASKS if t[1] in pbs)
+    pbs = [p for p in PBS if p["sprint"] == sp]
+    pts = sum(fib((p["tuong_tac"] + p["quy_tac"] + p["thuc_the"] + p["thao_tac"]) * C_DEFAULT * ED_TOTAL / 36) for p in pbs)
+    hrs = sum(t["est"] for t in TASKS if t["sprint"] == sp)
     rows.append(["Sprint %d" % sp, SPRINT_DATES[sp], goal, len(pbs), pts, hrs])
 c2.bang("Mục tiêu và khối lượng từng Sprint",
         ["Sprint", "Thời gian", "Mục tiêu Sprint", "Số User Story", "Story Points", "Giờ"],
@@ -307,22 +347,37 @@ c5.para("Chương này áp công thức ở chương 3 với hệ số ED ở ch
 c5.h2(1, "Bảng ước lượng chi tiết")
 rows = []
 for pb in PBS:
-    up = pb[7] + pb[8] + pb[9] + pb[10]
+    up = pb["tuong_tac"] + pb["quy_tac"] + pb["thuc_the"] + pb["thao_tac"]
     ap = up * C_DEFAULT
     pps = ap * ED_TOTAL / 36
-    rows.append([pb[0], pb[3][:60], pb[7], pb[8], pb[9], pb[10], up, "%.1f" % ap, "%.2f" % pps, fib(pps)])
+    rows.append([pb["id"], pb["user_story"][:60], pb["tuong_tac"], pb["quy_tac"], pb["thuc_the"],
+                 pb["thao_tac"], up, "%.1f" % ap, "%.2f" % pps, fib(pps)])
 c5.bang("Ước lượng UP, AP, PPS và story point cho từng user story",
         ["ID", "User Story", "Tương tác", "Quy tắc", "Thực thể", "Thao tác", "UP", "AP", "PPS", "SP"],
         rows, [1.2, 5.4, 1.3, 1.2, 1.3, 1.3, 0.9, 0.9, 1.0, 0.8])
 
 c5.h2(2, "Tổng hợp")
 c5.bang("Tổng hợp khối lượng dự án", ["Chỉ số", "Giá trị"], [
-    ["Tổng UP", sum(p[7] + p[8] + p[9] + p[10] for p in PBS)],
+    ["Tổng UP", sum(p["tuong_tac"] + p["quy_tac"] + p["thuc_the"] + p["thao_tac"] for p in PBS)],
     ["Tổng Story Point", TONG_SP],
     ["Tổng giờ task", "%d giờ" % TONG_GIO],
     ["Số user story", len(PBS)],
     ["Số task", len(TASKS)],
 ], [7.0, 5.0])
+
+# ---------------------------------------------------------- Chương 6
+doc.add_page_break()
+c6 = Chuong(doc, 6, "Sprint Backlog theo từng Sprint")
+c6.para("Chương này chia nhỏ Product Backlog thành Sprint Backlog cho từng Sprint. Mỗi bảng "
+        "liệt kê Task của một Sprint kèm Product Backlog gốc, ước tính giờ và trạng thái, "
+        "đúng mẫu Sprint Backlog của môn học.")
+for sp, goal in SPRINTS:
+    c6.h3(1, sp, "Sprint %d: %s" % (sp, goal))
+    rows = [[t["id"], t["story"], t["task"], t["mo_ta"], t["est"], "To Do"]
+            for t in TASKS if t["sprint"] == sp]
+    c6.bang("Sprint Backlog Sprint %d" % sp,
+            ["Task ID", "Product Backlog", "Task", "Mô tả công việc", "Estimate (giờ)", "Trạng thái"],
+            rows, [1.2, 1.8, 3.6, 4.8, 1.6, 1.4])
 
 ket_luan(doc, [
     "Product backlog của BShoes gồm %d user story, quy đổi được %d story point và %d giờ công. "
@@ -332,8 +387,8 @@ ket_luan(doc, [
     "Những story điểm cao nhất đều rơi vào nhóm trừ kho, thanh toán và phân quyền. Đây cũng là "
     "nơi nhóm bố trí task kiểm thử riêng, vì sai ở đây gây hậu quả trực tiếp lên tiền và hàng "
     "của cửa hàng.",
-    "Nhóm giữ hệ số C bằng 1 và để ngỏ ở file Excel, nên khi giảng viên yêu cầu đổi C thì toàn "
-    "bộ bảng ước lượng tự tính lại mà không phải sửa tay.",
+    "Sprint Backlog được tách theo từng Sprint và mỗi Task trỏ về đúng Product Backlog gốc, "
+    "nên khối lượng mỗi Sprint minh bạch và không lệch với danh sách user story.",
 ])
 
 f2 = os.path.join(OUTDIR, "WORKSHOP_2_MucTieu_BShoes.docx")

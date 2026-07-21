@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+"""Sinh WORKSHOP_2_BShoes.xlsx: Product Backlog (RQ), Release Backlog (PB),
+Sprint Planning, Sprint Backlog (tách từng sprint), ED, Ước lượng Story.
+
+Bám cột theo file mẫu doc-school-request (3 sheet Product/Release/Sprint Backlog).
+"""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from bshoes_data import *
@@ -7,10 +12,12 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 OUT = sys.argv[1]
-GREEN = "0B895A"; LIGHT = "E7F4EF"; GREY = "EEF1F4"
+GREEN = "0B895A"; LIGHT = "E7F4EF"; GREY = "EEF1F4"; BAND = "D9EAE2"
 hdr_font = Font(bold=True, color="FFFFFF", size=11)
 hdr_fill = PatternFill("solid", fgColor=GREEN)
 title_font = Font(bold=True, size=14, color=GREEN)
+band_font = Font(bold=True, color=GREEN, size=11)
+band_fill = PatternFill("solid", fgColor=BAND)
 bold = Font(bold=True)
 thin = Side(style="thin", color="D5DBE2")
 border = Border(left=thin, right=thin, top=thin, bottom=thin)
@@ -19,6 +26,10 @@ ctr = Alignment(horizontal="center", vertical="center")
 
 wb = Workbook()
 
+NPB = len(PBS)
+NRQ = len(RQS)
+
+
 def style_header(ws, row, ncols):
     for c in range(1, ncols + 1):
         cell = ws.cell(row=row, column=c)
@@ -26,28 +37,35 @@ def style_header(ws, row, ncols):
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
     ws.freeze_panes = ws.cell(row=row + 1, column=1)
 
+
 def widths(ws, ws_widths):
     for i, w in enumerate(ws_widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
+
+def goal_of(user_story):
+    """Tach phan 'I want to' khoi cau 'La <role>, toi muon <goal>'."""
+    return user_story.split("tôi muốn ", 1)[1] if "tôi muốn " in user_story else user_story
+
+
 # ============ 0. Tổng quan ============
 ws = wb.active; ws.title = "0. Tổng quan"
 ws["A1"] = PROJECT; ws["A1"].font = title_font
-ws["A2"] = "WORKSHOP 2: Product Backlog, Sprint Backlog & Ước lượng Story"; ws["A2"].font = bold
+ws["A2"] = "WORKSHOP 2: Product Backlog, Release Backlog, Sprint Backlog & Ước lượng Story"; ws["A2"].font = bold
 ws["A3"] = "Phiên bản: " + VERSION
 ws["A4"] = "Hạn hoàn thành: " + DEADLINE
 r = 6
-ws.cell(row=r, column=1, value="Cấu trúc tài liệu (3 cấp)").font = bold; r += 1
-for line in ["Cấp 1, REQ: yêu cầu từ actor (người dùng thực tế)",
-             "Cấp 2, PB (Product Backlog): PO bóc tách yêu cầu thành use case / user story, mỗi REQ có nhiều PB",
-             "Cấp 3, TASK: mỗi PB được chia thành nhiều task để Dev thực hiện"]:
+ws.cell(row=r, column=1, value="Cấu trúc tài liệu (3 cấp, đánh số theo Sprint)").font = bold; r += 1
+for line in ["Cấp 1, RQ (Request): yêu cầu từ actor, dạng As a / I want / So that -> Product Backlog",
+             "Cấp 2, PB (Product Backlog Item): user story bóc từ RQ, có Priority/Sprint/Story Point -> Release Backlog",
+             "Cấp 3, Task: mỗi PB chia thành nhiều Task -> Sprint Backlog (tách từng Sprint)"]:
     ws.cell(row=r, column=1, value=line); r += 1
 r += 1
 ws.cell(row=r, column=1, value="Công thức ước lượng (theo tài liệu 'Ước lượng số lượng Story')").font = bold; r += 1
 for line in ["UP  (Điểm chưa hiệu chỉnh) = Loại tương tác + Quy tắc nghiệp vụ + Số thực thể + Thao tác dữ liệu   (mỗi mục 1..3)",
              "AP  (Điểm đã hiệu chỉnh)   = UP × C   (C = hệ số nhân)",
              "PPS (Điểm cho mỗi Story)   = (AP × ED) / 36",
-             "ED  = tổng 18 yếu tố môi trường, mỗi yếu tố 0 hoặc 2  →  tối đa 36"]:
+             "ED  = tổng 18 yếu tố môi trường, mỗi yếu tố 0 hoặc 2  ->  tối đa 36"]:
     ws.cell(row=r, column=1, value=line); r += 1
 r += 1
 ws.cell(row=r, column=1, value="Kết quả tính cho nhóm").font = bold; r += 1
@@ -61,56 +79,60 @@ ws.cell(row=r, column=3, value="Trách nhiệm").font = bold; r += 1
 for code, name, resp in TEAM:
     ws.cell(row=r, column=1, value=code); ws.cell(row=r, column=2, value=name)
     ws.cell(row=r, column=3, value=resp); r += 1
-widths(ws, [22, 26, 90])
+widths(ws, [22, 26, 96])
 
-# ============ 1. Request -> Backlog -> Task ============
-ws = wb.create_sheet("1. REQ-PB-TASK")
-cols = ["REQ ID (cấp 1)", "Actor", "Yêu cầu từ actor", "PB ID (cấp 2)", "User Story (use case)",
-        "Task ID (cấp 3)", "Task", "Ước tính (giờ)", "Phụ trách"]
-ws.append(cols); style_header(ws, 1, len(cols))
-row = 2
-for rq, actor, desc in REQS:
-    pbs = [p for p in PBS if p[1] == rq]
-    first_req = True
-    for pb in pbs:
-        tks = [t for t in TASKS if t[1] == pb[0]]
-        if not tks:
-            tks = [("", pb[0], "(chưa chia task)", "", 0, "")]
-        first_pb = True
-        for t in tks:
-            ws.cell(row=row, column=1, value=rq if first_req else "")
-            ws.cell(row=row, column=2, value=actor if first_req else "")
-            ws.cell(row=row, column=3, value=desc if first_req else "")
-            ws.cell(row=row, column=4, value=pb[0] if first_pb else "")
-            ws.cell(row=row, column=5, value=pb[3] if first_pb else "")
-            ws.cell(row=row, column=6, value=t[0])
-            ws.cell(row=row, column=7, value=t[2])
-            ws.cell(row=row, column=8, value=t[4])
-            ws.cell(row=row, column=9, value=t[5])
-            for c in range(1, len(cols) + 1):
-                ws.cell(row=row, column=c).border = border
-                ws.cell(row=row, column=c).alignment = wrap
-            first_req = False; first_pb = False
-            row += 1
-widths(ws, [12, 20, 42, 10, 46, 10, 40, 12, 11])
-
-# ============ 2. Product Backlog ============
-ws = wb.create_sheet("2. Product Backlog")
-cols = ["REQ", "ID", "Vai trò", "User Story", "Mô tả chức năng", "Độ ưu tiên", "Sprint", "Story Points"]
-ws.append(cols); style_header(ws, 1, len(cols))
-for i, pb in enumerate(PBS, start=2):
-    ws.cell(row=i, column=1, value=pb[1]); ws.cell(row=i, column=2, value=pb[0])
-    ws.cell(row=i, column=3, value=pb[2]); ws.cell(row=i, column=4, value=pb[3])
-    ws.cell(row=i, column=5, value=pb[4]); ws.cell(row=i, column=6, value=pb[5])
-    ws.cell(row=i, column=7, value=pb[6])
-    ws.cell(row=i, column=8, value="=VLOOKUP(B%d,'6. Ước lượng Story'!$A$5:$L$%d,12,FALSE)" % (i, 4 + len(PBS)))
+# ============ 1. Product Backlog (cấp Request) ============
+ws = wb.create_sheet("1. Product Backlog")
+ws["A1"] = "Product Backlog cấp Request (RQ): As a / I want / So that"; ws["A1"].font = title_font
+cols = ["ID", "As a/an [role]", "I want to [goal]", "So that [reason]", "Priority",
+        "Business Value", "Acceptance Criteria", "State"]
+ws.append([]); ws.append(cols); style_header(ws, 3, len(cols))
+r = 4
+for rq in RQS:
+    ws.cell(row=r, column=1, value=rq["id"])
+    ws.cell(row=r, column=2, value="Là " + rq["role"])
+    ws.cell(row=r, column=3, value=rq["goal"])
+    ws.cell(row=r, column=4, value=rq["so_that"])
+    ws.cell(row=r, column=5, value=rq["priority"])
+    ws.cell(row=r, column=6, value=rq["bv"])
+    ws.cell(row=r, column=7, value="Chức năng hoạt động đúng và được PO nghiệm thu")
+    ws.cell(row=r, column=8, value="New")
     for c in range(1, len(cols) + 1):
-        ws.cell(row=i, column=c).border = border; ws.cell(row=i, column=c).alignment = wrap
-    ws.cell(row=i, column=8).alignment = ctr
-tot = len(PBS) + 2
-ws.cell(row=tot, column=7, value="TỔNG").font = bold
-ws.cell(row=tot, column=8, value="=SUM(H2:H%d)" % (len(PBS) + 1)).font = bold
-widths(ws, [9, 9, 10, 52, 46, 11, 8, 13])
+        ws.cell(row=r, column=c).border = border; ws.cell(row=r, column=c).alignment = wrap
+    ws.cell(row=r, column=5).alignment = ctr
+    r += 1
+widths(ws, [9, 20, 46, 44, 9, 14, 40, 9])
+
+# ============ 2. Release Backlog (cấp Product Backlog Item) ============
+ws = wb.create_sheet("2. Release Backlog")
+ws["A1"] = "Release Backlog: user story theo Backlog (RQ) và Sprint"; ws["A1"].font = title_font
+cols = ["Backlog ID", "Backlog", "As a/an [role]", "I want to [goal]", "So that [reason]",
+        "Story ID", "Priority", "Business Value", "Sprint#", "State", "Story Points"]
+ws.append([]); ws.append(cols); style_header(ws, 3, len(cols))
+r = 4
+rq_ten = {x["id"]: x["ten"] for x in RQS}
+for rq in RQS:
+    for pb in [p for p in PBS if p["rq"] == rq["id"]]:
+        ws.cell(row=r, column=1, value=rq["id"])
+        ws.cell(row=r, column=2, value=rq["ten"])
+        ws.cell(row=r, column=3, value="Là " + pb["role_name"])
+        ws.cell(row=r, column=4, value=goal_of(pb["user_story"]))
+        ws.cell(row=r, column=5, value=pb["mo_ta"])
+        ws.cell(row=r, column=6, value=pb["id"])
+        ws.cell(row=r, column=7, value=pb["priority"])
+        ws.cell(row=r, column=8, value=pb["bv"])
+        ws.cell(row=r, column=9, value=pb["sprint"])
+        ws.cell(row=r, column=10, value="New")
+        ws.cell(row=r, column=11, value="=VLOOKUP(F%d,'6. Ước lượng Story'!$A$5:$L$%d,12,FALSE)" % (r, 4 + NPB))
+        for c in range(1, len(cols) + 1):
+            ws.cell(row=r, column=c).border = border; ws.cell(row=r, column=c).alignment = wrap
+        for c in (7, 9, 11):
+            ws.cell(row=r, column=c).alignment = ctr
+        r += 1
+rb_first, rb_last = 4, r - 1
+ws.cell(row=r, column=6, value="TỔNG").font = bold
+ws.cell(row=r, column=11, value="=SUM(K%d:K%d)" % (rb_first, rb_last)).font = bold
+widths(ws, [11, 22, 16, 40, 40, 9, 9, 14, 9, 9, 12])
 
 # ============ 3. Sprint Planning ============
 ws = wb.create_sheet("3. Sprint Planning")
@@ -121,9 +143,9 @@ r = 4
 for sp, goal in SPRINTS:
     ws.cell(row=r, column=1, value="Sprint %d" % sp)
     ws.cell(row=r, column=2, value=goal)
-    ws.cell(row=r, column=3, value="=COUNTIF('2. Product Backlog'!$G$2:$G$%d,%d)" % (len(PBS) + 1, sp))
-    ws.cell(row=r, column=4, value="=SUMIF('2. Product Backlog'!$G$2:$G$%d,%d,'2. Product Backlog'!$H$2:$H$%d)" % (len(PBS) + 1, sp, len(PBS) + 1))
-    ws.cell(row=r, column=5, value="=SUMIF('4. Sprint Backlog'!$G$2:$G$%d,%d,'4. Sprint Backlog'!$E$2:$E$%d)" % (len(TASKS) + 1, sp, len(TASKS) + 1))
+    ws.cell(row=r, column=3, value="=COUNTIF('2. Release Backlog'!$I$%d:$I$%d,%d)" % (rb_first, rb_last, sp))
+    ws.cell(row=r, column=4, value="=SUMIF('2. Release Backlog'!$I$%d:$I$%d,%d,'2. Release Backlog'!$K$%d:$K$%d)" % (rb_first, rb_last, sp, rb_first, rb_last))
+    ws.cell(row=r, column=5, value="=SUMIF('4. Sprint Backlog'!$F$2:$F$600,%d,'4. Sprint Backlog'!$G$2:$G$600)" % sp)
     for c in range(1, len(cols) + 1):
         ws.cell(row=r, column=c).border = border; ws.cell(row=r, column=c).alignment = wrap
     r += 1
@@ -133,23 +155,40 @@ ws.cell(row=r, column=4, value="=SUM(D4:D%d)" % (r - 1)).font = bold
 ws.cell(row=r, column=5, value="=SUM(E4:E%d)" % (r - 1)).font = bold
 widths(ws, [11, 70, 14, 17, 14])
 
-# ============ 4. Sprint Backlog ============
+# ============ 4. Sprint Backlog (tách từng Sprint) ============
 ws = wb.create_sheet("4. Sprint Backlog")
-cols = ["Task ID", "Product Backlog", "Task", "Mô tả công việc", "Estimate (giờ)", "Phụ trách", "Sprint", "Trạng thái"]
+cols = ["Task ID", "Task", "Mô tả công việc", "Story ID", "Backlog ID", "Sprint#",
+        "Estimate (giờ)", "Phụ trách", "Trạng thái"]
 ws.append(cols); style_header(ws, 1, len(cols))
-pb_sprint = {p[0]: p[6] for p in PBS}
-for i, t in enumerate(TASKS, start=2):
-    ws.cell(row=i, column=1, value=t[0]); ws.cell(row=i, column=2, value=t[1])
-    ws.cell(row=i, column=3, value=t[2]); ws.cell(row=i, column=4, value=t[3])
-    ws.cell(row=i, column=5, value=t[4]); ws.cell(row=i, column=6, value=t[5])
-    ws.cell(row=i, column=7, value=pb_sprint.get(t[1], ""))
-    ws.cell(row=i, column=8, value="Done")
+r = 2
+for sp, goal in SPRINTS:
+    ws.cell(row=r, column=1, value="Sprint %d: %s" % (sp, goal))
     for c in range(1, len(cols) + 1):
-        ws.cell(row=i, column=c).border = border; ws.cell(row=i, column=c).alignment = wrap
-tot = len(TASKS) + 2
-ws.cell(row=tot, column=4, value="TỔNG GIỜ").font = bold
-ws.cell(row=tot, column=5, value="=SUM(E2:E%d)" % (len(TASKS) + 1)).font = bold
-widths(ws, [9, 15, 38, 46, 13, 11, 8, 11])
+        ws.cell(row=r, column=c).fill = band_fill; ws.cell(row=r, column=c).border = border
+    ws.cell(row=r, column=1).font = band_font
+    try:
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=len(cols))
+    except Exception:
+        pass
+    r += 1
+    for t in [t for t in TASKS if t["sprint"] == sp]:
+        ws.cell(row=r, column=1, value=t["id"])
+        ws.cell(row=r, column=2, value=t["task"])
+        ws.cell(row=r, column=3, value=t["mo_ta"])
+        ws.cell(row=r, column=4, value=t["story"])
+        ws.cell(row=r, column=5, value=t["backlog"])
+        ws.cell(row=r, column=6, value=t["sprint"])
+        ws.cell(row=r, column=7, value=t["est"])
+        ws.cell(row=r, column=8, value=t["who"])
+        ws.cell(row=r, column=9, value="To Do")
+        for c in range(1, len(cols) + 1):
+            ws.cell(row=r, column=c).border = border; ws.cell(row=r, column=c).alignment = wrap
+        for c in (4, 5, 6, 7):
+            ws.cell(row=r, column=c).alignment = ctr
+        r += 1
+ws.cell(row=r, column=3, value="TỔNG GIỜ").font = bold
+ws.cell(row=r, column=7, value="=SUM(G2:G%d)" % (r - 1)).font = bold
+widths(ws, [9, 38, 44, 10, 11, 8, 13, 11, 11])
 
 # ============ 5. ED (Môi trường) ============
 ws = wb.create_sheet("5. ED (Môi trường)")
@@ -181,7 +220,8 @@ r += 2
 ws.cell(row=r, column=2, value="Tổng theo từng khía cạnh (tham khảo)").font = bold; r += 1
 seen = []
 for aspect, _, _, _ in ED:
-    if aspect in seen: continue
+    if aspect in seen:
+        continue
     seen.append(aspect)
     rows = [i for i, e in enumerate(ED) if e[0] == aspect]
     ws.cell(row=r, column=2, value=aspect)
@@ -204,10 +244,9 @@ cols = ["ID", "User Story", "Loại tương tác\n(1-3)", "Quy tắc nghiệp v�
 ws.append([]); ws.append(cols); style_header(ws, 4, len(cols))
 r = 5
 for pb in PBS:
-    pid, rq, role, story, mo_ta, uu, sp, tt, qt, te, td = pb
-    ws.cell(row=r, column=1, value=pid); ws.cell(row=r, column=2, value=story)
-    ws.cell(row=r, column=3, value=tt); ws.cell(row=r, column=4, value=qt)
-    ws.cell(row=r, column=5, value=te); ws.cell(row=r, column=6, value=td)
+    ws.cell(row=r, column=1, value=pb["id"]); ws.cell(row=r, column=2, value=pb["user_story"])
+    ws.cell(row=r, column=3, value=pb["tuong_tac"]); ws.cell(row=r, column=4, value=pb["quy_tac"])
+    ws.cell(row=r, column=5, value=pb["thuc_the"]); ws.cell(row=r, column=6, value=pb["thao_tac"])
     ws.cell(row=r, column=7, value="=SUM(C%d:F%d)" % (r, r))
     ws.cell(row=r, column=8, value="=$C$2")
     ws.cell(row=r, column=9, value="=G%d*H%d" % (r, r))
@@ -229,5 +268,5 @@ widths(ws, [8, 52, 12, 13, 11, 12, 7, 7, 8, 7, 9, 12])
 
 wb.save(OUT)
 print("OK ->", OUT)
+print("RQ =", NRQ, " PB =", NPB, " Task =", len(TASKS), " Tong gio =", sum(t["est"] for t in TASKS))
 print("ED =", ED_TOTAL, "/", ED_MAX, "=> he so", round(ED_TOTAL / ED_MAX, 2))
-print("PBs:", len(PBS), " Tasks:", len(TASKS), " Tong gio:", sum(t[4] for t in TASKS))
