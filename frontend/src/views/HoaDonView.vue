@@ -31,6 +31,34 @@ async function onScan(text) {
   else notify('Không tìm thấy mã: ' + text, 'warning')
 }
 
+// ---- manual code entry ----
+const showManual = ref(false)
+const manualCode = ref('')
+function openManual() { manualCode.value = ''; showManual.value = true }
+async function confirmManual() {
+  const code = manualCode.value.trim()
+  if (!code) return
+  await onScan(code)            // reuse the same lookup+add+toast path as scanning
+  showManual.value = false
+}
+
+// ---- member lookup by phone ----
+async function timHoiVien() {
+  const q = (active.value.memberCode || '').trim()
+  if (!q) { notify('Nhập SĐT hội viên', 'warning'); return }
+  try {
+    const list = await khachHangApi.search(q)
+    const kh = (list || []).find(k => (k.sdt || '') === q) || (list || [])[0]
+    if (!kh) { notify('Không tìm thấy hội viên với SĐT: ' + q, 'warning'); return }
+    active.value.khachHang = kh.ten
+    active.value.idKhachHang = kh.id
+    active.value.sdt = kh.sdt
+    notify('Đã gán khách: ' + kh.ten, 'success')
+  } catch (e) {
+    notify('Không tra cứu được hội viên (backend offline?)', 'warning')
+  }
+}
+
 const voucherSelectOptions = computed(() =>
   voucherOptions.value.map(v => ({ value: v.value, label: v.label }))
 )
@@ -262,8 +290,8 @@ function taoHoaDon() {
             </table>
           </div>
           <footer class="pos-cart-actions">
-            <button class="btn btn-sm btn-outline-secondary" @click="notify('Nhập tay', 'info')">Nhập tay</button>
-            <button class="btn btn-sm btn-outline-secondary" @click="notify('Nhập mã / quét QR', 'info')">Nhập mã</button>
+            <button class="btn btn-sm btn-outline-secondary" @click="openManual">Nhập tay</button>
+            <button class="btn btn-sm btn-outline-secondary" @click="showScanner = true">Nhập mã</button>
             <button class="btn btn-sm btn-outline-secondary" @click="tangSL">Tăng số lượng</button>
             <button class="btn btn-sm btn-outline-danger" @click="giamSL">Giảm số lượng</button>
             <button class="btn btn-sm btn-outline-danger" @click="boSanPham">Bỏ sản phẩm</button>
@@ -320,7 +348,7 @@ function taoHoaDon() {
               <div class="input-group input-group-sm mb-2">
                 <span class="input-group-text">Mã hội viên</span>
                 <input class="form-control" v-model="active.memberCode" placeholder="" />
-                <button class="btn btn-success" @click="notify('Nhập SĐT hội viên', 'info')">Nhập sdt</button>
+                <button class="btn btn-success" @click="timHoiVien">Nhập sdt</button>
               </div>
               <button class="btn btn-success btn-sm w-100 mb-1" @click="openAddKH">Thêm khách hàng mới</button>
               <button class="btn btn-success btn-sm w-100" @click="active.khachHang = 'Khách lẻ'">Khách vãng lai</button>
@@ -360,7 +388,7 @@ function taoHoaDon() {
               <div class="input-group input-group-sm">
                 <span class="input-group-text">Mã hội viên</span>
                 <input class="form-control" v-model="active.memberCode" />
-                <button class="btn btn-success" @click="notify('Nhập SĐT hội viên', 'info')">Nhập sdt</button>
+                <button class="btn btn-success" @click="timHoiVien">Nhập sdt</button>
               </div>
             </div>
 
@@ -405,6 +433,21 @@ function taoHoaDon() {
         <div class="d-flex gap-2">
           <button class="btn btn-outline-secondary flex-fill" @click="showQR = false">Huỷ</button>
           <button class="btn btn-success flex-fill" @click="confirmQR">Đã chuyển khoản</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manual code entry modal -->
+    <div v-if="showManual" class="bs-overlay" @click.self="showManual = false">
+      <div class="bs-modal">
+        <h5 class="mb-3">Nhập mã sản phẩm</h5>
+        <div class="mb-3">
+          <label class="form-label small mb-1">Mã / Serial</label>
+          <input class="form-control" v-model="manualCode" placeholder="Nhập mã sản phẩm..." @keyup.enter="confirmManual" autofocus>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary flex-fill" @click="showManual = false">Đóng</button>
+          <button class="btn btn-success flex-fill" @click="confirmManual">Thêm</button>
         </div>
       </div>
     </div>
