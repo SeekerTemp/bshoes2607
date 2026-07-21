@@ -13,6 +13,7 @@ import { useToast } from '../composables/useToast'
 import { useAuth } from '../composables/useAuth'
 import { hoaDonApi } from '../api/hoaDon'
 import { vnd } from '../utils/format'
+import { printReceipt } from '../utils/receipt'
 
 const { keyword, trangThai, filtered, load } = useLichSu()
 const { notify } = useToast()
@@ -55,6 +56,36 @@ function xem(row) {
   chon.value = row
   modalOpen.value = true
 }
+
+// Reprint an already-recorded invoice. Maps the lịch sử row (`chon`) into the
+// normalized receipt shape shared with the POS (see utils/receipt.js). Fields
+// not present on the history payload (voucher amount, subtotal, payment method)
+// default sensibly rather than being fabricated.
+function inHoaDon() {
+  if (!chon.value) return
+  const c = chon.value
+  const items = (c.chiTiet || []).map(d => ({
+    ten: d.ten,
+    soLuong: d.soLuong,
+    donGia: d.donGia,
+    thanhTien: d.thanhTien != null ? d.thanhTien : (d.donGia || 0) * (d.soLuong || 0),
+  }))
+  const phiShip = Number(c.phiShip) || 0
+  const giamGia = Number(c.tienGiamGia) || 0
+  const tongTien = Number(c.tongTien) || 0
+  const tamTinh = c.tongTienBanDau != null ? Number(c.tongTienBanDau) : tongTien + giamGia - phiShip
+  const ok = printReceipt({
+    ma: c.ma,
+    ngay: c.ngayTao,
+    khach: c.khach || 'Khách lẻ',
+    hinhThuc: c.phuongThucThanhToan || '',
+    items,
+    tamTinh, giamGia, phiShip,
+    phaiTra: tongTien,
+    paid: true,
+  })
+  if (!ok) notify('In hoá đơn thất bại — vui lòng thử lại', 'danger')
+}
 </script>
 
 <template>
@@ -95,6 +126,7 @@ function xem(row) {
         <div class="text-end fs-5">Tổng: <b style="color: var(--c-primary)">{{ vnd(chon.tongTien) }}</b></div>
       </template>
       <template #footer>
+        <AppButton v-if="chon" variant="outline-secondary" @click="inHoaDon">In hóa đơn</AppButton>
         <AppButton v-if="chon && chon.trangThai === 'Chờ giao'" variant="primary" @click="daGiao">Đánh dấu Đã giao</AppButton>
         <AppButton v-if="chon && ['Thành công','Chờ giao','Đã giao'].includes(chon.trangThai)" variant="outline-danger" @click="traHang">Trả hàng</AppButton>
         <AppButton variant="secondary" @click="modalOpen = false">Đóng</AppButton>

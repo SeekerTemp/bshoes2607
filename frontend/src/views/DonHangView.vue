@@ -9,6 +9,7 @@ import { hoaDonApi } from '../api/hoaDon'
 import { useToast } from '../composables/useToast'
 import { useAuth } from '../composables/useAuth'
 import { vnd } from '../utils/format'
+import { printReceipt } from '../utils/receipt'
 
 const { notify } = useToast()
 const { user } = useAuth()
@@ -55,6 +56,35 @@ async function traHang(r) {
   catch (e) { notify('Không thể trả hàng', 'warning') }
 }
 async function refresh(id) { await load(); if (sel.value && sel.value.id === id) await selectRow({ id }) }
+
+// Reprint the selected order/invoice. Maps `sel` (HoaDonDto) into the normalized
+// receipt shape shared with the POS (see utils/receipt.js). Fields not present on
+// this payload default sensibly rather than being fabricated.
+function inHoaDon() {
+  if (!sel.value) return
+  const s = sel.value
+  const items = (s.chiTiet || []).map(c => ({
+    ten: c.ten,
+    soLuong: c.soLuong,
+    donGia: c.donGia,
+    thanhTien: c.thanhTien != null ? c.thanhTien : (c.donGia || 0) * (c.soLuong || 0),
+  }))
+  const phiShip = Number(s.phiShip) || 0
+  const giamGia = Number(s.tienGiamGia) || 0
+  const tongTien = Number(s.tongTien) || 0
+  const tamTinh = s.tongTienBanDau != null ? Number(s.tongTienBanDau) : tongTien + giamGia - phiShip
+  const ok = printReceipt({
+    ma: s.ma,
+    ngay: s.ngayTao,
+    khach: s.khach || 'Khách lẻ',
+    hinhThuc: s.phuongThucThanhToan || '',
+    items,
+    tamTinh, giamGia, phiShip,
+    phaiTra: tongTien,
+    paid: true,
+  })
+  if (!ok) notify('In hoá đơn thất bại — vui lòng thử lại', 'danger')
+}
 const showAddKH = ref(false)
 function onCustomerCreated(kh) { notify('Đã thêm khách hàng: ' + (kh?.ten || ''), 'success') }
 onMounted(load)
@@ -121,6 +151,7 @@ onMounted(load)
             <li class="fw-bold" style="color:#0B895A"><b>Tổng phải trả:</b> {{ vnd(sel.tongTien) }}</li>
           </ul>
           <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary flex-fill" @click="inHoaDon"><i class="bi bi-printer"></i> In hóa đơn</button>
             <button v-if="sel.trangThaiCode === 3" class="btn btn-success flex-fill" @click="daGiao(sel)"><i class="bi bi-check2"></i> Đã giao</button>
             <button v-if="[1,3,4].includes(sel.trangThaiCode)" class="btn btn-outline-danger flex-fill" @click="traHang(sel)"><i class="bi bi-arrow-return-left"></i> Trả hàng</button>
           </div>

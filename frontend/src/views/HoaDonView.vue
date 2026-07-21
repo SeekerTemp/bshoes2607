@@ -10,6 +10,7 @@ import { useToast } from '../composables/useToast'
 import { vnd } from '../utils/format'
 import { hoaDonApi } from '../api/hoaDon'
 import { khachHangApi } from '../api/khachHang'
+import { printReceipt as printReceiptDoc } from '../utils/receipt'
 
 const {
   sanPham, khachHangOptions, voucherOptions, hinhThucOptions,
@@ -130,6 +131,8 @@ async function saveKH() {
 }
 
 // ---- receipt / print ----
+// Maps the POS cart (`gio`) + active invoice into the normalized receipt shape
+// consumed by utils/receipt.js (shared with LichSuView.vue / DonHangView.vue).
 function buildReceipt(paid) {
   return {
     ma: active.value.ma,
@@ -137,72 +140,21 @@ function buildReceipt(paid) {
     khach: active.value.khachHang || 'Khách lẻ',
     hinhThuc: active.value.hinhThuc,
     paid,
-    lines: gio.value.map(l => ({ ten: l.ten, mau: l.mau, size: l.size, soLuong: l.soLuong, gia: l.gia, thanhTien: l.gia * l.soLuong })),
+    items: gio.value.map(l => ({
+      ten: l.ten,
+      mota: [l.mau, l.size].filter(Boolean).join(' / ') || undefined,
+      soLuong: l.soLuong,
+      donGia: l.gia,
+      thanhTien: l.gia * l.soLuong,
+    })),
     tamTinh: tamTinh.value, giamGia: giamGia.value, phiShip: phiShip.value,
     phaiTra: phaiTra.value, khachDua: Number(active.value.khachDua) || 0, tienThua: tienThua.value,
   }
 }
 function printReceipt(data) {
-  if (!data || !data.lines.length) { notify('Giỏ hàng trống, không có gì để in', 'warning'); return }
-  const rows = data.lines.map((l, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td>${l.ten}${l.mau || l.size ? `<br><small>${[l.mau, l.size].filter(Boolean).join(' / ')}</small>` : ''}</td>
-      <td class="c">${l.soLuong}</td>
-      <td class="r">${vnd(l.gia)}</td>
-      <td class="r">${vnd(l.thanhTien)}</td>
-    </tr>`).join('')
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${data.ma}</title>
-    <style>
-      *{font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box}
-      body{width:300px;margin:0 auto;padding:12px;color:#111}
-      h1{font-size:18px;text-align:center;margin:0 0 2px}
-      .sub{text-align:center;font-size:11px;color:#555;margin-bottom:8px}
-      .meta{font-size:12px;margin-bottom:8px;border-bottom:1px dashed #999;padding-bottom:6px}
-      table{width:100%;border-collapse:collapse;font-size:12px}
-      th{border-bottom:1px solid #333;text-align:left;padding:3px 2px}
-      td{padding:3px 2px;vertical-align:top}
-      td.c,th.c{text-align:center}td.r,th.r{text-align:right}
-      small{color:#666}
-      .tot{margin-top:8px;border-top:1px dashed #999;padding-top:6px;font-size:12px}
-      .tot div{display:flex;justify-content:space-between;padding:1px 0}
-      .tot .big{font-weight:700;font-size:14px}
-      .tag{text-align:center;margin:6px 0;font-weight:700;color:${data.paid ? '#0B895A' : '#b26a00'}}
-      .thanks{text-align:center;font-size:11px;margin-top:10px;color:#555}
-    </style></head><body>
-    <h1>BShoes</h1>
-    <div class="sub">Cửa hàng giày dép BShoes</div>
-    <div class="tag">${data.paid ? 'HÓA ĐƠN THANH TOÁN' : 'PHIẾU TẠM TÍNH'}</div>
-    <div class="meta">
-      Mã HĐ: <b>${data.ma}</b><br>
-      Ngày: ${data.ngay}<br>
-      Khách: ${data.khach}<br>
-      Thanh toán: ${data.hinhThuc}
-    </div>
-    <table>
-      <thead><tr><th>#</th><th>Sản phẩm</th><th class="c">SL</th><th class="r">Đơn giá</th><th class="r">T.Tiền</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div class="tot">
-      <div><span>Tạm tính</span><span>${vnd(data.tamTinh)}</span></div>
-      <div><span>Giảm giá</span><span>-${vnd(data.giamGia)}</span></div>
-      ${data.phiShip ? `<div><span>Phí ship</span><span>${vnd(data.phiShip)}</span></div>` : ''}
-      <div class="big"><span>Phải trả</span><span>${vnd(data.phaiTra)}</span></div>
-      ${data.paid && data.khachDua ? `<div><span>Khách đưa</span><span>${vnd(data.khachDua)}</span></div><div><span>Tiền thừa</span><span>${vnd(data.tienThua)}</span></div>` : ''}
-    </div>
-    <div class="thanks">Cảm ơn quý khách & hẹn gặp lại!</div>
-    </body></html>`
-  // Print via a hidden iframe — reliable (no popup blocker, works after an await).
-  const iframe = document.createElement('iframe')
-  iframe.setAttribute('aria-hidden', 'true')
-  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0'
-  document.body.appendChild(iframe)
-  const doc = iframe.contentWindow.document
-  doc.open(); doc.write(html); doc.close()
-  const fire = () => { try { iframe.contentWindow.focus(); iframe.contentWindow.print() } catch (e) { /* ignore */ } }
-  iframe.onload = fire
-  setTimeout(fire, 300)
-  setTimeout(() => iframe.remove(), 1500)
+  if (!data || !data.items.length) { notify('Giỏ hàng trống, không có gì để in', 'warning'); return }
+  const ok = printReceiptDoc(data)
+  if (!ok) notify('In hoá đơn thất bại — vui lòng thử lại', 'danger')
 }
 function inTamTinh() { printReceipt(buildReceipt(false)) }
 function taoHoaDon() {
