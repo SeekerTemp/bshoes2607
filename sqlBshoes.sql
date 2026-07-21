@@ -321,6 +321,76 @@ create table lich_su_hoa_don (
 );
 go
 
+-- 1.20 bao_hanh  (net-new feature for the Spring port. A warranty claim ties a
+-- sold variant (san_pham_chi_tiet) to a customer, its invoice, and the handling
+-- staff. Status/history logic lives in Java.)
+create table bao_hanh (
+    id_bao_hanh int identity(1,1) primary key,
+    ma_bao_hanh varchar(20) unique,
+    id_san_pham_chi_tiet int,
+    id_khach_hang int,
+    id_hoa_don int,
+    id_nhan_vien int,
+    serial varchar(50),
+    mo_ta_loi nvarchar(255),
+    loai_yeu_cau nvarchar(100),
+    don_vi_bao_hanh nvarchar(100),
+    chi_phi money,
+    thay_linh_kien bit,
+    ngay_bat_dau datetime,
+    ngay_ket_thuc datetime,
+    trang_thai nvarchar(50),   -- Chưa xử lý / Đã chẩn đoán / Đang xử lý / Đã xử lý / Đã thu phí / Đã trả
+    ngay_tao datetime default getdate(),
+    ngay_cap_nhat datetime default getdate(),
+    trang_thai_xoa bit default 0,
+    foreign key (id_san_pham_chi_tiet) references san_pham_chi_tiet(id_san_pham_chi_tiet),
+    foreign key (id_khach_hang) references khach_hang(id_khach_hang),
+    foreign key (id_hoa_don) references hoa_don(id_hoa_don),
+    foreign key (id_nhan_vien) references nhan_vien(id_nhan_vien)
+);
+go
+
+-- 1.21 dat_truoc  (net-new feature for the Spring port. Khách đăng ký đặt
+-- trước biến thể đang hết hàng. Quy tắc: cho đặt trước khi
+-- san_pham_chi_tiet.so_luong_ton = 0 (không đổi kiểu cột trang_thai). Trạng
+-- thái xử lý nằm ở Java service như bao_hanh.)
+create table dat_truoc (
+    id_dat_truoc int identity(1,1) primary key,
+    ma_dat_truoc varchar(20) unique,
+    id_san_pham_chi_tiet int,
+    id_khach_hang int,
+    id_hoa_don int,                    -- điền khi đã chuyển thành đơn hàng
+    ten_khach_hang nvarchar(100),
+    so_dien_thoai varchar(20),
+    email varchar(100),
+    so_luong int,
+    ngay_dang_ky datetime default getdate(),
+    ngay_du_kien datetime,
+    trang_thai nvarchar(50),           -- Chờ hàng / Đã có hàng / Đã chuyển đơn / Đã hủy
+    ghi_chu nvarchar(255),
+    ngay_tao datetime default getdate(),
+    ngay_cap_nhat datetime default getdate(),
+    trang_thai_xoa bit default 0,
+    foreign key (id_san_pham_chi_tiet) references san_pham_chi_tiet(id_san_pham_chi_tiet),
+    foreign key (id_khach_hang) references khach_hang(id_khach_hang),
+    foreign key (id_hoa_don) references hoa_don(id_hoa_don)
+);
+go
+
+-- 1.22 nhan_vien_quyen  (1 dòng = 1 nhân viên vào được 1 màn hình. Rows là SỰ
+-- THẬT; vai_tro.quyen chỉ là template để chép sang đây khi tạo NV / đổi vai
+-- trò, sau đó tick thêm/bớt tự do cho từng người.
+-- Ngoại lệ duy nhất: vai trò ADMIN (quyen = '*') tính động = tất cả màn,
+-- KHÔNG đọc bảng này, để thêm màn mới về sau admin không tự khóa mình ngoài
+-- hệ thống. Vì vậy NV001/003/005 (ADMIN) không cần seed dòng nào.)
+create table nhan_vien_quyen (
+    id_nhan_vien int not null,
+    man_hinh varchar(30) not null,
+    primary key (id_nhan_vien, man_hinh),
+    foreign key (id_nhan_vien) references nhan_vien(id_nhan_vien)
+);
+go
+
 /* ============================================================================
    2. SEED DATA  (plain INSERTs, in FK-safe order)
 ============================================================================ */
@@ -678,6 +748,37 @@ insert into lich_su_hoa_don (id_nhan_vien, id_hoa_don, ghi_chu, thoi_gian_thay_d
 (2, 30, N'Trả hàng, hoàn tiền: HD030', '2026-07-09 09:15:00', N'Lê Thị B', N'Lê Thị B', '2026-07-09 09:15:00', '2026-07-09 09:15:00', 0, 0);
 go
 
+-- 2.20 bao_hanh
+insert into bao_hanh (ma_bao_hanh, id_san_pham_chi_tiet, id_khach_hang, id_hoa_don, id_nhan_vien, serial, mo_ta_loi, loai_yeu_cau, don_vi_bao_hanh, chi_phi, thay_linh_kien, ngay_bat_dau, ngay_ket_thuc, trang_thai) values
+('BH0001', 1, 1, 1,  2, 'NK-42-000123', N'Đế bị bong ở mũi giày sau 2 tháng sử dụng.', N'Bong đế',  N'BShoes Center', 120000, 1, '2026-05-08', '2026-11-08', N'Đang xử lý'),
+('BH0002', 2, 3, NULL, 3, 'AD-40-000456', N'Đường chỉ gót bị bung.',                    N'Đứt chỉ',  N'Adidas Care',  80000,  0, '2026-10-20', '2027-04-20', N'Chưa xử lý'),
+('BH0003', 3, 4, NULL, 5, 'PM-41-000789', N'Quai hậu bị gãy khớp nối.',                 N'Gãy quai', N'BShoes Center', 60000,  1, '2026-09-12', '2027-03-12', N'Đã xử lý'),
+('BH0004', 5, 5, NULL, 6, 'VN-39-000234', N'Ngoài thời hạn bảo hành.',                  N'Mòn đế',   N'BShoes Center', 0,      0, '2025-08-05', '2026-02-05', N'Đã trả'),
+('BH0005', 6, 6, NULL, 2, 'RB-43-000567', N'Keo dán đế lỗi, tách lớp.',                 N'Lỗi keo',  N'BShoes Center', 150000, 1, '2026-07-25', '2027-01-25', N'Đã thu phí');
+go
+
+-- 2.21 dat_truoc
+insert into dat_truoc (ma_dat_truoc, id_san_pham_chi_tiet, id_khach_hang, ten_khach_hang, so_dien_thoai, email, so_luong, ngay_dang_ky, ngay_du_kien, trang_thai, ghi_chu) values
+-- SPCT004 + SPCT006 đang hết hàng → 'Chờ hàng'. SPCT005 hàng đã về → 'Đã có hàng' (chuyển đơn được ngay).
+('DT0001', 6, 1, N'Nguyễn Trung Nghĩa', '0968291160', N'nghia@gmail.com', 1, '2026-07-02', '2026-08-15', N'Chờ hàng',     N'Khách hỏi size 42, báo khi có hàng'),
+('DT0002', 4, 3, N'Đặng Thị Hồng',      '0923456789', N'hongdt@gmail.com', 2, '2026-07-05', '2026-08-20', N'Chờ hàng',     N'Đặt 2 đôi cho cả nhà'),
+('DT0003', 5, 4, N'Phan Minh Tuấn',     '0956789123', N'tuanpm@gmail.com', 1, '2026-06-20', '2026-07-30', N'Đã có hàng',   N'Đã gọi báo khách, chờ tới lấy'),
+('DT0004', 5, 5, N'Trương Thị Lan',     '0919876543', N'lantr@gmail.com', 1, '2026-06-10', '2026-07-10', N'Đã hủy',       N'Khách đổi ý');
+go
+
+-- 2.22 nhan_vien_quyen
+-- NV002, NV004, NV006 mang vai trò NV -> chép template 'Nhân viên bán hàng'.
+-- NV002 được mở rộng thêm 'khach-hang': minh họa "template + mở rộng riêng".
+insert into nhan_vien_quyen (id_nhan_vien, man_hinh) values
+(2, 'dashboard'), (2, 'hoa-don'), (2, 'don-hang'), (2, 'dat-truoc'), (2, 'bao-hanh'), (2, 'khach-hang'),
+(4, 'dashboard'), (4, 'hoa-don'), (4, 'don-hang'), (4, 'dat-truoc'), (4, 'bao-hanh'),
+(6, 'dashboard'), (6, 'hoa-don'), (6, 'don-hang'), (6, 'dat-truoc'), (6, 'bao-hanh'),
+-- Tài khoản test (mục 2.13): id 7 = banhang (NV), id 8 = quanly (QL). Đều KHÔNG có
+-- 'dashboard' -> đăng nhập rơi vào màn được phép đầu tiên (/hoa-don, /san-pham).
+(7, 'hoa-don'), (7, 'don-hang'), (7, 'bao-hanh'),
+(8, 'san-pham'), (8, 'khach-hang'), (8, 'phieu-giam-gia');
+go
+
 /* ============================================================================
    3. DB LOGIC KEPT AS NATIVE OBJECTS (called from the backend via native queries)
 ============================================================================ */
@@ -745,107 +846,3 @@ BEGIN
 END;
 GO
 
-/* ============================================================================
-   4. WARRANTY (bao_hanh)  — net-new feature for the Spring port.
-   A warranty claim ties a sold variant (san_pham_chi_tiet) to a customer,
-   its invoice, and the handling staff. Status/history logic lives in Java.
-============================================================================ */
-create table bao_hanh (
-    id_bao_hanh int identity(1,1) primary key,
-    ma_bao_hanh varchar(20) unique,
-    id_san_pham_chi_tiet int,
-    id_khach_hang int,
-    id_hoa_don int,
-    id_nhan_vien int,
-    serial varchar(50),
-    mo_ta_loi nvarchar(255),
-    loai_yeu_cau nvarchar(100),
-    don_vi_bao_hanh nvarchar(100),
-    chi_phi money,
-    thay_linh_kien bit,
-    ngay_bat_dau datetime,
-    ngay_ket_thuc datetime,
-    trang_thai nvarchar(50),   -- Chưa xử lý / Đã chẩn đoán / Đang xử lý / Đã xử lý / Đã thu phí / Đã trả
-    ngay_tao datetime default getdate(),
-    ngay_cap_nhat datetime default getdate(),
-    trang_thai_xoa bit default 0,
-    foreign key (id_san_pham_chi_tiet) references san_pham_chi_tiet(id_san_pham_chi_tiet),
-    foreign key (id_khach_hang) references khach_hang(id_khach_hang),
-    foreign key (id_hoa_don) references hoa_don(id_hoa_don),
-    foreign key (id_nhan_vien) references nhan_vien(id_nhan_vien)
-);
-go
-
-/* ============================================================================
-   5. PRE-ORDER (dat_truoc) — khách đăng ký đặt trước biến thể đang hết hàng.
-   Quy tắc: cho đặt trước khi san_pham_chi_tiet.so_luong_ton = 0 (không đổi kiểu
-   cột trang_thai). Trạng thái xử lý nằm ở Java service như bao_hanh.
-============================================================================ */
-create table dat_truoc (
-    id_dat_truoc int identity(1,1) primary key,
-    ma_dat_truoc varchar(20) unique,
-    id_san_pham_chi_tiet int,
-    id_khach_hang int,
-    id_hoa_don int,                    -- điền khi đã chuyển thành đơn hàng
-    ten_khach_hang nvarchar(100),
-    so_dien_thoai varchar(20),
-    email varchar(100),
-    so_luong int,
-    ngay_dang_ky datetime default getdate(),
-    ngay_du_kien datetime,
-    trang_thai nvarchar(50),           -- Chờ hàng / Đã có hàng / Đã chuyển đơn / Đã hủy
-    ghi_chu nvarchar(255),
-    ngay_tao datetime default getdate(),
-    ngay_cap_nhat datetime default getdate(),
-    trang_thai_xoa bit default 0,
-    foreign key (id_san_pham_chi_tiet) references san_pham_chi_tiet(id_san_pham_chi_tiet),
-    foreign key (id_khach_hang) references khach_hang(id_khach_hang),
-    foreign key (id_hoa_don) references hoa_don(id_hoa_don)
-);
-go
-
-insert into dat_truoc (ma_dat_truoc, id_san_pham_chi_tiet, id_khach_hang, ten_khach_hang, so_dien_thoai, email, so_luong, ngay_dang_ky, ngay_du_kien, trang_thai, ghi_chu) values
--- SPCT004 + SPCT006 đang hết hàng → 'Chờ hàng'. SPCT005 hàng đã về → 'Đã có hàng' (chuyển đơn được ngay).
-('DT0001', 6, 1, N'Nguyễn Trung Nghĩa', '0968291160', N'nghia@gmail.com', 1, '2026-07-02', '2026-08-15', N'Chờ hàng',     N'Khách hỏi size 42, báo khi có hàng'),
-('DT0002', 4, 3, N'Đặng Thị Hồng',      '0923456789', N'hongdt@gmail.com', 2, '2026-07-05', '2026-08-20', N'Chờ hàng',     N'Đặt 2 đôi cho cả nhà'),
-('DT0003', 5, 4, N'Phan Minh Tuấn',     '0956789123', N'tuanpm@gmail.com', 1, '2026-06-20', '2026-07-30', N'Đã có hàng',   N'Đã gọi báo khách, chờ tới lấy'),
-('DT0004', 5, 5, N'Trương Thị Lan',     '0919876543', N'lantr@gmail.com', 1, '2026-06-10', '2026-07-10', N'Đã hủy',       N'Khách đổi ý');
-go
-
-/* ============================================================================
-   6. PHÂN QUYỀN THEO NHÂN VIÊN (nhan_vien_quyen)
-   1 dòng = 1 nhân viên vào được 1 màn hình. Rows là SỰ THẬT; vai_tro.quyen chỉ
-   là template để chép sang đây khi tạo NV / đổi vai trò, sau đó tick thêm/bớt
-   tự do cho từng người.
-
-   Ngoại lệ duy nhất: vai trò ADMIN (quyen = '*') tính động = tất cả màn, KHÔNG
-   đọc bảng này — để thêm màn mới về sau admin không tự khóa mình ngoài hệ thống.
-   Vì vậy NV001/003/005 (ADMIN) không cần seed dòng nào.
-============================================================================ */
-create table nhan_vien_quyen (
-    id_nhan_vien int not null,
-    man_hinh varchar(30) not null,
-    primary key (id_nhan_vien, man_hinh),
-    foreign key (id_nhan_vien) references nhan_vien(id_nhan_vien)
-);
-go
-
--- NV002, NV004, NV006 mang vai trò NV -> chép template 'Nhân viên bán hàng'.
--- NV002 được mở rộng thêm 'khach-hang': minh họa "template + mở rộng riêng".
-insert into nhan_vien_quyen (id_nhan_vien, man_hinh) values
-(2, 'dashboard'), (2, 'hoa-don'), (2, 'don-hang'), (2, 'dat-truoc'), (2, 'bao-hanh'), (2, 'khach-hang'),
-(4, 'dashboard'), (4, 'hoa-don'), (4, 'don-hang'), (4, 'dat-truoc'), (4, 'bao-hanh'),
-(6, 'dashboard'), (6, 'hoa-don'), (6, 'don-hang'), (6, 'dat-truoc'), (6, 'bao-hanh'),
--- Tài khoản test (mục 2.13): id 7 = banhang (NV), id 8 = quanly (QL). Đều KHÔNG có
--- 'dashboard' -> đăng nhập rơi vào màn được phép đầu tiên (/hoa-don, /san-pham).
-(7, 'hoa-don'), (7, 'don-hang'), (7, 'bao-hanh'),
-(8, 'san-pham'), (8, 'khach-hang'), (8, 'phieu-giam-gia');
-go
-
-insert into bao_hanh (ma_bao_hanh, id_san_pham_chi_tiet, id_khach_hang, id_hoa_don, id_nhan_vien, serial, mo_ta_loi, loai_yeu_cau, don_vi_bao_hanh, chi_phi, thay_linh_kien, ngay_bat_dau, ngay_ket_thuc, trang_thai) values
-('BH0001', 1, 1, 1,  2, 'NK-42-000123', N'Đế bị bong ở mũi giày sau 2 tháng sử dụng.', N'Bong đế',  N'BShoes Center', 120000, 1, '2026-05-08', '2026-11-08', N'Đang xử lý'),
-('BH0002', 2, 3, NULL, 3, 'AD-40-000456', N'Đường chỉ gót bị bung.',                    N'Đứt chỉ',  N'Adidas Care',  80000,  0, '2026-10-20', '2027-04-20', N'Chưa xử lý'),
-('BH0003', 3, 4, NULL, 5, 'PM-41-000789', N'Quai hậu bị gãy khớp nối.',                 N'Gãy quai', N'BShoes Center', 60000,  1, '2026-09-12', '2027-03-12', N'Đã xử lý'),
-('BH0004', 5, 5, NULL, 6, 'VN-39-000234', N'Ngoài thời hạn bảo hành.',                  N'Mòn đế',   N'BShoes Center', 0,      0, '2025-08-05', '2026-02-05', N'Đã trả'),
-('BH0005', 6, 6, NULL, 2, 'RB-43-000567', N'Keo dán đế lỗi, tách lớp.',                 N'Lỗi keo',  N'BShoes Center', 150000, 1, '2026-07-25', '2027-01-25', N'Đã thu phí');
-go
