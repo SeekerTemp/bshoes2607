@@ -11,9 +11,16 @@ cd doc-school/_generator
 
 python gen_docx.py ..                          # -> WORKSHOP_1_BShoes.docx, WORKSHOP_2_MucTieu_BShoes.docx
 python gen_ws2_xlsx.py ../WORKSHOP_2_BShoes.xlsx
+python gen_ws3.py ..                            # -> WORKSHOP_3_BShoes.docx
 
-python verify_docx.py ../WORKSHOP_1_BShoes.docx ../WORKSHOP_2_MucTieu_BShoes.docx
+python check_ids.py                            # bat bien ID: RQ -> PB -> Task, dung thu tu sprint
+python verify_docx.py ../WORKSHOP_1_BShoes.docx ../WORKSHOP_2_MucTieu_BShoes.docx ../WORKSHOP_3_BShoes.docx
 ```
+
+Mô hình ID 3 cấp (chuẩn theo file mẫu `doc-school-request`): `RQ` (request, As a/I want/So that)
+là Product Backlog; `PB` (user story) là Release Backlog, có Sprint#; `Task` là Sprint Backlog,
+mỗi Task mang Story ID (PB) + Backlog ID (RQ) + Sprint#. PB và Task được đánh số lại theo thứ
+tự Sprint trong `bshoes_data.py`, `check_ids.py` chặn nếu lệch.
 
 Trên Windows nếu console báo `UnicodeEncodeError` thì đặt `PYTHONIOENCODING=utf-8`.
 
@@ -21,10 +28,12 @@ Trên Windows nếu console báo `UnicodeEncodeError` thì đặt `PYTHONIOENCOD
 
 | File | Vai trò |
 |---|---|
-| `bshoes_data.py` | Nguồn dữ liệu: REQ, product backlog, task, yếu tố ED, sprint |
+| `bshoes_data.py` | Nguồn dữ liệu: RQ, PB (user story), Task, yếu tố ED, sprint + hàm renumber |
 | `docx_format.py` | Khuôn định dạng Word (font, heading, caption, kiểm tra gạch ngang) |
-| `gen_docx.py` | Nội dung 2 file Word |
-| `gen_ws2_xlsx.py` | Nội dung file Excel ước lượng |
+| `gen_docx.py` | Nội dung Workshop 1 và Workshop 2 (Word) |
+| `gen_ws2_xlsx.py` | Nội dung file Excel Workshop 2 (Product/Release/Sprint Backlog, ước lượng) |
+| `gen_ws3.py` | Nội dung Workshop 3 (Word): tầm nhìn kiến trúc + bảng Trello |
+| `check_ids.py` | Kiểm bất biến ID: RQ/PB/Task liên tục, truy vết đủ, đúng thứ tự sprint |
 | `verify_docx.py` | Đọc ngược file đã sinh để kiểm chứng định dạng |
 | `gen_dbml.py` | Sinh sơ đồ DBML cho dbdiagram.io thẳng từ `sqlBshoes.sql` |
 | `audit_schema.py` | Đối chiếu cột của JPA entity với DDL |
