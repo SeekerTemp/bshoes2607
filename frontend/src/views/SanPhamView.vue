@@ -154,7 +154,7 @@ async function ctLuu() {
       await bienTheApi.create(f.idSanPham, dto); notify('Đã thêm biến thể', 'success')
     }
     await load(); ctThem()
-  } catch (e) { notify('Lưu thất bại (backend offline?)', 'warning') }
+  } catch (e) { notify(crudErrorMessage(e), 'warning') }
 }
 async function ctNhapKho() {
   if (!ctForm.value.idSpct) { notify('Chọn biến thể để nhập kho', 'warning'); return }

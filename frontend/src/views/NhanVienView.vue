@@ -140,7 +140,7 @@ async function doDelete() {
         <div class="col"><FormField label="Chức vụ"><input class="form-control" v-model="form.chucVu"></FormField></div>
         <div class="col"><FormField label="Giới tính"><AppSelect v-model="form.gioiTinh" :options="gioiTinhOptions" /></FormField></div>
       </div>
-      <FormField label="Vai trò"><AppSelect v-model="form.idVaiTro" :options="vaiTroOptions" /></FormField>
+      <FormField label="Vai trò"><AppSelect v-model.number="form.idVaiTro" :options="vaiTroOptions" /></FormField>
       <FormField label="Mật khẩu">
         <input type="password" class="form-control" v-model="form.matKhau">
         <small class="text-muted" v-if="form.id">Để trống nếu không muốn đổi mật khẩu hiện tại.</small>
