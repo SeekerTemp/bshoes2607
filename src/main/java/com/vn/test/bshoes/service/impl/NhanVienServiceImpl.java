@@ -2,7 +2,6 @@ package com.vn.test.bshoes.service.impl;
 
 import com.vn.test.bshoes.dto.NhanVienDto;
 import com.vn.test.bshoes.entity.NhanVien;
-import com.vn.test.bshoes.entity.VaiTro;
 import com.vn.test.bshoes.repository.NhanVienRepository;
 import com.vn.test.bshoes.repository.VaiTroRepository;
 import com.vn.test.bshoes.service.NhanVienQuyenService;
@@ -40,14 +39,15 @@ public class NhanVienServiceImpl implements NhanVienService {
                 e.getChucVu(),
                 e.getGioiTinh(),
                 e.getIdVaiTro() != null ? e.getIdVaiTro().getTenVaiTro() : null,
-                e.getTrangThai()
+                e.getTrangThai(),
+                e.getIdVaiTro() != null ? e.getIdVaiTro().getId() : null,
+                null
         );
     }
 
     private void applyVaiTro(NhanVienDto dto, NhanVien e) {
-        if (StringUtils.hasText(dto.getVaiTro())) {
-            VaiTro vt = vaiTroRepository.findByTenVaiTro(dto.getVaiTro());
-            e.setIdVaiTro(vt);
+        if (dto.getIdVaiTro() != null) {
+            e.setIdVaiTro(vaiTroRepository.findById(dto.getIdVaiTro()).orElse(null));
         } else {
             e.setIdVaiTro(null);
         }
@@ -80,6 +80,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         e.setCccd(dto.getCccd());
         e.setChucVu(dto.getChucVu());
         e.setGioiTinh(dto.getGioiTinh());
+        e.setMatKhau(dto.getMatKhau());
         e.setTrangThai(dto.getTrangThai() == null ? Boolean.TRUE : dto.getTrangThai());
         e.setTrangThaiXoa(false);
         applyVaiTro(dto, e);
@@ -104,6 +105,7 @@ public class NhanVienServiceImpl implements NhanVienService {
         e.setCccd(dto.getCccd());
         e.setChucVu(dto.getChucVu());
         e.setGioiTinh(dto.getGioiTinh());
+        if (org.springframework.util.StringUtils.hasText(dto.getMatKhau())) e.setMatKhau(dto.getMatKhau());
         if (dto.getTrangThai() != null) e.setTrangThai(dto.getTrangThai());
         applyVaiTro(dto, e);
         e = repo.save(e);

@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import AppShell from '../components/layout/AppShell.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
 import AppButton from '../components/ui/AppButton.vue'
@@ -15,6 +15,7 @@ import VaiTroPanel from '../components/panels/VaiTroPanel.vue'
 import { useNhanVien } from '../composables/useNhanVien'
 import { useToast } from '../composables/useToast'
 import { crudErrorMessage } from '../composables/useCrud'
+import { vaiTroApi } from '../api/vaiTro'
 
 const { keyword, filtered, add, update, remove } = useNhanVien()
 const { notify } = useToast()
@@ -34,10 +35,19 @@ const columns = [
 ]
 
 const gioiTinhOptions = ['Nam', 'Nữ']
-const vaiTroOptions = ['ADMIN', 'NHÂN VIÊN']
+const vaiTroOptions = ref([])
+
+onMounted(async () => {
+  try {
+    const list = await vaiTroApi.findAll()
+    vaiTroOptions.value = list.map(v => ({ value: v.id, label: v.ten }))
+  } catch (e) {
+    console.warn('Không tải được danh sách vai trò', e)
+  }
+})
 
 function blankForm() {
-  return { id: null, ma: '', ten: '', taiKhoan: '', email: '', sdt: '', cccd: '', chucVu: '', gioiTinh: 'Nam', vaiTro: 'NHÂN VIÊN', trangThai: true }
+  return { id: null, ma: '', ten: '', taiKhoan: '', email: '', sdt: '', cccd: '', chucVu: '', gioiTinh: 'Nam', idVaiTro: null, matKhau: '', trangThai: true }
 }
 
 const modalOpen = ref(false)
@@ -52,6 +62,7 @@ function openCreate() {
 
 function openEdit(row) {
   form.value = JSON.parse(JSON.stringify(row))
+  form.value.matKhau = ''
   modalOpen.value = true
 }
 
@@ -129,7 +140,11 @@ async function doDelete() {
         <div class="col"><FormField label="Chức vụ"><input class="form-control" v-model="form.chucVu"></FormField></div>
         <div class="col"><FormField label="Giới tính"><AppSelect v-model="form.gioiTinh" :options="gioiTinhOptions" /></FormField></div>
       </div>
-      <FormField label="Vai trò"><AppSelect v-model="form.vaiTro" :options="vaiTroOptions" /></FormField>
+      <FormField label="Vai trò"><AppSelect v-model="form.idVaiTro" :options="vaiTroOptions" /></FormField>
+      <FormField label="Mật khẩu">
+        <input type="password" class="form-control" v-model="form.matKhau">
+        <small class="text-muted" v-if="form.id">Để trống nếu không muốn đổi mật khẩu hiện tại.</small>
+      </FormField>
       <div class="form-check">
         <input class="form-check-input" type="checkbox" v-model="form.trangThai" id="nv-trangthai">
         <label class="form-check-label" for="nv-trangthai">Hoạt động</label>

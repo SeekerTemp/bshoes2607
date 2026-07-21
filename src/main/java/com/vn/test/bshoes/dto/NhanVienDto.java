@@ -19,4 +19,6 @@ public class NhanVienDto {
     private String gioiTinh;
     private String vaiTro;
     private Boolean trangThai;
+    private Integer idVaiTro;
+    private String matKhau;
 }
