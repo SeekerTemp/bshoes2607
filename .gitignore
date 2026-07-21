@@ -40,3 +40,6 @@ build/
 hs_err_pid*.log
 replay_pid*.log
 *.orig.bak
+
+### Locally-uploaded images (see UploadController) ###
+uploads/

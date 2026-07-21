@@ -14,7 +14,9 @@ import { useSanPham } from '../composables/useSanPham'
 import { useToast } from '../composables/useToast'
 import { crudErrorMessage } from '../composables/useCrud'
 import { vnd } from '../utils/format'
+import { validateImageFile } from '../utils/upload'
 import { bienTheApi } from '../api/bienThe'
+import { uploadApi } from '../api/upload'
 import {
   loaiSanPhamList, kieuDangList, kieuCoGiayList, kieuDayGiayList,
   xuatXuList, mauSacList, kichThuocList,
@@ -31,6 +33,25 @@ function onImgError(e) { e.target.style.visibility = 'hidden' }
 // grid-card image pickers (one per tab that carries an image)
 const spImgOpen = ref(false)
 const ctImgOpen = ref(false)
+
+// "Tải ảnh từ máy" — upload a local file for the variant image, as an
+// alternative to picking one from the built-in image library.
+const ctFileInput = ref(null)
+function ctTriggerUpload() { ctFileInput.value?.click() }
+async function ctUploadImage(ev) {
+  const file = ev.target.files && ev.target.files[0]
+  ev.target.value = '' // allow re-selecting the same file later
+  if (!file) return
+  const { ok, error } = validateImageFile(file)
+  if (!ok) { notify(error, 'warning'); return }
+  try {
+    const res = await uploadApi.image(file)
+    ctForm.value.imageUrl = res.url
+    notify('Đã tải ảnh lên', 'success')
+  } catch (e) {
+    notify(crudErrorMessage(e) || 'Tải ảnh thất bại', 'warning')
+  }
+}
 
 /* ============================ TAB 1 — Sản phẩm ============================ */
 const spSearch = ref('')
@@ -280,6 +301,12 @@ async function ctAn() {
               <img :src="ctForm.imageUrl || PLACEHOLDER" alt="" @error="onImgError">
               <span class="img-choose-overlay"><i class="bi bi-images"></i> Chọn ảnh</span>
             </button>
+            <div class="mt-2">
+              <button type="button" class="btn btn-sm btn-light" @click="ctTriggerUpload">
+                <i class="bi bi-upload"></i> Tải ảnh từ máy
+              </button>
+              <input ref="ctFileInput" type="file" accept="image/png,image/jpeg" class="d-none" @change="ctUploadImage">
+            </div>
           </div>
           <dl class="green-fields">
             <div class="gf" v-if="!ctForm.idSpct"><dt>Sản phẩm</dt><dd>
