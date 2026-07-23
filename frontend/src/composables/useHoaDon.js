@@ -75,6 +75,72 @@ export function useHoaDon() {
     }
   }
 
+  // Maps one server invoice line (HoaDonChiTietDto) into the local cart-row shape,
+  // enriching with product metadata (ma/mau/size/ton) looked up from the loaded catalogue.
+  function chiTietLine(c) {
+    const prod = sanPham.value.find(p => p.id === c.idSanPhamChiTiet) || {}
+    return {
+      id: c.id, spId: c.idSanPhamChiTiet, ma: prod.ma, ten: c.ten,
+      mau: prod.mau, size: prod.size, gia: c.donGia, ton: prod.ton,
+      soLuong: c.soLuong, trangThai: '-',
+    }
+  }
+
+  // Maps a server HoaDonDto (a pending invoice, trang_thai = 0) into the local queue
+  // row shape. `existing` (if given) is a local row already tracked by serverId — its
+  // user-editable fields (khách hàng/voucher/hình thức/ghi chú/...) are left untouched;
+  // only server-derived fields (mã/nhân viên/ngày tạo/trạng thái/giỏ) are refreshed.
+  function serverDtoToRow(dto, existing) {
+    const gioMapped = (dto.chiTiet || []).map(chiTietLine)
+    if (existing) {
+      existing.serverId = dto.id
+      existing.ma = dto.ma || existing.ma
+      existing.nhanVien = dto.nhanVien || existing.nhanVien
+      existing.ngayTao = dto.ngayTao || existing.ngayTao
+      existing.trangThai = dto.trangThai || existing.trangThai
+      existing.gio = gioMapped
+      return existing
+    }
+    return {
+      id: dto.id, serverId: dto.id, ma: dto.ma || ('HD' + pad(dto.id)),
+      nhanVien: dto.nhanVien || '', khachHang: dto.khach || 'Khách lẻ',
+      sdt: dto.soDienThoai || '', diaChi: dto.diaChi || '',
+      trangThai: dto.trangThai || 'Chờ', trangThaiHang: '-',
+      ngayTao: dto.ngayTao || '',
+      voucher: 0, hinhThuc: dto.phuongThucThanhToan || 'Tiền mặt',
+      khachDua: 0, memberCode: '', phiShip: Number(dto.phiShip) || 0, ghiChu: dto.ghiChu || '',
+      idKhachHang: null,
+      gio: gioMapped,
+    }
+  }
+
+  // Sync the queue with the server's pending invoices — the source of truth for
+  // "which invoices are still open". Existing local rows are updated in place (by
+  // serverId) so in-progress edits survive; rows whose server invoice is no longer
+  // pending (paid/cancelled elsewhere) are dropped — this is how a just-paid invoice
+  // disappears from the queue (see checkout()). Purely local rows not yet persisted
+  // (serverId still null) are left alone. On failure (offline), the local queue is
+  // kept as-is for DISPLAY only — this never masks a failed sale, since checkout()'s
+  // own success/failure is decided independently of this refresh.
+  async function loadQueue() {
+    try {
+      const list = await hoaDonApi.cart()
+      const serverIds = new Set(list.map(d => d.id))
+      for (const dto of list) {
+        const existing = hoaDons.value.find(h => h.serverId === dto.id)
+        if (existing) serverDtoToRow(dto, existing)
+        else hoaDons.value.push(serverDtoToRow(dto, null))
+      }
+      hoaDons.value = hoaDons.value.filter(h => !h.serverId || serverIds.has(h.serverId))
+      if (hoaDons.value.length === 0) { createHoaDon(); return }
+      if (!hoaDons.value.some(h => h.id === activeId.value)) {
+        activeId.value = hoaDons.value[0].id
+      }
+    } catch (e) {
+      console.warn('loadQueue offline — keeping local invoice queue as-is', e)
+    }
+  }
+
   // ---- products ----
   async function load() {
     try {
@@ -85,7 +151,7 @@ export function useHoaDon() {
       sanPham.value = deep(posSanPham)
     }
   }
-  onMounted(load)
+  onMounted(() => { load(); loadQueue() })
 
   const ketQua = computed(() => {
     const k = keyword.value.trim().toLowerCase()
@@ -118,14 +184,7 @@ export function useHoaDon() {
   // Rebuild the local cart from a server HoaDonDto, enriching each line with product
   // metadata (mau/size/ton) looked up from the loaded product list.
   function syncCartFromServer(inv, dto) {
-    inv.gio = (dto.chiTiet || []).map(c => {
-      const prod = sanPham.value.find(p => p.id === c.idSanPhamChiTiet) || {}
-      return {
-        id: c.id, spId: c.idSanPhamChiTiet, ma: prod.ma, ten: c.ten,
-        mau: prod.mau, size: prod.size, gia: c.donGia, ton: prod.ton,
-        soLuong: c.soLuong, trangThai: '-',
-      }
-    })
+    inv.gio = (dto.chiTiet || []).map(chiTietLine)
   }
 
   async function addLine(p) {
@@ -225,6 +284,7 @@ export function useHoaDon() {
     const lines = active.value.gio
     if (!lines.length) return { ok: false, reason: 'empty' }
     const giaoHang = orderTab.value === 'dathang'
+    const voucher = Number(active.value.voucher) || 0
     try {
       let invId = active.value.serverId
       if (!invId) {                                   // offline-created invoice: create + fill now
@@ -244,6 +304,7 @@ export function useHoaDon() {
         ghiChu: active.value.ghiChu,
         idKhachHang: active.value.idKhachHang || null,
         idNhanVien: nvId(),
+        idPhieuGiamGia: voucher > 0 ? voucher : null,
         phiShip: giaoHang ? (Number(active.value.phiShip) || 0) : 0,
         giaoHang,
         ...payment,
@@ -251,11 +312,13 @@ export function useHoaDon() {
       if (paid?.ma) active.value.ma = paid.ma
       thanhToan()
       await load()               // refresh product list so reduced stock shows
+      await loadQueue()          // paid invoice is no longer pending — it drops out of the queue
       return { ok: true, online: true, invoice: paid }
     } catch (e) {
-      console.warn('Checkout API failed — applying local-only payment', e)
-      thanhToan()
-      return { ok: true, online: false, error: e }
+      // Honest failure: never apply a local-only payment or claim success here.
+      // The caller (UI) must see ok:false and the real error and let the cashier retry.
+      console.error('Checkout failed — sale NOT completed', e)
+      return { ok: false, error: e }
     }
   }
 
@@ -265,7 +328,7 @@ export function useHoaDon() {
     // ui state
     keyword, ketQua, orderTab, leftTab,
     // queue
-    hoaDons, activeId, active, createHoaDon, switchHoaDon, removeHoaDon,
+    hoaDons, activeId, active, createHoaDon, switchHoaDon, removeHoaDon, loadQueue,
     tongHoaDonHomNay, tongTienHomNay,
     // cart
     gio, selectedLineId, selectedLine, selectLine,

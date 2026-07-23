@@ -105,16 +105,30 @@ async function pay() {
   showQR.value = true
 }
 async function confirmQR() { showQR.value = false; await doCheckout() }
+
+// Double-submit guard: disables the pay buttons for the duration of a checkout
+// (see :disabled on "Thanh toán" / "Giao hàng (thanh toán)").
+const paying = ref(false)
 async function doCheckout() {
-  const snapshot = buildReceipt(true)   // capture cart before any refresh
-  const paidId = active.value.id
-  const counterSale = orderTab.value === 'hoadon'
-  const r = await checkout()
-  if (r.online) notify(`Đã thanh toán ${active.value.ma}: ${vnd(phaiTra.value)} — đã lưu DB, ghi lịch sử & trừ kho`, 'success')
-  else notify(`Thanh toán ${active.value.ma}: ${vnd(phaiTra.value)} (offline — chưa lưu DB)`, 'warning')
-  printReceipt(snapshot)
-  // paid counter-sale invoice leaves the pending queue (a fresh one opens if it was the last)
-  if (r.ok && counterSale) removeHoaDon(paidId)
+  if (paying.value) return
+  paying.value = true
+  try {
+    const snapshot = buildReceipt(true)   // capture cart/amounts before checkout can shift `active`
+    const r = await checkout()
+    if (r.ok) {
+      // Success: honest confirmation — paid, printed, and the invoice is gone from
+      // the pending queue (checkout() already refreshed it via loadQueue()).
+      notify(`Đã thanh toán ${snapshot.ma}: ${vnd(snapshot.phaiTra)} — đã lưu DB, ghi lịch sử & trừ kho`, 'success')
+      printReceipt(snapshot)
+    } else {
+      // Failure: no fake success — surface the real error, keep the cart/queue
+      // untouched so the cashier can fix the issue (stock/voucher/etc.) and retry.
+      const msg = r.error?.response?.data?.message || r.error?.message || 'Không thể thanh toán — vui lòng thử lại'
+      notify(`Thanh toán ${snapshot.ma} thất bại: ${msg}`, 'danger')
+    }
+  } finally {
+    paying.value = false
+  }
 }
 function huy() {
   if (confirm(`Huỷ hoá đơn ${active.value.ma}?`)) removeHoaDon(active.value.id)
@@ -221,7 +235,7 @@ function taoHoaDon() {
               <thead>
                 <tr>
                   <th class="text-center">STT</th><th>Mã SP</th><th>Tên sp</th>
-                  <th>Màu sắc</th><th>Kích thước</th><th class="text-end">Số lượng bán</th><th></th>
+                  <th>Màu sắc</th><th>Kích thước</th><th class="text-end">Tồn kho</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -371,7 +385,7 @@ function taoHoaDon() {
             </dl>
 
             <div class="green-actions">
-              <button class="btn btn-success w-100" :disabled="gio.length === 0" @click="pay">Thanh toán</button>
+              <button class="btn btn-success w-100" :disabled="gio.length === 0 || paying" @click="pay">Thanh toán</button>
               <button class="btn btn-success w-100" @click="taoHoaDon">Tạo hóa đơn</button>
               <button class="btn btn-success w-100" :disabled="gio.length === 0" @click="inTamTinh">Phiếu tạm tính</button>
               <button class="btn btn-outline-danger w-100" @click="huy">Hủy</button>
@@ -409,7 +423,7 @@ function taoHoaDon() {
 
             <div class="green-actions">
               <button class="btn btn-success w-100" @click="taoHoaDon">Tạo hóa đơn</button>
-              <button class="btn btn-success w-100" :disabled="gio.length === 0" @click="giaoHang">Giao hàng (thanh toán)</button>
+              <button class="btn btn-success w-100" :disabled="gio.length === 0 || paying" @click="giaoHang">Giao hàng (thanh toán)</button>
               <button class="btn btn-success w-100" @click="daGiaoAction">Đã giao</button>
               <button class="btn btn-outline-danger w-100" @click="traHangAction">Hoàn trả</button>
               <button class="btn btn-light w-100" disabled>Xuất json thông tin sản phẩm</button>
