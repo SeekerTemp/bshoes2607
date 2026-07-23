@@ -88,8 +88,9 @@ function doClear() {
         </div>
 
         <p class="small text-muted mb-3">
-          Đang lưu <b>{{ logCount }}</b> mục (tối đa 400, tự động xoá mục cũ nhất). Nếu gặp lỗi khi thao tác, hãy bấm
-          "Tải file log" và gửi file đó kèm mô tả lỗi để được hỗ trợ.
+          Đang lưu <b>{{ logCount }}</b> mục (tối đa 400, tự động xoá mục cũ nhất). Log cũng được tự động gửi lên máy
+          chủ để lưu chung vào file log server. Nếu máy chủ không truy cập được, hãy bấm "Tải file log" và gửi file
+          đó kèm mô tả lỗi để được hỗ trợ.
         </p>
 
         <div class="log-table-wrap">

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { redact, trimBuffer } from './logger'
+import { redact, trimBuffer, selectUnsent, markSent } from './logger'
 
 // Pure-helper tests only. vitest.setup.js stubs localStorage with a no-op
 // getItem/setItem, so logEvent/getLogs/etc. are exercised indirectly at most;
@@ -90,5 +90,82 @@ describe('trimBuffer', () => {
     const arr = [1, 2, 3, 4, 5]
     trimBuffer(arr, 2)
     expect(arr).toEqual([1, 2, 3, 4, 5])
+  })
+})
+
+describe('selectUnsent', () => {
+  it('picks only entries without a sent flag', () => {
+    const buf = [{ id: 1, sent: true }, { id: 2 }, { id: 3, sent: false }]
+    expect(selectUnsent(buf)).toEqual([{ id: 2 }, { id: 3, sent: false }])
+  })
+
+  it('returns everything unsent when nothing has been shipped yet', () => {
+    const buf = [{ id: 1 }, { id: 2 }, { id: 3 }]
+    expect(selectUnsent(buf)).toEqual(buf)
+  })
+
+  it('returns an empty array once everything has been marked sent', () => {
+    const buf = [{ id: 1, sent: true }, { id: 2, sent: true }]
+    expect(selectUnsent(buf)).toEqual([])
+  })
+
+  it('caps the result at the given limit, oldest first', () => {
+    const buf = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }]
+    expect(selectUnsent(buf, 2)).toEqual([{ id: 1 }, { id: 2 }])
+  })
+
+  it('does not apply a cap when limit is omitted', () => {
+    const buf = Array.from({ length: 150 }, (_, i) => ({ id: i }))
+    expect(selectUnsent(buf).length).toBe(150)
+  })
+
+  it('returns an empty array for non-array input', () => {
+    expect(selectUnsent(null, 10)).toEqual([])
+    expect(selectUnsent(undefined, 10)).toEqual([])
+  })
+
+  it('does not mutate the original buffer', () => {
+    const buf = [{ id: 1 }, { id: 2 }]
+    selectUnsent(buf, 1)
+    expect(buf).toEqual([{ id: 1 }, { id: 2 }])
+  })
+})
+
+describe('markSent', () => {
+  it('marks only the given entries as sent, leaving the rest untouched', () => {
+    const e1 = { id: 1 }
+    const e2 = { id: 2 }
+    const e3 = { id: 3 }
+    const buf = [e1, e2, e3]
+
+    const out = markSent(buf, [e1, e2])
+
+    expect(out).toEqual([{ id: 1, sent: true }, { id: 2, sent: true }, { id: 3 }])
+    // original array/objects are not mutated
+    expect(e1).toEqual({ id: 1 })
+    expect(buf).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }])
+  })
+
+  it('a failed flush (marking nothing) loses no entries', () => {
+    const buf = [{ id: 1 }, { id: 2 }, { id: 3 }]
+    const out = markSent(buf, [])
+    expect(out).toEqual(buf)
+  })
+
+  it('a subsequent flush only picks up entries left unsent by the previous one', () => {
+    const e1 = { id: 1 }
+    const e2 = { id: 2 }
+    const e3 = { id: 3 }
+    let buf = [e1, e2, e3]
+
+    // First flush ships e1, e2 and marks them sent; e3 wasn't part of the
+    // batch (e.g. batch limit) so it must remain selectable afterwards.
+    buf = markSent(buf, [e1, e2])
+    expect(selectUnsent(buf)).toEqual([{ id: 3 }])
+  })
+
+  it('returns an empty array for non-array input', () => {
+    expect(markSent(null, [])).toEqual([])
+    expect(markSent(undefined, [])).toEqual([])
   })
 })

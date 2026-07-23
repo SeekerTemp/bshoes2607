@@ -73,14 +73,23 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         }
     }
 
+    // The client-log ingest endpoint just echoes a batch of frontend log
+    // entries; capturing/logging its body would duplicate that content back
+    // into this same log file for no benefit. Still log the one-line
+    // method/URI/status for it like any other /api/** request.
+    private static final String CLIENT_LOG_PATH = "/api/logs/client";
+
     private void logRequest(HttpServletRequest request, ContentCachingResponseWrapper response,
                              boolean multipart, long durationMs) {
         int status = response.getStatus();
         String line = request.getMethod() + " " + request.getRequestURI() + " -> " + status + " (" + durationMs + "ms)";
 
-        if (status >= 400) {
+        boolean skipBody = CLIENT_LOG_PATH.equals(request.getRequestURI());
+        if (status >= 400 && !skipBody) {
             String body = multipart ? "[multipart, not captured]" : extractBody(request);
             log.warn("{} body={}", line, body);
+        } else if (status >= 400) {
+            log.warn(line);
         } else {
             log.info(line);
         }

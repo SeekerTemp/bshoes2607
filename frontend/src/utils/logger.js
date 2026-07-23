@@ -11,6 +11,13 @@ const MAX = 400
 const STORAGE_KEY = 'bshoes_logs'
 const USER_KEY = 'bshoes_user'
 
+// Auto-ship-to-backend tuning. Entries are marked `sent: true` once a flush
+// to the backend succeeds, so a flush never re-sends and a failed flush never
+// loses anything - the next flush just retries the still-unsent entries.
+const SHIP_URL = '/api/logs/client'
+const FLUSH_BATCH_LIMIT = 100
+const FLUSH_INTERVAL_MS = 20000
+
 // Matches matKhau / password / pass / token at any casing, anywhere in a key name.
 const SENSITIVE_KEY_RE = /matKhau|password|pass|token/i
 
@@ -53,6 +60,27 @@ export function trimBuffer(arr, max) {
   if (!Array.isArray(arr)) return []
   if (arr.length <= max) return arr.slice()
   return arr.slice(arr.length - max)
+}
+
+// ---- ship-to-backend helpers (pure, exported for testing) -----------------
+
+// Picks the entries that haven't been shipped yet (no `sent` flag), oldest
+// first, capped at `limit`. Never picks an already-`sent` entry, so a flush
+// never re-sends what a previous flush already delivered.
+export function selectUnsent(buf, limit) {
+  if (!Array.isArray(buf)) return []
+  const unsent = buf.filter((e) => e && !e.sent)
+  return typeof limit === 'number' ? unsent.slice(0, limit) : unsent
+}
+
+// Returns a NEW array where every entry that is one of `entries` (by
+// reference) is replaced with a copy carrying `sent: true`; every other
+// entry is left exactly as-is (same reference, same value) - so entries that
+// were not part of this flush are never lost or altered.
+export function markSent(buf, entries) {
+  if (!Array.isArray(buf)) return []
+  const sentSet = new Set(entries)
+  return buf.map((e) => (sentSet.has(e) ? { ...e, sent: true } : e))
 }
 
 // ---- storage plumbing -------------------------------------------------------
@@ -183,3 +211,174 @@ export function downloadLogs() {
     // never break the app just because export failed
   }
 }
+
+// ---- auto-ship to backend ---------------------------------------------
+//
+// Ships unsent entries to POST /api/logs/client so the backend persists them
+// into the same rolling file as backend events (see
+// ClientLogController + logback-spring.xml). After a deploy test run this
+// means only ONE server-side file needs collecting.
+//
+// CRITICAL - no recursion: this uses the raw fetch() API, NEVER the `http`
+// axios instance from api/http.js. That instance's response interceptor calls
+// logEvent() on every failed request; if flushing went through axios, a
+// failed flush would itself create a new "api error" log entry, which the
+// next flush would try to ship, which would fail the same way, forever. For
+// the same reason, the failure paths below only ever `console.warn` - they
+// MUST NEVER call logEvent().
+
+// Best-effort string form of the `user` field (an object like
+// { ma, ten, vaiTro } or null) for the wire payload, whose `user` field is a
+// plain string (see ClientLogEntryDto on the backend).
+function userToString(user) {
+  if (!user) return ''
+  try {
+    return user.ten || user.ma || JSON.stringify(user)
+  } catch {
+    return ''
+  }
+}
+
+// Best-effort string form of `detail` (already redacted/capped at capture
+// time in logEvent) for the wire payload, whose `detail` field is a plain
+// string.
+function detailToString(detail) {
+  if (detail === undefined || detail === null) return ''
+  if (typeof detail === 'string') return detail
+  try {
+    return JSON.stringify(detail)
+  } catch {
+    return String(detail)
+  }
+}
+
+function toWireEntry(e) {
+  return {
+    t: e.t,
+    level: e.level,
+    category: e.category,
+    message: e.message,
+    route: e.route,
+    user: userToString(e.user),
+    detail: detailToString(e.detail),
+  }
+}
+
+function buildPayload(unsent) {
+  return JSON.stringify({ logs: unsent.map(toWireEntry) })
+}
+
+// Ships up to FLUSH_BATCH_LIMIT unsent entries to the backend. Never throws.
+// On success, marks those entries `sent: true` (persisted) so they're never
+// re-sent. On any failure - network down, backend down, CORS, etc. - it
+// leaves them unsent so the NEXT flush (interval or page-hide) retries them;
+// nothing is ever dropped just because one flush failed.
+export function flushLogs() {
+  try {
+    const buf = readBuffer()
+    const unsent = selectUnsent(buf, FLUSH_BATCH_LIMIT)
+    if (!unsent.length) return
+
+    fetch(SHIP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: buildPayload(unsent),
+    })
+      .then((res) => {
+        if (res && res.ok) {
+          writeBuffer(markSent(readBuffer(), unsent))
+        }
+        // non-ok response: leave unsent, next flush retries.
+      })
+      .catch(() => {
+        // Backend/network unreachable. Only console.warn - NEVER logEvent()
+        // here, or a failed flush would generate a new entry for the next
+        // flush to try (and fail) forever.
+        console.warn('[logger] flushLogs: failed to ship logs to backend')
+      })
+  } catch {
+    // shipping must never throw / break the app
+  }
+}
+
+// Same idea as flushLogs(), but used when the page is being hidden/unloaded,
+// where a normal fetch() can be cancelled mid-flight by the browser.
+// navigator.sendBeacon is designed to survive that; fall back to
+// fetch(keepalive) when sendBeacon isn't available.
+function flushLogsOnUnload() {
+  try {
+    const buf = readBuffer()
+    const unsent = selectUnsent(buf, FLUSH_BATCH_LIMIT)
+    if (!unsent.length) return
+
+    const payload = buildPayload(unsent)
+
+    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+      const blob = new Blob([payload], { type: 'application/json' })
+      const accepted = navigator.sendBeacon(SHIP_URL, blob)
+      if (accepted) {
+        writeBuffer(markSent(readBuffer(), unsent))
+      }
+      // sendBeacon only guarantees the browser accepted the request for
+      // delivery, not that the server processed it, but that's the best
+      // signal available synchronously at unload time.
+      return
+    }
+
+    if (typeof fetch === 'function') {
+      fetch(SHIP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        keepalive: true,
+      }).catch(() => {
+        // best-effort only at unload time - never logEvent() here either.
+      })
+    }
+  } catch {
+    // logging must never break page unload
+  }
+}
+
+let autoShipStarted = false
+
+// Wires up the periodic flush plus the page-hide/unload flush. Safe to call
+// more than once (e.g. the module being imported from more than one entry
+// point) - only registers the interval/listeners on the first call.
+export function startAutoShip() {
+  try {
+    if (autoShipStarted) return
+    autoShipStarted = true
+
+    if (typeof window === 'undefined') return
+
+    setInterval(() => {
+      try {
+        if (selectUnsent(readBuffer(), 1).length) {
+          flushLogs()
+        }
+      } catch {
+        // never let the interval throw
+      }
+    }, FLUSH_INTERVAL_MS)
+
+    if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          flushLogsOnUnload()
+        }
+      })
+    }
+
+    if (typeof window.addEventListener === 'function') {
+      window.addEventListener('pagehide', flushLogsOnUnload)
+    }
+  } catch {
+    // never break the app just because auto-ship setup failed
+  }
+}
+
+// Start lazily as soon as the module loads. In the vitest node test
+// environment `window` is undefined, so this is a no-op there (guarded
+// above) and the pure helpers can still be tested in isolation.
+startAutoShip()
