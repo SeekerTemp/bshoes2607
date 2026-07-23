@@ -8,6 +8,16 @@
     <property name="LOG_PATTERN"
               value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
 
+    <!-- Where the log file lands. Defaults to ./logs (relative to the directory the
+         app is STARTED from). On a deploy machine pin it to an absolute path so it
+         never depends on the working directory:
+             java -DLOG_DIR=/var/log/bshoes -jar bshoes.jar
+             (or set an environment variable LOG_DIR=D:\bshoes-logs)
+         This directory is on the SERVER filesystem only — it is deliberately NOT
+         served over HTTP (WebConfig exposes /api/uploads/** and nothing else), so
+         the browser/frontend can never read these logs. -->
+    <property name="LOG_DIR" value="${LOG_DIR:-logs}"/>
+
     <!-- Dev console output, unchanged from Spring Boot defaults in shape. -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -19,9 +29,9 @@
          Rolls daily AND once the active file hits ~10MB; keeps ~7 days of history
          capped at ~100MB total. -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/bshoes.log</file>
+        <file>${LOG_DIR}/bshoes.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>logs/bshoes-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <fileNamePattern>${LOG_DIR}/bshoes-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <maxFileSize>10MB</maxFileSize>
             <maxHistory>7</maxHistory>
             <totalSizeCap>100MB</totalSizeCap>
