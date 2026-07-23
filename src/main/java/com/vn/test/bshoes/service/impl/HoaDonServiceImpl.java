@@ -9,7 +9,6 @@ import com.vn.test.bshoes.dto.PosSanPhamDto;
 import com.vn.test.bshoes.dto.ThanhToanRequest;
 import com.vn.test.bshoes.entity.HoaDon;
 import com.vn.test.bshoes.entity.HoaDonChiTiet;
-import com.vn.test.bshoes.entity.KhachHang;
 import com.vn.test.bshoes.entity.LichSuHoaDon;
 import com.vn.test.bshoes.entity.NhanVien;
 import com.vn.test.bshoes.entity.PhieuGiamGia;
