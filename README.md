@@ -106,6 +106,47 @@ The SPA is built on a documented design system (green-themed Bootstrap): tokens 
 `frontend/src/styles/`, reusable primitives in `frontend/src/components/ui/`, all demoed at the
 `/style-guide` route.
 
+## Logging — testing on another machine
+
+Clone, run, reproduce the bug, then send back **one file**: `logs/bshoes.log`.
+
+The backend writes a rolling log; the frontend **auto-ships** its captured browser events to
+`POST /api/logs/client`, which appends them to that same file. So server stack traces and what
+the browser saw sit in one time-ordered timeline:
+
+```
+10:15:30.118 INFO  CLIENT - [api] POST /api/khach-hang -> 500 | route=/khach-hang user=admin
+10:15:30.121 ERROR GlobalExceptionHandler - 500 on POST /api/khach-hang
+    java.lang.NullPointerException: ...
+```
+
+**Where the file is.** `logs/bshoes.log`, relative to the directory the backend was started from.
+The absolute path is printed to the console at startup, so you never have to guess. Pin it
+anywhere with:
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.jvmArguments="-DLOG_DIR=/abs/path"
+java -DLOG_DIR=/abs/path -jar target/*.jar          # packaged
+```
+
+Rotates daily and at 10MB (`bshoes-YYYY-MM-DD.N.log`), 7 days / 100MB kept. `logs/` is
+gitignored — created at runtime, never committed.
+
+**What is captured:** every `/api/**` request (method, URI, status, duration), all 4xx/5xx with
+the request body, full stack traces via a catch-all handler, plus browser-side API failures,
+Vue errors and unhandled rejections. Passwords/tokens are redacted (`***`).
+
+**If the API is on another host/port**, point the frontend proxy at it (works for both
+`npm run dev` and `npm run preview`):
+
+```bash
+VITE_API_TARGET=http://192.168.1.50:8085 npm run dev
+```
+
+**Fallback:** if the backend is unreachable the browser log can't be shipped — grab it from the
+*Hệ thống* page → **"Tải file log"** (downloads a JSON). That's the only place network-level
+failures the server never saw will show up.
+
 ## Status & known gaps
 
 - ✅ Backend **compiles** (JDK 17). ✅ Frontend **builds**. Verified locally.
