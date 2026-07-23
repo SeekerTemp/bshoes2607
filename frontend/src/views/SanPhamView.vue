@@ -83,10 +83,11 @@ function selectSP(p) {
   spForm.value = { ...blankSP(), ...JSON.parse(JSON.stringify(p)) }
 }
 function spThem() { spSelectedId.value = null; spForm.value = blankSP() }
-// double-click a product → jump to its variants (Sản phẩm chi tiết tab), filtered
+// double-click a product → jump to its variants (Sản phẩm chi tiết tab), filtered by product id
 function openBienThe(p) {
   selectSP(p)
-  ctSearch.value = p.ten
+  ctFilterProductId.value = p.id
+  ctSearch.value = ''
   ctSelectedKey.value = null
   tab.value = 'chitiet'
 }
@@ -122,6 +123,15 @@ async function spAn() {
 
 /* ============= TAB 2 — Sản phẩm chi tiết (biến thể), wired to backend ============= */
 const ctSearch = ref('')
+// scope the variant list to a single product (set via the dropdown or by
+// double-clicking a product row); null = no filter, show every product's variants
+const ctFilterProductId = ref(null)
+const ctFilterProductLabel = computed(() => {
+  if (ctFilterProductId.value == null) return ''
+  const p = filtered.value.find(x => x.id === ctFilterProductId.value)
+  return p ? p.ten : ''
+})
+function ctClearProductFilter() { ctFilterProductId.value = null }
 // flatten every product's variants; each row carries the server variant id (idSpct)
 const ctRows = computed(() => {
   const k = ctSearch.value.trim().toLowerCase()
@@ -133,7 +143,9 @@ const ctRows = computed(() => {
       ton: v.ton, trangThai: v.trangThai !== false, imageUrl: v.imageUrl || p.imageUrl,
     })
   }))
-  return rows.filter(r => !k || (r.ma || '').toLowerCase().includes(k) || (r.tenSP || '').toLowerCase().includes(k))
+  return rows
+    .filter(r => ctFilterProductId.value == null || r.idSanPham === ctFilterProductId.value)
+    .filter(r => !k || (r.ma || '').toLowerCase().includes(k) || (r.tenSP || '').toLowerCase().includes(k))
 })
 const ctSelectedKey = ref(null)
 const ctNhap = ref(0)
@@ -252,7 +264,7 @@ async function ctAn() {
         </div>
         <div class="green-actions">
           <button class="btn btn-success w-100" @click="spThem">Thêm</button>
-          <button class="btn btn-success w-100" :disabled="!spForm.id" @click="spLuu">Sửa</button>
+          <button class="btn btn-success w-100" @click="spLuu">{{ spForm.id ? 'Lưu (Sửa)' : 'Tạo sản phẩm' }}</button>
           <button class="btn btn-success w-100" @click="spLamMoi">Làm mới</button>
           <button class="btn btn-outline-danger w-100" :disabled="!spForm.id" @click="spAn">Ẩn (Xóa mềm)</button>
           <button class="btn btn-light w-100" disabled>Xuất json thông tin sản phẩm</button>
@@ -265,11 +277,21 @@ async function ctAn() {
     <div v-show="tab === 'chitiet'" class="sp-grid">
       <div class="sp-master">
         <div class="card sp-panel">
-          <header class="sp-panel-head">
+          <header class="sp-panel-head flex-wrap gap-2">
             <h6 class="sp-title">CHI TIẾT SẢN PHẨM</h6>
-            <div class="input-group input-group-sm sp-search">
-              <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-              <input class="form-control" v-model="ctSearch" placeholder="Tìm sản phẩm chi tiết" />
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+              <select class="form-select form-select-sm" style="width:220px" v-model="ctFilterProductId">
+                <option :value="null">Tất cả sản phẩm</option>
+                <option v-for="p in filtered" :key="p.id" :value="p.id">{{ p.ten }}</option>
+              </select>
+              <span v-if="ctFilterProductId != null" class="badge bg-primary-subtle text-primary-emphasis border ct-filter-chip">
+                {{ ctFilterProductLabel }}
+                <button type="button" class="ct-filter-chip-x" @click="ctClearProductFilter" title="Bỏ lọc theo sản phẩm">✕</button>
+              </span>
+              <div class="input-group input-group-sm sp-search">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input class="form-control" v-model="ctSearch" placeholder="Tìm sản phẩm chi tiết" />
+              </div>
             </div>
           </header>
           <div class="table-scroll" style="height: 460px">
@@ -372,6 +394,8 @@ async function ctAn() {
 .sp-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .sp-title { margin: 0; font-weight: 700; letter-spacing: .3px; }
 .sp-search { max-width: 280px; }
+.ct-filter-chip { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
+.ct-filter-chip-x { border: none; background: none; padding: 0; line-height: 1; color: inherit; cursor: pointer; font-size: 12px; }
 
 .table-scroll { overflow: auto; border: 1px solid var(--c-border); border-radius: var(--radius-sm); }
 .sp-table { min-width: 640px; }

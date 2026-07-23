@@ -99,7 +99,8 @@ onMounted(load)
           <button class="btn btn-sm btn-outline-secondary" @click="triggerImport"><i class="bi bi-upload"></i> Import</button>
           <button class="btn btn-sm btn-outline-secondary" @click="exportCsv"><i class="bi bi-download"></i> Export</button>
           <input ref="fileInput" type="file" accept=".csv" class="d-none" @change="importCsv">
-          <span class="ms-auto badge bg-light text-dark border">{{ activeLabel }} · {{ filtered.length }}</span>
+          <span class="badge bg-light text-dark border">{{ activeLabel }} · {{ filtered.length }}</span>
+          <button class="btn btn-sm btn-success ms-auto" @click="reset"><i class="bi bi-plus-lg"></i> Thêm</button>
         </div>
 
         <div class="d-flex gap-3">
