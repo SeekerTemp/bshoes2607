@@ -7,7 +7,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { hoaDonApi } from '../api/hoaDon'
 import { useAuth } from './useAuth'
-import { posSanPham, posKhachHang, posVouchers, posHinhThuc, posHoaDonQueue } from '../mock/data'
+import { posSanPham, posKhachHang, posHinhThuc, posHoaDonQueue } from '../mock/data'
 
 const deep = v => JSON.parse(JSON.stringify(v))
 
@@ -16,7 +16,29 @@ export function useHoaDon() {
   const nvId = () => user.value?.id ?? null
   const sanPham = ref(deep(posSanPham))
   const khachHangOptions = ref([...posKhachHang])
-  const voucherOptions = ref(deep(posVouchers))
+  // Real phiếu giảm giá (id + rule) from the server. The mock `posVouchers` values
+  // were discount ENCODINGS (0.1 / 50000), not row ids — sending those as
+  // idPhieuGiamGia made the backend find no voucher and record giảm = 0 while the
+  // screen showed a discount (customer charged a different total than displayed).
+  const voucherOptions = ref([{ value: 0, label: 'Không' }])
+  async function loadVouchers() {
+    try {
+      const rows = await hoaDonApi.vouchersActive()
+      voucherOptions.value = [
+        { value: 0, label: 'Không' },
+        ...(rows || []).map(v => ({
+          value: v.id, label: v.ten || v.ma,
+          loai: v.loai, giaTri: Number(v.giaTri) || 0,
+          donToiThieu: Number(v.donToiThieu) || 0, giamToiDa: Number(v.giamToiDa) || 0,
+        })),
+      ]
+    } catch (e) {
+      // No fake vouchers offline — offering one would promise a discount the
+      // backend will not honour.
+      console.warn('Không tải được phiếu giảm giá', e)
+      voucherOptions.value = [{ value: 0, label: 'Không' }]
+    }
+  }
   const hinhThucOptions = [...posHinhThuc]
 
   const keyword = ref('')
@@ -151,7 +173,7 @@ export function useHoaDon() {
       sanPham.value = deep(posSanPham)
     }
   }
-  onMounted(() => { load(); loadQueue() })
+  onMounted(() => { load(); loadQueue(); loadVouchers() })
 
   const ketQua = computed(() => {
     const k = keyword.value.trim().toLowerCase()
@@ -257,10 +279,20 @@ export function useHoaDon() {
   // ---- money (active invoice) ----
   const soLuong = computed(() => active.value.gio.reduce((s, l) => s + l.soLuong, 0))
   const tamTinh = computed(() => active.value.gio.reduce((s, l) => s + l.gia * l.soLuong, 0))
+  // Mirrors the backend function tinh_tien_giam_gia (used by HoaDonServiceImpl
+  // .thanhToan) EXACTLY, so the total shown at the counter equals the total the
+  // server records: under đơn tối thiểu -> 0; loại 0 = %, loại 1 = số tiền cố
+  // định; capped at giảm tối đa.
   const giamGia = computed(() => {
-    const v = Number(active.value.voucher) || 0
-    if (v === 0) return 0
-    return v < 1 ? Math.round(tamTinh.value * v) : v
+    const id = Number(active.value.voucher) || 0
+    if (id === 0) return 0
+    const v = voucherOptions.value.find(o => o.value === id)
+    if (!v) return 0
+    const tong = tamTinh.value
+    if (tong < (v.donToiThieu || 0)) return 0
+    let giam = v.loai === 0 ? tong * ((v.giaTri || 0) / 100) : (v.giaTri || 0)
+    if (giam > (v.giamToiDa || 0)) giam = v.giamToiDa || 0
+    return Math.round(Math.max(0, giam))
   })
   const phiShip = computed(() => orderTab.value === 'dathang' ? (Number(active.value.phiShip) || 0) : 0)
   const phaiTra = computed(() => Math.max(0, tamTinh.value - giamGia.value + phiShip.value))
