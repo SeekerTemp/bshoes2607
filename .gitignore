@@ -43,3 +43,6 @@ replay_pid*.log
 
 ### Locally-uploaded images (see UploadController) ###
 uploads/
+
+### Backend rolling log files (see logback-spring.xml) ###
+logs/
