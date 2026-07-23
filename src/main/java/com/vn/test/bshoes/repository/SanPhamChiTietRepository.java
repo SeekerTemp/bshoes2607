@@ -28,7 +28,15 @@ public interface SanPhamChiTietRepository extends JpaRepository<SanPhamChiTiet, 
     @Query("select s from SanPhamChiTiet s where s.trangThai = true and (s.trangThaiXoa = false or s.trangThaiXoa is null)")
     List<SanPhamChiTiet> findForStore();
 
-    SanPhamChiTiet findByMaSanPhamChiTiet(String ma);
+    /**
+     * Scan/lookup by variant code (POS). Ignores inactive (trangThai=false) and
+     * soft-deleted variants — but deliberately does NOT filter on soLuongTon, so a
+     * sold-out variant is still FOUND (the caller reports "hết hàng" rather than the
+     * misleading "không tìm thấy").
+     */
+    @Query("select s from SanPhamChiTiet s where s.maSanPhamChiTiet = :ma and s.trangThai = true " +
+           "and (s.trangThaiXoa = false or s.trangThaiXoa is null)")
+    SanPhamChiTiet findByMaSanPhamChiTiet(@Param("ma") String ma);
 
     /**
      * Atomically decrement stock. Returns rows affected: 1 = ok, 0 = not enough stock

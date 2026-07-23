@@ -209,13 +209,28 @@ export function useHoaDon() {
     inv.gio = (dto.chiTiet || []).map(chiTietLine)
   }
 
+  // Re-fetch `inv` from the server and rebuild its local cart from that truth.
+  // Used whenever a mutation fails partway (partial checkout, rejected qty change)
+  // so the cart shown to the cashier never lies about what the server actually holds.
+  async function resyncCartFromServer(inv) {
+    if (!inv.serverId) return
+    try {
+      const dto = await hoaDonApi.findById(inv.serverId)
+      syncCartFromServer(inv, dto)
+      await load()
+    } catch (e) {
+      console.warn('resyncCartFromServer failed — cart may be stale', e)
+    }
+  }
+
   async function addLine(p) {
+    if (!p || p.ton <= 0) return   // sold out — let the caller report "hết hàng"; never call the API
     const inv = active.value
     const sid = await ensureServerInvoice(inv)
     if (!sid) {                       // offline — local-only cart
       const found = inv.gio.find(l => l.spId === p.id)
       if (found) { if (found.soLuong < p.ton) found.soLuong++ }
-      else inv.gio.push({ id: ++seqLine, spId: p.id, ma: p.ma, ten: p.ten, mau: p.mau, size: p.size, gia: p.gia, ton: p.ton, soLuong: 1, trangThai: '-' })
+      else if (p.ton > 0) inv.gio.push({ id: ++seqLine, spId: p.id, ma: p.ma, ten: p.ten, mau: p.mau, size: p.size, gia: p.gia, ton: p.ton, soLuong: 1, trangThai: '-' })
       return
     }
     try {
@@ -227,35 +242,57 @@ export function useHoaDon() {
       throw e
     }
   }
+  // Returns a distinguished result so the caller can toast the right thing instead
+  // of collapsing "code not found" and "found but out of stock" into one message:
+  //   not found         -> { ok:false, reason:'not_found' }
+  //   found, ton <= 0    -> { ok:false, reason:'out_of_stock', ten }
+  //   addItem/API failed -> { ok:false, reason:'error', message, ten }
+  //   success            -> { ok:true, ten }
   async function scanAdd(ma) {
+    let p
     try {
-      const p = await hoaDonApi.scanByMa(ma)
-      if (p) { await addLine(p); return { ok: true, ten: p.ten } }
-      return { ok: false }
+      p = await hoaDonApi.scanByMa(ma)
     } catch (e) {
-      return { ok: false, error: e }
+      if (e?.response?.status === 404) return { ok: false, reason: 'not_found' }
+      return { ok: false, reason: 'error', message: e?.response?.data?.message || e?.message }
+    }
+    if (!p) return { ok: false, reason: 'not_found' }
+    if (p.ton <= 0) return { ok: false, reason: 'out_of_stock', ten: p.ten }
+    try {
+      await addLine(p)
+      return { ok: true, ten: p.ten }
+    } catch (e) {
+      return { ok: false, reason: 'error', message: e?.response?.data?.message || e?.message, ten: p.ten }
     }
   }
   function selectLine(l) { selectedLineId.value = l.id }
 
+  // Returns { ok:true } or { ok:false, message } — never swallows a backend
+  // rejection: on failure the local cart is re-synced from server truth (so a
+  // rejected quantity is never left displayed) and the caller can toast `message`.
   async function setQty(l, qty) {
     const inv = active.value
     if (!inv.serverId || typeof l.id !== 'number') {   // offline / local line
       if (qty <= 0) { removeLineLocal(l) } else { l.soLuong = Math.min(qty, l.ton || qty) }
-      return
+      return { ok: true }
     }
     try {
       const dto = await hoaDonApi.updateItem(l.id, qty)
       syncCartFromServer(inv, dto)
       await load()
-    } catch (e) { console.warn('updateItem failed', e) }
+      return { ok: true }
+    } catch (e) {
+      await resyncCartFromServer(inv)
+      return { ok: false, error: e, message: e?.response?.data?.message || e?.message || 'Không thể cập nhật số lượng' }
+    }
   }
-  function inc(l) { setQty(l, (l.soLuong || 0) + 1) }
-  function dec(l) { if (l.soLuong > 1) setQty(l, l.soLuong - 1) }
+  function inc(l) { return setQty(l, (l.soLuong || 0) + 1) }
+  function dec(l) { return l.soLuong > 1 ? setQty(l, l.soLuong - 1) : Promise.resolve({ ok: true }) }
   function clampLine(l) {
     let q = Number(l.soLuong) || 1
     if (q < 1) q = 1
-    setQty(l, q)
+    if (typeof l.ton === 'number' && q > l.ton) q = l.ton
+    return setQty(l, q)
   }
   function removeLineLocal(l) {
     active.value.gio = active.value.gio.filter(x => x.id !== l.id)
@@ -317,15 +354,36 @@ export function useHoaDon() {
     if (!lines.length) return { ok: false, reason: 'empty' }
     const giaoHang = orderTab.value === 'dathang'
     const voucher = Number(active.value.voucher) || 0
+    const inv = active.value
     try {
-      let invId = active.value.serverId
+      let invId = inv.serverId
       if (!invId) {                                   // offline-created invoice: create + fill now
-        const inv = await hoaDonApi.createEmpty(payment.idNhanVien ?? nvId())
-        invId = inv.id
-        active.value.serverId = inv.id
-        if (inv.ma) active.value.ma = inv.ma
+        const created = await hoaDonApi.createEmpty(payment.idNhanVien ?? nvId())
+        invId = created.id
+        inv.serverId = created.id
+        if (created.ma) inv.ma = created.ma
         for (const l of lines) {
-          await hoaDonApi.addItem(invId, { idSanPhamChiTiet: l.spId, soLuong: l.soLuong })
+          try {
+            await hoaDonApi.addItem(invId, { idSanPhamChiTiet: l.spId, soLuong: l.soLuong })
+          } catch (e) {
+            // A line failed partway through this loop (e.g. out of stock). Earlier
+            // lines in the SAME loop are already persisted server-side (their stock
+            // already decremented) — `inv.serverId` is now set, so a naive retry would
+            // skip this create+fill branch entirely and go straight to thanh-toan,
+            // silently finalizing a sale missing this line. Instead: stop (never call
+            // thanh-toan here), and re-sync the local cart from the server so it shows
+            // EXACTLY what was actually persisted. A subsequent retry then sees
+            // `invId` already set, skips this loop, and pays for precisely the
+            // (now honestly displayed, possibly truncated) server cart — never a
+            // silently-truncated one.
+            await resyncCartFromServer(inv)
+            await loadQueue()
+            return {
+              ok: false, error: e, reason: 'partial',
+              failedLine: l.ma || l.ten,
+              message: e?.response?.data?.message || e?.message,
+            }
+          }
         }
       }
       const paid = await hoaDonApi.thanhToan(invId, {

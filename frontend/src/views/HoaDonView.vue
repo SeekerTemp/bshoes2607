@@ -27,8 +27,10 @@ const { notify } = useToast()
 const showScanner = ref(false)
 async function onScan(text) {
   const r = await scanAdd(text)
-  if (r.ok) notify('Đã thêm: ' + r.ten, 'success')
-  else notify('Không tìm thấy mã: ' + text, 'warning')
+  if (r.ok) { notify('Đã thêm: ' + r.ten, 'success'); return }
+  if (r.reason === 'out_of_stock') { notify(`${r.ten} đã hết hàng`, 'warning'); return }
+  if (r.reason === 'error') { notify(r.message || 'Không thể thêm sản phẩm', 'danger'); return }
+  notify('Không tìm thấy mã: ' + text, 'warning')   // reason === 'not_found'
 }
 
 // ---- manual code entry ----
@@ -71,8 +73,15 @@ function needLine(action) {
   if (!selectedLine.value) { notify('Chọn một dòng trong giỏ hàng trước', 'warning'); return false }
   return true
 }
-function tangSL() { if (needLine()) inc(selectedLine.value) }
-function giamSL() { if (needLine()) dec(selectedLine.value) }
+// setQty/inc/dec/clampLine resolve to { ok, message } — never silently swallow a
+// backend rejection (e.g. "not enough stock"); the cart itself is already re-synced
+// from server truth by the composable, this just surfaces the message.
+async function bumpQty(fn, l) {
+  const r = await fn(l)
+  if (r && r.ok === false) notify(r.message || 'Không thể cập nhật số lượng', 'danger')
+}
+function tangSL() { if (needLine()) bumpQty(inc, selectedLine.value) }
+function giamSL() { if (needLine()) bumpQty(dec, selectedLine.value) }
 function boSanPham() { if (needLine()) removeLine(selectedLine.value) }
 function hoanTraLine() { if (needLine()) hoanTra(selectedLine.value) }
 
@@ -287,10 +296,10 @@ function taoHoaDon() {
                   <td class="fw-medium">{{ l.ten }}</td>
                   <td>
                     <div class="stepper">
-                      <button class="btn btn-sm btn-outline-danger" @click.stop="dec(l)">−</button>
+                      <button class="btn btn-sm btn-outline-danger" @click.stop="bumpQty(dec, l)">−</button>
                       <input type="number" min="1" :max="l.ton" class="form-control form-control-sm text-center"
-                             v-model.number="l.soLuong" @change="clampLine(l)" @click.stop>
-                      <button class="btn btn-sm btn-outline-success" @click.stop="inc(l)">+</button>
+                             v-model.number="l.soLuong" @change="bumpQty(clampLine, l)" @click.stop>
+                      <button class="btn btn-sm btn-outline-success" @click.stop="bumpQty(inc, l)">+</button>
                     </div>
                   </td>
                   <td class="text-end">{{ vnd(l.gia) }}</td>
