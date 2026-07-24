@@ -1,6 +1,34 @@
 # Generator tài liệu workshop
 
-Sinh lại 2 file Word + 1 file Excel trong `doc-school/` từ một nguồn dữ liệu duy nhất.
+Sinh lại các file Word trong `doc-school/` từ nguồn dữ liệu, đừng sửa tay file Word
+rồi sinh lại vì sinh lại sẽ đè mất.
+
+## Pipeline chuẩn (nguồn sự thật = file Excel của nhóm)
+
+Từ 2026-07-24, Workshop 1 + 2 và bản tổng hợp `asm1.docx` lấy dữ liệu TRỰC TIẾP từ
+file Excel nhóm đã chỉnh tay: `doc-school/2607lts_nhóm 1_WebBshoes_Workshop1.xlsx`.
+
+```bash
+cd doc-school/_generator
+export PYTHONIOENCODING=utf-8         # Windows: set PYTHONIOENCODING=utf-8
+
+python ws_source.py                   # nạp + kiểm tra dữ liệu từ Excel (40 RQ, 13 PB, 6 sprint)
+python gen_asm1.py ..                 # -> asm1.docx  (tổng hợp WS1 + WS2, mỗi mục có mở/thân/kết)
+python gen_ws12.py ..                 # -> WORKSHOP_1_BShoes.docx, WORKSHOP_2_MucTieu_BShoes.docx
+python verify_docx.py ../asm1.docx ../WORKSHOP_1_BShoes.docx ../WORKSHOP_2_MucTieu_BShoes.docx
+```
+
+Mô hình ID bám đúng Excel: **RQ-1..RQ-40 = Product Backlog** (user story, 24 New +
+16 Removed), **PB-1..PB-13 = Release Backlog** (nhóm chức năng) gán vào Sprint. ED = 18/36
+(hệ số môi trường 0.5), C = 1. Muốn đổi nội dung thì sửa file Excel rồi chạy lại, KHÔNG sửa
+`ws_source.py` trừ khi bố cục sheet thay đổi.
+
+`gen_docx.py` + `bshoes_data.py` là generator CŨ (mô hình 9 RQ / 40 PB, đánh số theo sprint),
+chỉ còn dùng cho `gen_ws2_xlsx.py` và `gen_ws3.py`. **Đừng chạy `gen_docx.py`** cho WS1/WS2 nữa
+vì nó đè file bằng mô hình cũ; dùng `gen_ws12.py`.
+
+## Generator cũ (legacy)
+
 Sửa nội dung ở `bshoes_data.py`, đừng sửa tay file Word rồi sinh lại, vì sinh lại sẽ đè mất.
 
 ## Chạy
