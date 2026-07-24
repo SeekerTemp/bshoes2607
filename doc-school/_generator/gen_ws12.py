@@ -20,10 +20,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from docx import Document
 
-from docx_format import setup, title, ket_luan
-from ws_source import PROJECT, ED_TOTAL, ED_MAX, ENV_FACTOR, C_DEFAULT
+from docx_format import setup, ket_luan
+from ws_source import ED_TOTAL, ED_MAX, ENV_FACTOR, C_DEFAULT
 from gen_asm1 import (
-    build_ws1, build_ws2,
+    build_ws1, build_ws2, cover_page,
     N_RQ, N_NEW, N_REMOVED, N_PB, N_SPRINT, N_TASK, TONG_GIO,
     DOI_TUONG_HOAN, TOTALS,
 )
@@ -40,11 +40,7 @@ OUTDIR = sys.argv[1]
 
 doc1 = setup(Document())
 
-title(
-    doc1,
-    "WORKSHOP 1: Kế hoạch dự án và Product Backlog",
-    "%s, Nhóm 1" % PROJECT["name"],
-)
+cover_page(doc1, "Báo cáo", "Workshop 1: Kế hoạch dự án và Product Backlog")
 
 build_ws1(doc1, base=0)
 
@@ -72,11 +68,7 @@ print("OK ->", f1)
 
 doc2 = setup(Document())
 
-title(
-    doc2,
-    "WORKSHOP 2: Mục tiêu và ước lượng",
-    "%s, Nhóm 1" % PROJECT["name"],
-)
+cover_page(doc2, "Báo cáo", "Workshop 2: Mục tiêu, ước lượng và Sprint Backlog")
 
 build_ws2(doc2, base=0)
 
