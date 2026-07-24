@@ -1108,6 +1108,6 @@ if __name__ == "__main__":
         ],
     )
 
-    f = os.path.join(OUTDIR, "asm1.docx")
+    f = os.path.join(OUTDIR, "asm1-cl.docx")
     doc.save(f)
     print("OK ->", f)
