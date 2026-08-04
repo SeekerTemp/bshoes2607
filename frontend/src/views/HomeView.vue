@@ -7,14 +7,21 @@ import { useCart } from '../composables/useCart'
 import { useToast } from '../composables/useToast'
 import ToastHost from '../components/ui/ToastHost.vue'   // storefront không nằm trong AppShell nên phải tự gắn
 import DatTruocModal from '../components/ui/DatTruocModal.vue'
+import DemoDataBanner from '../components/ui/DemoDataBanner.vue'
 import { vnd } from '../utils/format'
-import { filterByCategory } from '../utils/catalog'
+import { filterByCategory, filterByKeyword } from '../utils/catalog'
 
 const router = useRouter()
 
 const IMG = n => `/images/shoes/img_shoe_${n}.png`
 const activeCat = ref(0)   // 0 = "Tất cả" (không lọc)
 const sort = ref('hot')
+// `kwInput` is what is typed, `kw` is what the grid is filtered by — committed
+// by the search button or Enter.
+const kwInput = ref('')
+const kw = ref('')
+// True while `products` holds mockProducts because the API call failed.
+const isDemo = ref(false)
 const { soLuong: cartCount, add: addToCart } = useCart()
 const { notify } = useToast()
 
@@ -69,16 +76,27 @@ async function loadProducts() {
         sale: [50, 30, 40, 0, 35, 45, 20, 15, 30, 25][i % 10], ban: 60 + (i * 13) % 90,
         img: p.imageUrl || IMG(10007 + (i % 10)),
       }))
-    } else products.value = mockProducts.map(p => ({ ...p, idSanPham: p.id }))
+      isDemo.value = false
+    } else {
+      // Reachable backend with no products is real (empty) data, not an outage.
+      products.value = []
+      isDemo.value = false
+    }
   } catch (e) {
     console.warn('API offline, using mock storefront', e)
     products.value = mockProducts.map(p => ({ ...p, idSanPham: p.id }))
+    isDemo.value = true
   }
 }
 onMounted(() => { loadProducts(); loadCategories() })
 
+function timKiem() {
+  kw.value = kwInput.value.trim()
+  if (kw.value && sorted.value.length === 0) notify(`Không tìm thấy sản phẩm nào cho "${kw.value}"`, 'warning')
+}
+
 const sorted = computed(() => {
-  const a = filterByCategory(products.value, activeCat.value)
+  const a = filterByKeyword(filterByCategory(products.value, activeCat.value), kw.value)
   if (sort.value === 'asc') return [...a].sort((x, y) => x.gia - y.gia)
   if (sort.value === 'desc') return [...a].sort((x, y) => y.gia - x.gia)
   return [...a].sort((x, y) => y.ban - x.ban)
@@ -103,6 +121,9 @@ function xemChiTiet(p) {
 <template>
   <div class="store">
     <ToastHost />
+    <div v-if="isDemo" class="container pt-2">
+      <DemoDataBanner what="danh sách sản phẩm" @retry="loadProducts" />
+    </div>
     <!-- utility -->
     <div class="util"><div class="container d-flex justify-content-between py-1">
       <div class="d-flex gap-3"><a href="#">bshoes.vn</a><a href="#">Tải ứng dụng</a><a href="#">Kết nối</a></div>
@@ -116,8 +137,9 @@ function xemChiTiet(p) {
     <header class="shop-head py-3"><div class="container d-flex align-items-center gap-4">
       <router-link to="/home" class="brand text-nowrap"><i class="bi bi-bag-heart-fill"></i> BShoes <small class="d-block">giày chính hãng</small></router-link>
       <div class="search-wrap input-group flex-grow-1">
-        <input class="form-control" placeholder="Tìm giày, thương hiệu, mã sản phẩm...">
-        <button class="btn px-4"><i class="bi bi-search"></i></button>
+        <input class="form-control" v-model="kwInput" @keyup.enter="timKiem"
+               placeholder="Tìm giày, thương hiệu, mã sản phẩm...">
+        <button class="btn px-4" @click="timKiem"><i class="bi bi-search"></i></button>
       </div>
       <router-link to="/" class="icon-btn" title="Trang quản trị"><i class="bi bi-speedometer2"></i></router-link>
       <router-link to="/gio-hang" class="icon-btn" title="Giỏ hàng của tôi">

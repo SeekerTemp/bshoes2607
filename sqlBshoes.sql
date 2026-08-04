@@ -556,13 +556,88 @@ go
 
 -- 2.16 phieu_giam_gia
 insert into phieu_giam_gia (ma_phieu_giam, ten_phieu_giam, loai_giam_gia, gia_tri_giam, don_toi_thieu, giam_toi_da, so_luong, thoi_gian_bat_dau, thoi_gian_ket_thuc, nguoi_tao_ma, nguoi_cap_nhat, trang_thai, trang_thai_xoa) values
-(N'PGG001', N'Giảm giá dịp lễ', 1, 10, 500000, 100000, 50, '2025-11-08', '2025-11-30', N'admin', N'admin', 1, 0),
-(N'PGG002', N'Giảm giá cuối tuần', 0, 20000, 100000, 50000, 100, '2025-11-09', '2025-11-10', N'admin', N'admin', 1, 0),
-(N'PGG003', N'Khuyến mãi đầu tháng', 1, 15, 300000, 80000, 70, '2025-11-01', '2025-11-07', N'admin', N'admin', 1, 0),
-(N'PGG004', N'Flash sale', 0, 50000, 200000, 50000, 30, '2025-11-08', '2025-11-08', N'admin', N'admin', 1, 0),
-(N'PGG005', N'Giảm giá sinh nhật', 1, 20, 400000, 120000, 60, '2025-11-15', '2025-11-15', N'admin', N'admin', 1, 0),
-(N'PGG006', N'Mua 1 tặng 1', 0, 0, 0, 0, 20, '2025-11-20', '2025-11-25', N'admin', N'admin', 1, 0);
+-- loai_giam_gia: 0 = giảm theo %, 1 = giảm số tiền cố định (khớp dbo.tinh_tien_giam_gia).
+-- Sáu dòng gốc trước đây bị ĐẢO cột loai: 'Giảm giá dịp lễ' ghi loai=1, gia_tri=10
+-- nghĩa là giảm 10 ĐỒNG (không phải 10%), còn 'Giảm giá cuối tuần' ghi loai=0,
+-- gia_tri=20000 nghĩa là giảm 20000%. Đã sửa lại cho đúng ý nghĩa của tên phiếu.
+-- Giữ nguyên thứ tự để id 1..6 vẫn khớp FK id_phieu_giam_gia trong hoa_don.
+(N'PGG001', N'Giảm giá dịp lễ (10%)',        0, 10,     500000, 100000, 50,  '2025-11-08', '2025-11-30 23:59:59', N'admin', N'admin', 1, 0),
+(N'PGG002', N'Giảm giá cuối tuần (20K)',     1, 20000,  100000, NULL,   100, '2025-11-09', '2025-11-10 23:59:59', N'admin', N'admin', 1, 0),
+(N'PGG003', N'Khuyến mãi đầu tháng (15%)',   0, 15,     300000, 80000,  70,  '2025-11-01', '2025-11-07 23:59:59', N'admin', N'admin', 1, 0),
+(N'PGG004', N'Flash sale (50K)',             1, 50000,  200000, NULL,   30,  '2025-11-08', '2025-11-08 23:59:59', N'admin', N'admin', 1, 0),
+(N'PGG005', N'Giảm giá sinh nhật (20%)',     0, 20,     400000, 120000, 60,  '2025-11-15', '2025-11-15 23:59:59', N'admin', N'admin', 1, 0),
+(N'PGG006', N'Ưu đãi thành viên (25%)',      0, 25,     0,      200000, 20,  '2025-11-20', '2025-11-25 23:59:59', N'admin', N'admin', 1, 0);
 go
+
+/* ---------------------------------------------------------------------------
+   2.16b phieu_giam_gia — SINH TỰ ĐỘNG cho cả giai đoạn 2025-2030.
+
+   Vì sao cần: view_phieu_giam_gia_hoat_dong chỉ trả phiếu có
+   GETDATE() BETWEEN thoi_gian_bat_dau AND thoi_gian_ket_thuc. Sáu phiếu gốc ở
+   trên đều hết hạn trong tháng 11/2025, nên sau thời điểm đó màn Bán Hàng
+   KHÔNG còn phiếu nào để áp — nhìn như "khuyến mãi bị hỏng".
+
+   Sinh ra:
+   - 1 phiếu / tháng, hiệu lực trọn tháng, mã PGGyyyyMM  (72 phiếu)
+   - 1 phiếu / năm,   hiệu lực trọn năm,  mã PGGYyyyy    (6 phiếu)
+
+   Xen kẽ loại % và loại số tiền cố định; phiếu số tiền cố định để
+   giam_toi_da = NULL (không giới hạn) để dùng luôn làm dữ liệu kiểm thử cho
+   nhánh "không đặt trần" của dbo.tinh_tien_giam_gia.
+
+   Chạy lại script này nhiều lần cũng không tạo trùng: đã lọc theo ma_phieu_giam.
+--------------------------------------------------------------------------- */
+DECLARE @thang DATE = '2025-01-01';
+DECLARE @i INT;
+
+WHILE @thang < '2031-01-01'
+BEGIN
+    SET @i = (MONTH(@thang) - 1) % 4;
+
+    INSERT INTO phieu_giam_gia
+        (ma_phieu_giam, ten_phieu_giam, loai_giam_gia, gia_tri_giam, don_toi_thieu,
+         giam_toi_da, so_luong, thoi_gian_bat_dau, thoi_gian_ket_thuc,
+         nguoi_tao_ma, nguoi_cap_nhat, trang_thai, trang_thai_xoa)
+    SELECT
+        'PGG' + FORMAT(@thang, 'yyyyMM'),
+        N'Khuyến mãi tháng ' + CAST(MONTH(@thang) AS nvarchar(2)) + N'/' + CAST(YEAR(@thang) AS nvarchar(4)),
+        CASE WHEN @i IN (0, 2) THEN 0 ELSE 1 END,                 -- 0 = %, 1 = tiền
+        CASE @i WHEN 0 THEN 10 WHEN 1 THEN 50000 WHEN 2 THEN 20 ELSE 100000 END,
+        CASE @i WHEN 0 THEN 300000 WHEN 1 THEN 500000 WHEN 2 THEN 800000 ELSE 1000000 END,
+        CASE WHEN @i IN (0, 2) THEN 150000 ELSE NULL END,         -- phiếu tiền: không giới hạn
+        100,
+        CAST(@thang AS DATETIME),
+        DATEADD(SECOND, -1, DATEADD(MONTH, 1, CAST(@thang AS DATETIME))),
+        N'admin', N'admin', 1, 0
+    WHERE NOT EXISTS (
+        SELECT 1 FROM phieu_giam_gia WHERE ma_phieu_giam = 'PGG' + FORMAT(@thang, 'yyyyMM'));
+
+    SET @thang = DATEADD(MONTH, 1, @thang);
+END;
+GO
+
+DECLARE @nam INT = 2025;
+
+WHILE @nam <= 2030
+BEGIN
+    INSERT INTO phieu_giam_gia
+        (ma_phieu_giam, ten_phieu_giam, loai_giam_gia, gia_tri_giam, don_toi_thieu,
+         giam_toi_da, so_luong, thoi_gian_bat_dau, thoi_gian_ket_thuc,
+         nguoi_tao_ma, nguoi_cap_nhat, trang_thai, trang_thai_xoa)
+    SELECT
+        'PGGY' + CAST(@nam AS varchar(4)),
+        N'Ưu đãi thành viên ' + CAST(@nam AS nvarchar(4)) + N' (5%)',
+        0, 5, 0, 200000, 9999,
+        CAST(DATEFROMPARTS(@nam, 1, 1) AS DATETIME),
+        -- CAST to DATETIME first: DATEADD(SECOND, ...) on a DATE value is an error.
+        DATEADD(SECOND, -1, CAST(DATEFROMPARTS(@nam + 1, 1, 1) AS DATETIME)),
+        N'admin', N'admin', 1, 0
+    WHERE NOT EXISTS (
+        SELECT 1 FROM phieu_giam_gia WHERE ma_phieu_giam = 'PGGY' + CAST(@nam AS varchar(4)));
+
+    SET @nam = @nam + 1;
+END;
+GO
 
 -- 2.17 hoa_don  (trang_thai 1 = Đã thanh toán, loai_hoa_don 1 = hợp lệ; id_nhan_vien rotated 1-6 for demo)
 insert into hoa_don (id_khach_hang, id_phieu_giam_gia, id_nhan_vien, ma_hoa_don, tong_tien_ban_dau, tien_giam_gia, tong_tien_phai_tra, ten_nguoi_nhan, so_dien_thoai, dia_chi, phuong_thuc_thanh_toan, ghi_chu, nguoi_tao_ma, nguoi_cap_nhat, ngay_tao_ma, ngay_cap_nhat, trang_thai, loai_hoa_don) values
@@ -827,20 +902,30 @@ BEGIN
     WHERE id_phieu_giam_gia = @id_phieu;
 
     -- Không đủ điều kiện đơn tối thiểu
-    IF (@tong_tien < @don_toi_thieu)
+    IF (@tong_tien < ISNULL(@don_toi_thieu, 0))
         RETURN 0;
 
     -- Loại 0 = giảm theo %
     IF (@loai = 0)
-        SET @giam = @tong_tien * (@gia_tri / 100.0);
+        SET @giam = @tong_tien * (ISNULL(@gia_tri, 0) / 100.0);
 
     -- Loại 1 = giảm số tiền cố định
     IF (@loai = 1)
-        SET @giam = @gia_tri;
+        SET @giam = ISNULL(@gia_tri, 0);
 
-    -- Giới hạn giảm tối đa
-    IF (@giam > @giam_toi_da)
+    SET @giam = ISNULL(@giam, 0);
+
+    -- Giới hạn giảm tối đa. NULL hoặc 0 = KHÔNG giới hạn (trước đây giam_toi_da = 0
+    -- bị hiểu là "giảm tối đa 0đ" nên mọi phiếu không đặt trần đều giảm = 0).
+    IF (@giam_toi_da IS NOT NULL AND @giam_toi_da > 0 AND @giam > @giam_toi_da)
         SET @giam = @giam_toi_da;
+
+    -- Không bao giờ giảm quá chính hoá đơn
+    IF (@giam > @tong_tien)
+        SET @giam = @tong_tien;
+
+    IF (@giam < 0)
+        SET @giam = 0;
 
     RETURN @giam;
 END;

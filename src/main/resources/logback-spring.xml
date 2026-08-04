@@ -22,6 +22,10 @@
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
+            <!-- Without this, logback writes with the platform default charset
+                 (windows-1252 here) and every Vietnamese message in the file
+                 turns into "B?n c?n ??ng nh?p" — useless for diagnosis. -->
+            <charset>UTF-8</charset>
         </encoder>
     </appender>
 
@@ -38,6 +42,10 @@
         </rollingPolicy>
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
+            <!-- Without this, logback writes with the platform default charset
+                 (windows-1252 here) and every Vietnamese message in the file
+                 turns into "B?n c?n ??ng nh?p" — useless for diagnosis. -->
+            <charset>UTF-8</charset>
         </encoder>
     </appender>
 

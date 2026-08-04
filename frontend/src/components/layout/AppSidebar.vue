@@ -14,7 +14,7 @@ const navItems = computed(() =>
   SCREENS.filter(s => allowed.value.includes(s.key))
     .map(s => ({ to: s.to, icon: s.icon, label: s.label, exact: s.to === '/' }))
 )
-function doLogout() { logout(); router.push('/login') }
+async function doLogout() { await logout(); router.push('/login') }
 </script>
 
 <template>

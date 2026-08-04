@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import AppShell from '../components/layout/AppShell.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
+import DemoDataBanner from '../components/ui/DemoDataBanner.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import SearchBar from '../components/ui/SearchBar.vue'
 import DataTable from '../components/ui/DataTable.vue'
@@ -15,7 +16,7 @@ import { useToast } from '../composables/useToast'
 import { crudErrorMessage } from '../composables/useCrud'
 import { diaChiApi } from '../api/diaChi'
 
-const { keyword, filtered, add, update, remove } = useKhachHang()
+const { keyword, filtered, add, update, remove, load, isDemo } = useKhachHang()
 const { notify } = useToast()
 
 const tab = ref('kh')   // 'kh' | 'diachi'
@@ -111,6 +112,7 @@ async function removeAddr(a) {
 
 <template>
   <AppShell>
+    <DemoDataBanner v-if="isDemo" what="danh sách khách hàng" @retry="load" />
     <PageHeader title="Khách hàng">
       <template #actions>
         <AppButton icon="plus-lg" @click="openCreate">Thêm khách hàng</AppButton>

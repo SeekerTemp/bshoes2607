@@ -24,8 +24,14 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
 
     HoaDon findByMaHoaDon(String ma);
 
+    /**
+     * Vouchers currently usable at the till. Returns a projection, NOT the
+     * PhieuGiamGia entity: the view omits the audit columns the entity maps, and
+     * entity hydration then failed with "Unable to find column position by name:
+     * ngay_cap_nhat" on every call. See {@link VoucherActiveView}.
+     */
     @Query(value = "SELECT * FROM view_phieu_giam_gia_hoat_dong", nativeQuery = true)
-    List<com.vn.test.bshoes.entity.PhieuGiamGia> getVouchersActive();
+    List<VoucherActiveView> getVouchersActive();
 
     @Query(value = "SELECT dbo.tinh_tien_giam_gia(?1, ?2)", nativeQuery = true)
     java.math.BigDecimal tinhGiamGia(int idPhieu, BigDecimal tongTien);

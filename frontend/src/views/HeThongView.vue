@@ -6,10 +6,13 @@ import PageHeader from '../components/ui/PageHeader.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import ConfirmDialog from '../components/ui/ConfirmDialog.vue'
 import { getLogs, downloadLogs, clearLogs } from '../utils/logger'
+import { useAuth } from '../composables/useAuth'
 
 const router = useRouter()
-const nguoiDung = 'admin'
-const vaiTro = 'ADMIN'
+const { user, logout: doLogoutAuth } = useAuth()
+// Show who is actually signed in, not a hardcoded 'admin'.
+const nguoiDung = computed(() => user.value?.ten || user.value?.ma || '—')
+const vaiTro = computed(() => user.value?.vaiTro || '—')
 
 const confirmOpen = ref(false)
 
@@ -17,8 +20,11 @@ function logout() {
   confirmOpen.value = true
 }
 
-function doLogout() {
+async function doLogout() {
   confirmOpen.value = false
+  // Actually end the session — before this it only navigated away, leaving the
+  // user (and their token) in localStorage, so going back in re-entered the app.
+  await doLogoutAuth()
   router.push('/login')
 }
 
@@ -119,7 +125,8 @@ function doClear() {
       </div>
     </div>
 
-    <ConfirmDialog v-model:open="confirmOpen" title="Đăng xuất" message="Đăng xuất?" @confirm="doLogout" />
+    <ConfirmDialog v-model:open="confirmOpen" title="Đăng xuất" message="Đăng xuất khỏi hệ thống?"
+                   confirm-text="Đăng xuất" @confirm="doLogout" />
     <ConfirmDialog
       v-model:open="clearConfirmOpen"
       title="Xoá log"

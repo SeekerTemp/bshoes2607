@@ -7,7 +7,9 @@ import { ref, computed } from 'vue'
 import AppShell from '../components/layout/AppShell.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
 import AppSelect from '../components/ui/AppSelect.vue'
+import AppModal from '../components/ui/AppModal.vue'
 import ImagePicker from '../components/ui/ImagePicker.vue'
+import DemoDataBanner from '../components/ui/DemoDataBanner.vue'
 import DanhMucPanel from '../components/panels/DanhMucPanel.vue'
 import ThuocTinhPanel from '../components/panels/ThuocTinhPanel.vue'
 import { useSanPham } from '../composables/useSanPham'
@@ -15,14 +17,16 @@ import { useToast } from '../composables/useToast'
 import { crudErrorMessage } from '../composables/useCrud'
 import { vnd } from '../utils/format'
 import { validateImageFile } from '../utils/upload'
+import { downloadJson, stamp } from '../utils/csv'
 import { bienTheApi } from '../api/bienThe'
+import { sanPhamApi } from '../api/sanPham'
 import { uploadApi } from '../api/upload'
 import {
   loaiSanPhamList, kieuDangList, kieuCoGiayList, kieuDayGiayList,
   xuatXuList, mauSacList, kichThuocList,
 } from '../mock/data'
 
-const { filtered, load, add, update, remove, thuongHieuList, chatLieuList } = useSanPham()
+const { filtered, load, add, update, remove, thuongHieuList, chatLieuList, isDemo } = useSanPham()
 const { notify } = useToast()
 
 const tab = ref('sanpham') // 'sanpham' | 'chitiet' | 'danhmuc' | 'thuoctinh'
@@ -121,6 +125,84 @@ async function spAn() {
   }
 }
 
+/* ---- Thùng rác: xem sản phẩm đã ẩn và khôi phục (GET /recycle, POST /restore/{ma}) ---- */
+const recycleOpen = ref(false)
+const recycleRows = ref([])
+const recycleLoading = ref(false)
+
+async function openRecycle() {
+  recycleOpen.value = true
+  recycleLoading.value = true
+  try {
+    recycleRows.value = (await sanPhamApi.recycle()) || []
+  } catch (e) {
+    recycleRows.value = []
+    notify(crudErrorMessage(e) || 'Không tải được danh sách bị ẩn', 'warning')
+  } finally {
+    recycleLoading.value = false
+  }
+}
+
+async function restoreSP(row) {
+  try {
+    await sanPhamApi.restore(row.ma)
+    notify(`Đã khôi phục ${row.ma}`, 'success')
+    // Refresh both the bin and the main list so neither shows a stale row.
+    await Promise.all([openRecycle(), load()])
+  } catch (e) {
+    notify(crudErrorMessage(e), 'warning')
+  }
+}
+
+/* ---- Xuất / nhập JSON danh sách sản phẩm ---- */
+function spXuatJson() {
+  const rows = spRows.value
+  if (!rows.length) { notify('Không có sản phẩm nào để xuất', 'warning'); return }
+  const ok = downloadJson(`san-pham-${stamp()}.json`, {
+    exportedAt: new Date().toISOString(),
+    count: rows.length,
+    sanPham: rows,
+  })
+  notify(ok ? `Đã xuất ${rows.length} sản phẩm` : 'Không xuất được file', ok ? 'success' : 'warning')
+}
+
+const spJsonInput = ref(null)
+function spTriggerImport() { spJsonInput.value?.click() }
+
+async function spNhapJson(ev) {
+  const file = ev.target.files?.[0]
+  if (!file) return
+  ev.target.value = ''
+
+  let items
+  try {
+    const parsed = JSON.parse(await file.text())
+    // Accept both the shape spXuatJson() writes and a bare array.
+    items = Array.isArray(parsed) ? parsed : parsed?.sanPham
+  } catch (e) {
+    notify('File JSON không hợp lệ', 'warning')
+    return
+  }
+  if (!Array.isArray(items) || !items.length) { notify('File JSON không có sản phẩm nào', 'warning'); return }
+
+  let ok = 0
+  const loi = []
+  for (const [i, item] of items.entries()) {
+    if (!item?.ten) { loi.push(`mục ${i + 1}: thiếu tên`); continue }
+    try {
+      // Drop server-side identity so an import always creates new rows rather
+      // than silently overwriting whatever happens to share an id.
+      const { id, bienThe, ...rest } = item
+      await add({ ...blankSP(), ...rest, id: null, bienThe: [] })
+      ok++
+    } catch (e) {
+      loi.push(`mục ${i + 1} (${item.ten}): ${crudErrorMessage(e)}`)
+    }
+  }
+  if (ok) notify(`Đã nhập ${ok}/${items.length} sản phẩm`, 'success')
+  if (loi.length) notify(`${loi.length} mục lỗi — ${loi.slice(0, 3).join('; ')}`, 'warning')
+}
+
 /* ============= TAB 2 — Sản phẩm chi tiết (biến thể), wired to backend ============= */
 const ctSearch = ref('')
 // scope the variant list to a single product (set via the dropdown or by
@@ -185,6 +267,7 @@ async function ctAn() {
 
 <template>
   <AppShell>
+    <DemoDataBanner v-if="isDemo" what="danh sách sản phẩm" @retry="load" />
     <PageHeader title="Quản lý sản phẩm" />
 
     <!-- JTabbedPane section_1: Sản phẩm | Sản phẩm chi tiết | Thuộc tính -->
@@ -236,7 +319,7 @@ async function ctAn() {
               </tbody>
             </table>
           </div>
-          <footer class="sp-master-foot"><button class="btn btn-sm btn-outline-secondary" disabled>Xem danh sách bị ẩn</button></footer>
+          <footer class="sp-master-foot"><button class="btn btn-sm btn-outline-secondary" @click="openRecycle">Xem danh sách bị ẩn</button></footer>
         </div>
       </div>
 
@@ -267,8 +350,9 @@ async function ctAn() {
           <button class="btn btn-success w-100" @click="spLuu">{{ spForm.id ? 'Lưu (Sửa)' : 'Tạo sản phẩm' }}</button>
           <button class="btn btn-success w-100" @click="spLamMoi">Làm mới</button>
           <button class="btn btn-outline-danger w-100" :disabled="!spForm.id" @click="spAn">Ẩn (Xóa mềm)</button>
-          <button class="btn btn-light w-100" disabled>Xuất json thông tin sản phẩm</button>
-          <button class="btn btn-light w-100" disabled>Import sản phẩm bằng list json/csv/excel</button>
+          <button class="btn btn-light w-100" @click="spXuatJson">Xuất json thông tin sản phẩm</button>
+          <button class="btn btn-light w-100" @click="spTriggerImport">Import sản phẩm bằng list json</button>
+          <input ref="spJsonInput" type="file" accept=".json,application/json" class="d-none" @change="spNhapJson">
         </div>
       </div>
     </div>
@@ -310,7 +394,12 @@ async function ctAn() {
               </tbody>
             </table>
           </div>
-          <footer class="sp-master-foot"><button class="btn btn-sm btn-outline-secondary" disabled>Xem danh sách bị ẩn</button></footer>
+          <footer class="sp-master-foot">
+            <button class="btn btn-sm btn-outline-secondary" disabled
+                    title="Backend chưa có endpoint recycle/restore cho biến thể (chỉ có cho sản phẩm)">
+              Xem danh sách bị ẩn
+            </button>
+          </footer>
         </div>
       </div>
 
@@ -371,6 +460,30 @@ async function ctAn() {
 
     <ImagePicker v-model:open="spImgOpen" v-model="spForm.imageUrl" />
     <ImagePicker v-model:open="ctImgOpen" v-model="ctForm.imageUrl" />
+
+    <!-- Thùng rác: sản phẩm đã ẩn (xóa mềm) -->
+    <AppModal v-model:open="recycleOpen" title="Sản phẩm đã ẩn">
+      <div v-if="recycleLoading" class="text-muted py-3">Đang tải…</div>
+      <div v-else-if="!recycleRows.length" class="text-muted py-3">Không có sản phẩm nào bị ẩn.</div>
+      <div v-else style="max-height:420px;overflow:auto">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead><tr><th style="width:44px">STT</th><th>Mã</th><th>Tên sản phẩm</th><th>Thương hiệu</th><th></th></tr></thead>
+          <tbody>
+            <tr v-for="(r, i) in recycleRows" :key="r.id ?? r.ma">
+              <td>{{ i + 1 }}</td>
+              <td class="fw-semibold">{{ r.ma }}</td>
+              <td>{{ r.ten }}</td>
+              <td>{{ r.thuongHieu }}</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-success py-0 px-2" @click="restoreSP(r)">
+                  <i class="bi bi-arrow-counterclockwise"></i> Khôi phục
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </AppModal>
   </AppShell>
 </template>
 

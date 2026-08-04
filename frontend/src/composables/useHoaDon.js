@@ -8,6 +8,7 @@ import { ref, computed, onMounted } from 'vue'
 import { hoaDonApi } from '../api/hoaDon'
 import { useAuth } from './useAuth'
 import { posSanPham, posKhachHang, posHinhThuc, posHoaDonQueue } from '../mock/data'
+import { tinhGiamGia } from '../utils/voucher'
 
 const deep = v => JSON.parse(JSON.stringify(v))
 
@@ -164,13 +165,22 @@ export function useHoaDon() {
   }
 
   // ---- products ----
+  // True while `sanPham` holds the mock catalogue because /pos-products failed,
+  // so the POS screen can say so instead of letting a cashier ring up
+  // non-existent stock (see DemoDataBanner).
+  const isDemo = ref(false)
   async function load() {
     try {
       const rows = await hoaDonApi.posProducts()
-      sanPham.value = rows.map((p, i) => ({ ma: 'SP' + (i + 1), ...p }))
+      // Use the variant's REAL ma_san_pham_chi_tiet. This used to synthesise
+      // 'SP1', 'SP2'… by row index, so "Nhập mã" / QR then looked up
+      // /san-pham-chi-tiet/by-ma/sp1 and always got 404.
+      sanPham.value = rows.map(p => ({ ...p, ma: p.ma || '' }))
+      isDemo.value = false
     } catch (e) {
       console.warn('API offline, using mock', e)
       sanPham.value = deep(posSanPham)
+      isDemo.value = true
     }
   }
   onMounted(() => { load(); loadQueue(); loadVouchers() })
@@ -311,25 +321,25 @@ export function useHoaDon() {
     }
     removeLineLocal(l)
   }
+  // NOTE: this only toggles a LABEL on the line. It does not call the backend and
+  // does not put stock back — returning goods on a paid invoice goes through
+  // POST /hoa-don/{id}/tra-hang (nút "Hoàn trả" ở tab Đặt hàng / màn Giao Hàng).
+  // Tracked as F-POS-07 in docs/checklist/feature-backlog.csv.
   function hoanTra(l) { l.trangThai = l.trangThai === 'Hoàn trả' ? '-' : 'Hoàn trả' }
 
   // ---- money (active invoice) ----
-  const soLuong = computed(() => active.value.gio.reduce((s, l) => s + l.soLuong, 0))
-  const tamTinh = computed(() => active.value.gio.reduce((s, l) => s + l.gia * l.soLuong, 0))
-  // Mirrors the backend function tinh_tien_giam_gia (used by HoaDonServiceImpl
-  // .thanhToan) EXACTLY, so the total shown at the counter equals the total the
-  // server records: under đơn tối thiểu -> 0; loại 0 = %, loại 1 = số tiền cố
-  // định; capped at giảm tối đa.
+  // Number(...) || 0: a single line with a missing price must not turn the whole
+  // bill into NaN at the counter.
+  const soLuong = computed(() => active.value.gio.reduce((s, l) => s + (Number(l.soLuong) || 0), 0))
+  const tamTinh = computed(() =>
+    active.value.gio.reduce((s, l) => s + (Number(l.gia) || 0) * (Number(l.soLuong) || 0), 0))
+  // Delegates to utils/voucher.js, which mirrors the backend function
+  // tinh_tien_giam_gia (used by HoaDonServiceImpl.thanhToan) so the total shown
+  // at the counter equals the total the server records.
   const giamGia = computed(() => {
     const id = Number(active.value.voucher) || 0
     if (id === 0) return 0
-    const v = voucherOptions.value.find(o => o.value === id)
-    if (!v) return 0
-    const tong = tamTinh.value
-    if (tong < (v.donToiThieu || 0)) return 0
-    let giam = v.loai === 0 ? tong * ((v.giaTri || 0) / 100) : (v.giaTri || 0)
-    if (giam > (v.giamToiDa || 0)) giam = v.giamToiDa || 0
-    return Math.round(Math.max(0, giam))
+    return tinhGiamGia(tamTinh.value, voucherOptions.value.find(o => o.value === id))
   })
   const phiShip = computed(() => orderTab.value === 'dathang' ? (Number(active.value.phiShip) || 0) : 0)
   const phaiTra = computed(() => Math.max(0, tamTinh.value - giamGia.value + phiShip.value))
@@ -338,7 +348,8 @@ export function useHoaDon() {
   // ---- queue footer: totals for today ----
   const tongHoaDonHomNay = computed(() => hoaDons.value.length)
   const tongTienHomNay = computed(() =>
-    hoaDons.value.reduce((s, h) => s + h.gio.reduce((a, l) => a + l.gia * l.soLuong, 0), 0)
+    hoaDons.value.reduce((s, h) =>
+      s + h.gio.reduce((a, l) => a + (Number(l.gia) || 0) * (Number(l.soLuong) || 0), 0), 0)
   )
 
   function thanhToan() {
@@ -414,7 +425,7 @@ export function useHoaDon() {
 
   return {
     // catalogue + option lists
-    sanPham, khachHangOptions, voucherOptions, hinhThucOptions,
+    sanPham, khachHangOptions, voucherOptions, hinhThucOptions, isDemo, load,
     // ui state
     keyword, ketQua, orderTab, leftTab,
     // queue

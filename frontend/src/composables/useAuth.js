@@ -5,12 +5,30 @@ import { authApi } from '../api/auth'
 import { SCREENS } from '../config/screens'
 
 const KEY = 'bshoes_user'
-const user = ref(JSON.parse(localStorage.getItem(KEY) || 'null'))
+
+// Same reasoning as useCart.readCart(): this runs at module load, so an
+// unguarded JSON.parse on a corrupted session would throw during import and
+// leave the user staring at a blank page with no way to log in again. A broken
+// session must degrade to "logged out".
+export function readUser() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(KEY) || 'null')
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+const user = ref(readUser())
 
 function persist(u) {
   user.value = u
-  if (u) localStorage.setItem(KEY, JSON.stringify(u))
-  else localStorage.removeItem(KEY)
+  try {
+    if (u) localStorage.setItem(KEY, JSON.stringify(u))
+    else localStorage.removeItem(KEY)
+  } catch {
+    // quota / private mode — the in-memory session still works for this tab
+  }
 }
 
 // Pure: expand a quyen CSV ('*' or 'a,b,c') into an ordered list of allowed screen keys.
@@ -42,11 +60,18 @@ export function useAuth() {
     persist(u)
     return u
   }
-  // offline / demo fallback — full-access admin without hitting the API
+  // Offline / demo preview — no server token, so the backend will refuse every
+  // admin endpoint (401) and each screen falls back to mock data behind the red
+  // DemoDataBanner. That is the honest behaviour: this button lets you look at
+  // the UI, it does not give you access to real data.
   function loginDemo() {
-    persist({ id: null, ma: 'ADMIN', ten: 'Demo Admin', vaiTro: 'Quản trị', idVaiTro: 1, quyen: '*' })
+    persist({ id: null, ma: 'ADMIN', ten: 'Demo Admin', vaiTro: 'Quản trị', idVaiTro: 1, quyen: '*', token: null })
   }
-  function logout() { persist(null) }
+  // Invalidate server-side first (best-effort), then clear locally either way.
+  async function logout() {
+    if (user.value?.token) await authApi.logout()
+    persist(null)
+  }
 
   return { user, isAuthed, allowed, can, landingRoute, login, loginDemo, logout }
 }

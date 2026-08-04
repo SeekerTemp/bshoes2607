@@ -2,6 +2,7 @@
 import { ref, onMounted, nextTick } from 'vue'
 import Chart from 'chart.js/auto'
 import AppShell from '../components/layout/AppShell.vue'
+import DemoDataBanner from '../components/ui/DemoDataBanner.vue'
 import { thongKeApi } from '../api/thongKe'
 import { vnd } from '../utils/format'
 
@@ -17,6 +18,9 @@ const kpis = ref([])
 const best = ref([]); const worst = ref([]); const trending = ref([]); const featured = ref([])
 const cashEl = ref(null); const retEl = ref(null); const roiEl = ref(null); const catEl = ref(null)
 const years = ref([]); const year = ref(new Date().getFullYear())
+// True while the whole dashboard is showing illustrative fallback numbers
+// because the thống kê endpoints failed.
+const isDemo = ref(false)
 const retData = ref({ quayLai: 62, moi: 38, tyLe: 62 })
 let cashData = null, catData = null, roiData = null
 let chartInstances = []
@@ -97,8 +101,10 @@ async function loadData() {
     // ROI — real (revenue vs cost)
     roiData = (roi || []).map(r => ({ t: r.ten, v: Math.round(Number(r.roi) || 0) })).sort((a, b) => b.v - a.v)
     if (!roiData.length) roiData = roiMock
+    isDemo.value = false
   } catch (e) {
     console.warn('API offline, using mock dashboard', e)
+    isDemo.value = true
     buildKpis({ doanhThu: 1.82e9, soDon: 1284, donThanhCong: 1180, donCho: 62, donHuy: 42, soSanPhamBan: 3120 })
     best.value = [
       { ten: 'Nike Air Zoom', ban: 340, pct: 100, img: IMG('10007') },
@@ -191,6 +197,7 @@ function onYearChange() { reload() }
 <template>
   <AppShell>
     <div class="viz">
+      <DemoDataBanner v-if="isDemo" what="toàn bộ số liệu thống kê" @retry="reload" />
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
           <h4 class="mb-0 fw-bold">Thống kê &amp; Phân tích</h4>

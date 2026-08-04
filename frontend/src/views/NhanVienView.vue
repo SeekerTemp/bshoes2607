@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import AppShell from '../components/layout/AppShell.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
+import DemoDataBanner from '../components/ui/DemoDataBanner.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import SearchBar from '../components/ui/SearchBar.vue'
 import DataTable from '../components/ui/DataTable.vue'
@@ -17,7 +18,7 @@ import { useToast } from '../composables/useToast'
 import { crudErrorMessage } from '../composables/useCrud'
 import { vaiTroApi } from '../api/vaiTro'
 
-const { keyword, filtered, add, update, remove } = useNhanVien()
+const { keyword, filtered, add, update, remove, load, isDemo } = useNhanVien()
 const { notify } = useToast()
 
 const tab = ref('ds')   // 'ds' | 'quyen' | 'vaitro'
@@ -98,6 +99,7 @@ async function doDelete() {
 
 <template>
   <AppShell>
+    <DemoDataBanner v-if="isDemo" what="danh sách nhân viên" @retry="load" />
     <PageHeader title="Nhân viên">
       <template #actions>
         <AppButton v-if="tab === 'ds'" icon="plus-lg" @click="openCreate">Thêm nhân viên</AppButton>

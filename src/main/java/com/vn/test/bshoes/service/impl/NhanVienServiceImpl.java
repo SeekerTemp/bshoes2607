@@ -53,17 +53,25 @@ public class NhanVienServiceImpl implements NhanVienService {
         }
     }
 
+    // The three reads below are @Transactional(readOnly = true) AND use the
+    // fetch-join queries: toDto() dereferences the LAZY idVaiTro proxy, and with
+    // spring.jpa.open-in-view=false that blew up outside a session
+    // (LazyInitializationException -> 500 on GET /api/nhan-vien).
     @Override
+    @Transactional(readOnly = true)
     public List<NhanVienDto> findAll() {
         return repo.findActive().stream().map(this::toDto).toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public NhanVienDto findById(int id) {
-        return repo.findById(id).map(this::toDto).orElse(null);
+        NhanVien e = repo.findWithVaiTro(id);
+        return e != null ? toDto(e) : null;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<NhanVienDto> search(String ten, String gioiTinh) {
         String gt = StringUtils.hasText(gioiTinh) ? gioiTinh : "all";
         return repo.search(ten, gt).stream().map(this::toDto).toList();
