@@ -37,31 +37,45 @@ bshoes2607/
 
 ## Prerequisites
 
-- **JDK 17** — installed at `C:\Users\DREAMSTORE\AppData\Local\Programs\Eclipse Adoptium\jdk-17.0.19.10-hotspot`
-  (not on PATH; export `JAVA_HOME` before building — see below).
-- **Node 24 / npm 11** (for the SPA).
-- **SQL Server** with the `BShoes` database created from `sqlBshoes.sql` (default creds in
-  `application.properties`: `sa` / `123` on `localhost:1433`).
+- **JDK 17** with `JAVA_HOME` pointing at it. If `java -version` already reports 17 you are done;
+  otherwise set `JAVA_HOME` for the shell you build in (see below).
+- **Node 20+ / npm 10+** (developed on Node 24 / npm 11).
+- **Internet access on the first build** — the Maven wrapper downloads its jar and the
+  dependencies; `npm ci` downloads the SPA packages. Later builds work offline (`./mvnw -o`).
+- **SQL Server** with the `BShoes` database created from `sqlBshoes.sql` — only needed to *run*
+  the app, not to build or test it. Default creds in `application.properties`: `sa` / `123` on
+  `localhost:1433`.
 
 ## Build & run
 
 ### Backend (Spring Boot API, :8085)
 ```bash
-export JAVA_HOME="/c/Users/DREAMSTORE/AppData/Local/Programs/Eclipse Adoptium/jdk-17.0.19.10-hotspot"
-./mvnw -q -DskipTests compile        # BUILD SUCCESS (verified)
-./mvnw spring-boot:run               # needs the BShoes DB reachable on :1433
+export JAVA_HOME="/path/to/jdk-17"          # bash;  PowerShell: $env:JAVA_HOME='C:\path\to\jdk-17'
+./mvnw -DskipTests compile                  # PowerShell: .\mvnw.cmd
+./mvnw spring-boot:run                      # starts even if the DB is down (degraded)
 ```
-On Windows PowerShell use `.\mvnw.cmd`. First run downloads dependencies (online).
 
 ### Frontend (Vue SPA, :5173)
 ```bash
 cd frontend
-npm install
+npm ci                 # reproducible install from package-lock.json
 npm run dev            # http://localhost:5173  (proxies /api -> :8085)
 npm run build          # production build to dist/
 ```
-The SPA calls the live `/api/...` endpoints, with a **graceful fallback to mock data** when the
-backend is offline (watch the console for `API offline, using mock`). See `frontend/README.md`.
+When an API call fails, the affected screen falls back to local mock data **and shows a red
+"ĐANG HIỂN THỊ DỮ LIỆU DEMO" banner**, so demo data is never mistaken for real data.
+
+### Run the tests
+```bash
+cd frontend && npm test -- --run     # Vitest — 132 tests, no DB required
+cd ..      && ./mvnw test            # JUnit  —  48 tests, no DB required
+```
+Both suites are DB-free: the backend test profile keeps the Hibernate dialect pinned and lets
+Hikari defer connecting, so the Spring context loads (validating every entity, repository query
+and controller mapping) without SQL Server.
+
+Verified from a clean `git clone` on 2026-08-04: `npm ci` + build + 132/132, and `./mvnw test`
+48/48 `BUILD SUCCESS`.
 
 ### No-build preview (no backend, no npm)
 Open `preview/index.html` in a browser to click through all screens on mock data (needs internet
@@ -95,10 +109,10 @@ Requires a secure origin (localhost or HTTPS) and camera permission.
 ## Branches
 
 - **`main`** — initial import.
-- **`feature/spring-boot-port`** — Thymeleaf UI demo (Phase 1), `preview/`, and the Phase-2
-  backend scaffolding.
-- **`feature/vue-spa`** — the current line: Vue 3 SPA + Phase-3 backend reconciled to the new JPA
-  entities (DTOs) + wired frontend + QR scanner. **Most complete branch.**
+- **`asm-doc`** — coursework documents under `doc-school/`.
+- **`test-api-connect`** — API wiring experiments.
+- **`test-auth`** — **the current line, most complete**: Vue 3 SPA + reconciled backend, QR
+  scanner, server-side auth, and the feature/test checklist under `docs/checklist/`.
 
 ## Design system
 
@@ -147,17 +161,43 @@ VITE_API_TARGET=http://192.168.1.50:8085 npm run dev
 *Hệ thống* page → **"Tải file log"** (downloads a JSON). That's the only place network-level
 failures the server never saw will show up.
 
+## Authentication
+
+`POST /api/auth/login` returns a session **token**; the SPA stores it and sends it back as the
+`X-Auth-Token` header on every call. `ApiAuthFilter` checks that token server-side and compares
+the requested path against the employee's per-screen permissions in `nhan_vien_quyen`
+(`ScreenPermissions`), so an admin endpoint cannot be reached by curl-ing it directly.
+
+Public without a token: login, `/api/ping`, `/api/logs/client`, storefront browsing, the customer
+cart/checkout, and placing a pre-order.
+
+CORS for `/api/**` is declared in `WebConfig` and allows `localhost:5173` / `:4173` by default —
+override with `-Dapp.cors.origins=http://host:port`. Not needed for the normal dev flow, because
+Vite proxies `/api` to :8085.
+
+> **Prototype scope:** passwords are compared in **plaintext** and tokens live in memory only
+> (a restart logs everyone out). Deliberate for user testing — both must change before this
+> handles real accounts.
+
 ## Status & known gaps
 
-- ✅ Backend **compiles** (JDK 17). ✅ Frontend **builds**. Verified locally.
-- ⏳ Full end-to-end **run** requires the `BShoes` SQL Server DB up on :1433.
-- POS **checkout** persistence is minimal (create-invoice endpoint exists; full stock/line write
-  flow is client-side for now).
-- Dashboard **stat cards** use mock values (no single aggregate endpoint yet; sourceable from
-  `/api/thong-ke/theo-thang`).
-- **Auth** compares plaintext passwords (legacy parity) — replace with Spring Security + BCrypt.
+- ✅ Backend compiles and tests (48/48). ✅ Frontend builds and tests (132/132). Both verified
+  from a clean clone, **without** a database.
+- ⏳ Full end-to-end run requires the `BShoes` SQL Server DB up on :1433. Re-run `sqlBshoes.sql`
+  after pulling — the voucher seed, the active-voucher view usage and `dbo.tinh_tien_giam_gia`
+  all changed.
+- Passwords are plaintext (see above).
+- POS **"Hoàn trả"** on a cart line only toggles a label; it does not return stock. Real returns
+  go through `POST /api/hoa-don/{id}/tra-hang`.
+- Import supports **JSON only** for products / POS lines (CSV/Excel not implemented); Bảo Hành
+  import is CSV.
+- ~126 test cases still need a live database — tracked in `docs/checklist/`.
 
 ## Docs
 
+- **Feature + test checklist:** `docs/checklist/` — `feature-backlog.csv` (what exists),
+  `testcase-checklist.csv` (what is verified, with evidence), `CHECKLIST-RULES.md` (rules R1–R12;
+  R12 requires wiping all results and re-running the full regression each review round).
+- Manual regression list: `docs/regression-checklist.md`
 - Design spec: `docs/superpowers/specs/2026-07-02-bshoes-spring-boot-port-design.md`
 - Phase plans: `docs/superpowers/plans/` (Phase 1 UI, Phase 2 backend, Vue SPA, Phase 3 DTO reconcile)

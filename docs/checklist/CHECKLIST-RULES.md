@@ -120,7 +120,7 @@ Sau khi merge bất kỳ thay đổi nào chạm tới một màn hình:
 
 ```powershell
 cd frontend; npm test -- --run
-cd ..; $env:JAVA_HOME='C:\Users\DREAMSTORE\AppData\Local\Programs\Eclipse Adoptium\jdk-17.0.19.10-hotspot'; .\mvnw test
+cd ..; $env:JAVA_HOME='<đường dẫn JDK 17 trên máy bạn>'; .\mvnw test
 ```
 
 3. Chạy lại các test case tay của màn đó.
