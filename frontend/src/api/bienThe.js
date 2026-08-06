@@ -9,4 +9,7 @@ export const bienTheApi = {
   update: (id, dto) => http.put(`/san-pham-chi-tiet/${id}`, dto).then(r => r.data),
   nhapKho: (id, soLuong) => http.post(`/san-pham-chi-tiet/${id}/nhap-kho`, null, { params: { soLuong } }).then(r => r.data),
   remove: (id) => http.delete(`/san-pham-chi-tiet/${id}`).then(r => r.data),
+  // thùng rác biến thể (đối xứng với sanPhamApi.recycle/restore của sản phẩm)
+  recycle: () => http.get('/san-pham-chi-tiet/recycle').then(r => r.data),
+  restore: (id) => http.post(`/san-pham-chi-tiet/${id}/restore`).then(r => r.data),
 }

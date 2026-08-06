@@ -16,6 +16,11 @@ public interface SanPhamChiTietService {
     BienTheDto nhapKho(int id, int soLuong);
     void softDelete(int id);
 
+    /** Biến thể đã ẩn (xóa mềm) — cho màn "Xem danh sách bị ẩn" ở tab Sản phẩm chi tiết. */
+    List<BienTheDto> findRecycle();
+
+    void restore(int id);
+
     /** Storefront listing — includes out-of-stock variants so khách có thể đặt trước. */
     List<PosSanPhamDto> storeProducts();
 

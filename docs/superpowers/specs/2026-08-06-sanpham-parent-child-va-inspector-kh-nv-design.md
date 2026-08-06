@@ -140,12 +140,45 @@ Hệ quả: tạo nhân viên mới từ một nhân viên đang chọn vẫn ph
 `findByTaiKhoanAndMatKhau` trả về một người bất kỳ. Nay chặn ở `create()` và
 `update()`.
 
-## 8. Còn tồn đọng
+## 8. `/thong-ke/*` 500 — kết luận: KHÔNG phải lỗi code
 
-- `/thong-ke/*` 500 (mục 5.3) — cần log của tiến trình phục vụ lúc 17:41.
+Mục 5.3 để mở, nay đã truy xong bằng hai bằng chứng:
+
+1. **Đối chiếu mốc thời gian.** Dấu thời gian client là UTC, server là UTC+7. Các lỗi
+   500 xảy ra lúc 17:41:37–38 giờ máy, trong khi Tomcat mới bắt đầu nhận request lúc
+   **17:41:47** — tức là request đập vào tiến trình đang tắt / chưa lên, sớm hơn 9–10
+   giây. `/thong-ke/nam` chỉ là `SELECT DISTINCT YEAR(ngay_tao_ma) FROM hoa_don` mà
+   cũng 500 thì không thể là lỗi truy vấn.
+2. **Rà tĩnh toàn bộ truy vấn native của `ThongKeRepository` so với DDL**: mọi bảng và
+   cột được tham chiếu (`hd`, `hdct`, `spct`, `sp`, `lsp`, `cl`, `ms`, `kc` →
+   `hoa_don`, `hoa_don_chi_tiet`, `san_pham_chi_tiet`, `san_pham`, …) đều tồn tại,
+   kể cả `spct.gia_nhap` và `hdct.thanh_tien`. Không có cột nào thiếu.
+
+`DashboardView` vốn đã bắt lỗi và chuyển sang `DemoDataBanner` kèm nút thử lại, không
+spam toast. Không có gì phải sửa ở đây.
+
+## 9. Thùng rác biến thể
+
+Nút "Xem danh sách bị ẩn" ở tab Sản phẩm chi tiết trước đây bị `disabled` vĩnh viễn vì
+backend chưa có endpoint. Nay có `GET /api/san-pham-chi-tiet/recycle` và
+`POST /api/san-pham-chi-tiet/{id}/restore`, đối xứng với sản phẩm. `restoreById` dùng
+bulk update cùng lý do với `softDeleteById`.
+
+`BienTheDto.tenSanPham` chỉ điền ở danh sách thùng rác — điền ở mọi đường đọc sẽ deref
+proxy LAZY `idSanPham` từng dòng, tức N+1 truy vấn trên các endpoint nóng.
+
+Cả hai modal thùng rác (sản phẩm và biến thể) nay phân biệt **lỗi tải** với **thùng
+rác rỗng**. Trước đây gọi API hỏng cũng hiện "Không có sản phẩm nào bị ẩn", khiến người
+dùng tin là trống trong khi thực ra chưa đọc được gì.
+
+## 10. Còn tồn đọng
 - Dữ liệu mẫu 30 sản phẩm mới chỉ nằm trong `sqlBshoes.sql`; phải chạy lại file này
   trên DB `BShoes` mới thì mới hiển thị (sẽ mất hoá đơn/đơn hàng hiện có).
-- Chưa chạy end-to-end lần nào: SQL Server không bật trong suốt phiên làm việc. Mọi
-  kiểm chứng dựa trên compile, 138 unit test, và thao tác thật trên DOM ở chế độ demo.
+- **Chưa chạy end-to-end lần nào**: SQL Server không bật trong suốt phiên làm việc. Mọi
+  kiểm chứng dựa trên compile, 138 unit test, và thao tác thật trên DOM ở chế độ demo —
+  tức là đã xác nhận ĐÚNG request được gửi đi, chưa xác nhận server chấp nhận nó.
+  Việc cần chạy đầu tiên khi có DB: tạo 1 sản phẩm, thêm 2 biến thể khác màu, kiểm tra
+  mã sinh ra khác nhau (SPCT0xx-BK-M / -WH-L) và không sửa được; rồi thử tạo biến thể
+  giá 0 để chắc chắn nhận 400 tiếng Việt chứ không phải 500.
 - Biến thể cũ có màu/kích cỡ/đơn giá NULL sẽ trả 400 khi sửa cho tới khi điền đủ.
   Ẩn (xoá mềm) vẫn luôn thực hiện được (bulk update, không qua validation).

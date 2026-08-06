@@ -141,6 +141,24 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<BienTheDto> findRecycle() {
+        return repo.findRecycle().stream().map(v -> {
+            BienTheDto dto = toDto(v);
+            dto.setTenSanPham(v.getIdSanPham() != null ? v.getIdSanPham().getTenSanPham() : null);
+            return dto;
+        }).toList();
+    }
+
+    @Override
+    @Transactional
+    public void restore(int id) {
+        if (repo.restoreById(id) == 0) {
+            throw new IllegalArgumentException("Không tìm thấy biến thể để khôi phục");
+        }
+    }
+
     private PosSanPhamDto toPos(SanPhamChiTiet v) {
         PosSanPhamDto dto = new PosSanPhamDto();
         dto.setId(v.getId());

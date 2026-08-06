@@ -19,4 +19,12 @@ public class BienTheDto {
     private BigDecimal giaNhap;   // giá vốn (cost)
     private String imageUrl;
     private Boolean trangThai;
+
+    /**
+     * Tên sản phẩm cha. Chỉ điền ở danh sách thùng rác (findRecycle) — ở đó biến thể
+     * đứng một mình nên chỉ thấy mã/màu/cỡ thì không biết là của sản phẩm nào. Các
+     * đường đọc khác để null có chủ ý: điền nó sẽ deref proxy LAZY idSanPham cho từng
+     * dòng, tức là N+1 truy vấn trên đúng những endpoint nóng nhất.
+     */
+    private String tenSanPham;
 }

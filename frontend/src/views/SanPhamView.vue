@@ -172,15 +172,18 @@ async function spAn() {
 const recycleOpen = ref(false)
 const recycleRows = ref([])
 const recycleLoading = ref(false)
+const recycleErr = ref('')
 
 async function openRecycle() {
   recycleOpen.value = true
   recycleLoading.value = true
+  recycleErr.value = ''
   try {
     recycleRows.value = (await sanPhamApi.recycle()) || []
   } catch (e) {
     recycleRows.value = []
-    notify(crudErrorMessage(e) || 'Không tải được danh sách bị ẩn', 'warning')
+    // Cùng lý do với ctRecycleErr: lỗi tải KHÁC với thùng rác rỗng.
+    recycleErr.value = crudErrorMessage(e) || 'Không tải được danh sách bị ẩn'
   } finally {
     recycleLoading.value = false
   }
@@ -324,6 +327,38 @@ async function ctLuu() {
     await load()
   } catch (e) { notify(crudErrorMessage(e), 'warning') }
 }
+/* ---- Thùng rác biến thể (GET /recycle, POST /{id}/restore) ---- */
+const ctRecycleOpen = ref(false)
+const ctRecycleRows = ref([])
+const ctRecycleLoading = ref(false)
+// Tách lỗi khỏi "rỗng": nếu gọi API hỏng mà vẫn hiện "Không có biến thể nào bị ẩn"
+// thì người dùng tin là thùng rác trống, trong khi thực ra chưa đọc được gì.
+const ctRecycleErr = ref('')
+
+async function openCtRecycle() {
+  ctRecycleOpen.value = true
+  ctRecycleLoading.value = true
+  ctRecycleErr.value = ''
+  try {
+    ctRecycleRows.value = (await bienTheApi.recycle()) || []
+  } catch (e) {
+    ctRecycleRows.value = []
+    ctRecycleErr.value = crudErrorMessage(e) || 'Không tải được danh sách biến thể bị ẩn'
+  } finally {
+    ctRecycleLoading.value = false
+  }
+}
+
+async function restoreCT(row) {
+  try {
+    await bienTheApi.restore(row.id)
+    notify(`Đã khôi phục ${row.ma}`, 'success')
+    await Promise.all([openCtRecycle(), load()])
+  } catch (e) {
+    notify(crudErrorMessage(e), 'warning')
+  }
+}
+
 async function ctNhapKho() {
   if (!ctForm.value.idSpct) { notify('Chọn biến thể để nhập kho', 'warning'); return }
   const sl = Number(ctNhap.value) || 0
@@ -494,10 +529,7 @@ async function ctAn() {
             </table>
           </div>
           <footer class="sp-master-foot">
-            <button class="btn btn-sm btn-outline-secondary" disabled
-                    title="Backend chưa có endpoint recycle/restore cho biến thể (chỉ có cho sản phẩm)">
-              Xem danh sách bị ẩn
-            </button>
+            <button class="btn btn-sm btn-outline-secondary" @click="openCtRecycle">Xem danh sách bị ẩn</button>
           </footer>
         </div>
       </div>
@@ -569,9 +601,43 @@ async function ctAn() {
     <ImagePicker v-model:open="spImgOpen" v-model="spForm.imageUrl" />
     <ImagePicker v-model:open="ctImgOpen" v-model="ctForm.imageUrl" />
 
+    <!-- Thùng rác: biến thể đã ẩn (xóa mềm) -->
+    <AppModal v-model:open="ctRecycleOpen" title="Biến thể đã ẩn">
+      <div v-if="ctRecycleLoading" class="text-muted py-3">Đang tải…</div>
+      <div v-else-if="ctRecycleErr" class="alert alert-warning py-2 mb-0">
+        {{ ctRecycleErr }} — <button class="btn btn-sm btn-link p-0 align-baseline" @click="openCtRecycle">thử lại</button>
+      </div>
+      <div v-else-if="!ctRecycleRows.length" class="text-muted py-3">Không có biến thể nào bị ẩn.</div>
+      <div v-else style="max-height:420px;overflow:auto">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead><tr>
+            <th style="width:44px">STT</th><th>Mã biến thể</th><th>Sản phẩm</th>
+            <th>Màu</th><th>Cỡ</th><th class="text-end">Đơn giá</th><th class="text-end">Tồn</th><th></th>
+          </tr></thead>
+          <tbody>
+            <tr v-for="(r, i) in ctRecycleRows" :key="r.id">
+              <td>{{ i + 1 }}</td>
+              <td class="fw-semibold">{{ r.ma }}</td>
+              <td>{{ r.tenSanPham || '—' }}</td>
+              <td>{{ r.mau || '—' }}</td><td>{{ r.size || '—' }}</td>
+              <td class="text-end">{{ vnd(r.gia) }}</td><td class="text-end">{{ r.ton }}</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-success py-0 px-2" @click="restoreCT(r)">
+                  <i class="bi bi-arrow-counterclockwise"></i> Khôi phục
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </AppModal>
+
     <!-- Thùng rác: sản phẩm đã ẩn (xóa mềm) -->
     <AppModal v-model:open="recycleOpen" title="Sản phẩm đã ẩn">
       <div v-if="recycleLoading" class="text-muted py-3">Đang tải…</div>
+      <div v-else-if="recycleErr" class="alert alert-warning py-2 mb-0">
+        {{ recycleErr }} — <button class="btn btn-sm btn-link p-0 align-baseline" @click="openRecycle">thử lại</button>
+      </div>
       <div v-else-if="!recycleRows.length" class="text-muted py-3">Không có sản phẩm nào bị ẩn.</div>
       <div v-else style="max-height:420px;overflow:auto">
         <table class="table table-sm table-hover align-middle mb-0">

@@ -57,4 +57,11 @@ public class SanPhamChiTietController {
 
     @DeleteMapping("/{id}")
     public void softDelete(@PathVariable int id) { service.softDelete(id); }
+
+    /** Thùng rác biến thể — đối xứng với /api/san-pham-ql/recycle của sản phẩm. */
+    @GetMapping("/recycle")
+    public List<BienTheDto> findRecycle() { return service.findRecycle(); }
+
+    @PostMapping("/{id}/restore")
+    public void restore(@PathVariable int id) { service.restore(id); }
 }
