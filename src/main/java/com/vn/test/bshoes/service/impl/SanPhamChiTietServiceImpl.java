@@ -2,7 +2,6 @@ package com.vn.test.bshoes.service.impl;
 
 import com.vn.test.bshoes.dto.BienTheDto;
 import com.vn.test.bshoes.dto.PosSanPhamDto;
-import com.vn.test.bshoes.entity.SanPham;
 import com.vn.test.bshoes.entity.SanPhamChiTiet;
 import com.vn.test.bshoes.repository.KichCoRepository;
 import com.vn.test.bshoes.repository.MauSacRepository;
@@ -79,16 +78,32 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
         v.setGiaNhap(dto.getGiaNhap());
         if (StringUtils.hasText(dto.getMau())) v.setIdMauSac(mauSacRepository.findByTenMauSac(dto.getMau()));
         if (StringUtils.hasText(dto.getSize())) v.setIdKichCo(kichCoRepository.findByTenKichCo(dto.getSize()));
-        if (StringUtils.hasText(dto.getMa())) {
-            v.setMaSanPhamChiTiet(dto.getMa());
-        } else {
-            SanPham parent = sanPhamRepository.findById(idSanPham).orElse(null);
-            String parentMa = parent != null ? parent.getMaSanPham() : "";
-            v.setMaSanPhamChiTiet("SPCT" + parentMa);
-        }
         v.setTrangThai(true);
         v.setTrangThaiXoa(false);
+        // Lưu lần đầu để lấy id, rồi mới sinh mã — mã luôn do server đặt, không nhận
+        // từ client (xem sinhMa).
+        v = repo.save(v);
+        v.setMaSanPhamChiTiet(sinhMa(v));
         return toDto(repo.save(v));
+    }
+
+    /**
+     * Mã biến thể: {@code SPCT<id 3 chữ số>-<mã màu>-<mã kích cỡ>}, ví dụ SPCT079-BK-M.
+     *
+     * Phần id đảm bảo DUY NHẤT, phần màu/kích cỡ để người dùng đọc được ngay trên nhãn.
+     * Trước đây mã là {@code "SPCT" + mã sản phẩm cha}, nên MỌI biến thể của cùng một
+     * sản phẩm mang đúng một mã: quét QR theo mã (findByMaSanPhamChiTiet) trả về một
+     * biến thể bất kỳ trong số đó.
+     *
+     * Là hàm thuần theo (id, màu, kích cỡ): id không đổi nên mã chỉ đổi khi màu hoặc
+     * kích cỡ đổi — đúng lúc mã cũ đã sai. Nhãn/QR đã in của biến thể đó cần in lại.
+     */
+    private String sinhMa(SanPhamChiTiet v) {
+        String mau = v.getIdMauSac() != null && StringUtils.hasText(v.getIdMauSac().getMaMauSac())
+                ? v.getIdMauSac().getMaMauSac() : "NA";
+        String size = v.getIdKichCo() != null && StringUtils.hasText(v.getIdKichCo().getMaKichCo())
+                ? v.getIdKichCo().getMaKichCo() : "NA";
+        return String.format("SPCT%03d-%s-%s", v.getId(), mau, size);
     }
 
     @Override
@@ -101,8 +116,10 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
         if (dto.getTrangThai() != null) v.setTrangThai(dto.getTrangThai());
         if (StringUtils.hasText(dto.getMau())) v.setIdMauSac(mauSacRepository.findByTenMauSac(dto.getMau()));
         if (StringUtils.hasText(dto.getSize())) v.setIdKichCo(kichCoRepository.findByTenKichCo(dto.getSize()));
-        if (StringUtils.hasText(dto.getMa())) v.setMaSanPhamChiTiet(dto.getMa());
         if (StringUtils.hasText(dto.getImageUrl())) v.setImageUrl(dto.getImageUrl());
+        // Mã do server sở hữu, dto.getMa() bị bỏ qua có chủ ý: sinh lại sau khi màu /
+        // kích cỡ đã cập nhật để mã không bao giờ mô tả sai biến thể.
+        v.setMaSanPhamChiTiet(sinhMa(v));
         return toDto(repo.save(v));
     }
 
@@ -119,9 +136,9 @@ public class SanPhamChiTietServiceImpl implements SanPhamChiTietService {
     @Override
     @Transactional
     public void softDelete(int id) {
-        SanPhamChiTiet v = repo.findById(id).orElseThrow();
-        v.setTrangThaiXoa(true);
-        repo.save(v);
+        if (repo.softDeleteById(id) == 0) {
+            throw new IllegalArgumentException("Không tìm thấy biến thể để ẩn");
+        }
     }
 
     private PosSanPhamDto toPos(SanPhamChiTiet v) {

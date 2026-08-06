@@ -62,12 +62,21 @@ http.interceptors.response.use(
         responseData: error.response?.data,
       },
     })
-    // An expired/invalid token on a REAL session: drop it and send the user
-    // back to login. Deliberately skipped for the offline "Vào demo" login,
-    // which has no token — there the 401 should fall through so the screen
-    // shows its mock data behind the red DemoDataBanner instead of bouncing
-    // the user to a login page they cannot use while the backend is down.
-    if (status === 401 && !String(config.url || '').includes('/auth/') && storedUser()?.token) {
+    // An expired/invalid session: drop it and send the user back to login.
+    // Deliberately skipped for the offline "Vào demo" login, where the 401 should
+    // fall through so the screen shows its mock data behind the red
+    // DemoDataBanner instead of bouncing the user to a login page they cannot
+    // use while the backend is down.
+    //
+    // The demo case is identified by the explicit `demo` flag, NOT by a missing
+    // token. Testing `storedUser()?.token` treated every tokenless session as
+    // demo — including a REAL session saved before tokens existed. Such a user
+    // sent no X-Auth-Token, got 401 ("thiếu token") on every protected call, and
+    // was never logged out: the dashboard re-fired all seven /thong-ke requests
+    // round after round while still showing their name. That is the 401 storm in
+    // logs/bshoes260805.log 17:41–17:42, which never resolved on its own.
+    const u = storedUser()
+    if (status === 401 && !String(config.url || '').includes('/auth/') && u && !u.demo) {
       try {
         localStorage.removeItem(USER_KEY)
         if (!window.location.pathname.startsWith('/login')) {

@@ -64,8 +64,13 @@ export function useAuth() {
   // admin endpoint (401) and each screen falls back to mock data behind the red
   // DemoDataBanner. That is the honest behaviour: this button lets you look at
   // the UI, it does not give you access to real data.
+  // `demo: true` là cờ TƯỜNG MINH, không suy ra từ việc thiếu token. Trước đây
+  // http.js coi "không có token" nghĩa là phiên demo, nên một phiên THẬT cũ (lưu
+  // từ trước khi có token, hoặc bị mất token) cũng bị xếp vào demo: mọi request
+  // 401 nhưng không bao giờ đăng xuất, người dùng kẹt trong vòng lặp 401 mà màn
+  // hình vẫn hiện tên mình (xem logs/bshoes260805.log lúc 17:41–17:42).
   function loginDemo() {
-    persist({ id: null, ma: 'ADMIN', ten: 'Demo Admin', vaiTro: 'Quản trị', idVaiTro: 1, quyen: '*', token: null })
+    persist({ id: null, ma: 'ADMIN', ten: 'Demo Admin', vaiTro: 'Quản trị', idVaiTro: 1, quyen: '*', token: null, demo: true })
   }
   // Invalidate server-side first (best-effort), then clear locally either way.
   async function logout() {

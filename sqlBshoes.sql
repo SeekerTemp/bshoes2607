@@ -505,6 +505,118 @@ insert into san_pham_chi_tiet (id_san_pham, id_kich_co, id_mau_sac, ma_san_pham_
 (6, 6, 6, 'SPCT006',  0, 450000, 270000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10006.png');  -- hết hàng → demo đặt trước
 go
 
+
+/* ---------------------------------------------------------------------------
+   2.11b Bổ sung sản phẩm để mỗi danh mục có đủ 5 sản phẩm hiển thị.
+
+   SP01..SP06 ở §2.8 và SPCT001..SPCT006 ở §2.11 KHÔNG bị đụng tới: hoa_don_chi_tiet,
+   bao_hanh và dat_truoc đã tham chiếu id 1..6 của hai bảng đó. Khối này chỉ APPEND
+   24 sản phẩm (id 7..30) và 72 biến thể, nên phải chạy SAU §2.11.
+
+   Mọi biến thể ở đây đều có don_gia > 0 và so_luong_ton > 0 — đúng ràng buộc mà
+   entity SanPhamChiTiet enforce: chỉ đủ giá và đủ hàng mới được trang_thai = 1.
+--------------------------------------------------------------------------- */
+insert into san_pham (id_loai_san_pham, id_chat_lieu, id_kieu_dang, id_kieu_co_giay, id_kieu_day_giay, id_thuong_hieu, id_xuat_su, ma_san_pham, ten_san_pham, mo_ta, trang_thai, trang_thai_xoa) values
+(1, 4, 4, 3, 3, 1, 2, 'SP07', N'Nike Air Zoom Pegasus 41', N'Đế React êm, hỗ trợ chạy hằng ngày', 1, 0),
+(1, 1, 1, 1, 1, 2, 5, 'SP08', N'Adidas Samba OG', N'Bản classic da lộn, phối đồ dễ', 1, 0),
+(1, 1, 1, 1, 4, 3, 6, 'SP09', N'Puma Suede Classic XXI', N'Da lộn mềm, phom cổ thấp', 1, 0),
+(1, 2, 4, 2, 4, 5, 2, 'SP10', N'Vans Old Skool Canvas', N'Canvas bền, sọc jazz kinh điển', 1, 0),
+(2, 1, 6, 4, 5, 4, 6, 'SP11', N'Gucci Horsebit Loafer', N'Da bê nguyên tấm, khoá ngựa mạ vàng', 1, 0),
+(2, 1, 1, 1, 3, 2, 5, 'SP12', N'Adidas Leather Derby', N'Derby da thật đi làm hằng ngày', 1, 0),
+(2, 1, 1, 1, 1, 6, 2, 'SP13', N'Reebok Club C Leather', N'Da trơn trắng, phom tennis cổ điển', 1, 0),
+(2, 3, 1, 1, 3, 1, 3, 'SP14', N'Nike Killshot Leather', N'Da tổng hợp phối suede, retro', 1, 0),
+(3, 6, 3, 5, 5, 3, 1, 'SP15', N'Puma Softride Sandal', N'Đế Softride êm, quai hậu chắc', 1, 0),
+(3, 6, 3, 5, 6, 2, 1, 'SP16', N'Adidas Adilette Sandal', N'Quai hậu điều chỉnh, đi biển tốt', 1, 0),
+(3, 6, 3, 5, 5, 1, 4, 'SP17', N'Nike Vista Sandal', N'Đế dày, quai bản to thoáng khí', 1, 0),
+(3, 6, 3, 2, 6, 5, 1, 'SP18', N'Vans Trek Sandal', N'Sandal nhẹ, chống trượt', 1, 0),
+(4, 6, 3, 5, 6, 4, 6, 'SP19', N'Gucci Rubber Slide', N'Dép cao su in logo, bản giới hạn', 1, 0),
+(4, 6, 3, 5, 6, 1, 1, 'SP20', N'Nike Benassi Slide', N'Dép quai ngang, đế êm', 1, 0),
+(4, 6, 3, 5, 6, 3, 1, 'SP21', N'Puma Leadcat Slide', N'Dép nhẹ, mang trong nhà', 1, 0),
+(4, 5, 3, 6, 6, 6, 4, 'SP22', N'Reebok Comfort Slide', N'Lót nỉ mềm, đi dạo thoải mái', 1, 0),
+(5, 1, 6, 4, 3, 4, 6, 'SP23', N'Gucci Oxford Đen', N'Oxford da bóng, dự tiệc', 1, 0),
+(5, 3, 6, 4, 5, 5, 2, 'SP24', N'Vans Formal Loafer', N'Loafer phom gọn, giá dễ chịu', 1, 0),
+(5, 1, 6, 1, 3, 2, 5, 'SP25', N'Adidas Business Derby', N'Derby công sở, lót đệm', 1, 0),
+(5, 1, 5, 4, 3, 6, 6, 'SP26', N'Reebok Classic Brogue', N'Brogue đục lỗ, da thật', 1, 0),
+(6, 4, 4, 3, 5, 1, 2, 'SP27', N'Nike Vaporfly 3', N'Tấm carbon, dành cho race', 1, 0),
+(6, 4, 4, 3, 5, 2, 5, 'SP28', N'Adidas Ultraboost Light', N'Đệm Boost thế hệ nhẹ', 1, 0),
+(6, 4, 4, 3, 5, 3, 6, 'SP29', N'Puma Deviate Nitro 3', N'Bọt Nitro phản hồi tốt', 1, 0),
+(6, 4, 4, 3, 1, 6, 4, 'SP30', N'Reebok Floatride Energy', N'Chạy dài, đế bền', 1, 0);
+go
+
+insert into san_pham_chi_tiet (id_san_pham, id_kich_co, id_mau_sac, ma_san_pham_chi_tiet, so_luong_ton, don_gia, gia_nhap, nguoi_tao, nguoi_cap_nhat, trang_thai, trang_thai_xoa, image_url) values
+(7, 2, 3, 'SPCT007', 24, 2190000, 1314000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10007.png'),
+(7, 3, 4, 'SPCT008', 31, 2240000, 1344000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10008.png'),
+(7, 4, 2, 'SPCT009', 38, 2290000, 1374000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10009.png'),
+(8, 2, 3, 'SPCT010', 12, 2450000, 1470000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10010.png'),
+(8, 3, 4, 'SPCT011', 19, 2500000, 1500000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10011.png'),
+(8, 4, 2, 'SPCT012', 26, 2550000, 1530000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10012.png'),
+(9, 2, 3, 'SPCT013', 33, 1690000, 1014000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10013.png'),
+(9, 3, 4, 'SPCT014', 40, 1740000, 1044000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10014.png'),
+(9, 4, 2, 'SPCT015', 14, 1790000, 1074000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10015.png'),
+(10, 2, 3, 'SPCT016', 21, 1450000, 870000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10016.png'),
+(10, 3, 4, 'SPCT017', 28, 1500000, 900000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10017.png'),
+(10, 4, 2, 'SPCT018', 35, 1550000, 930000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10018.png'),
+(11, 2, 3, 'SPCT019', 9, 8900000, 5340000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10019.png'),
+(11, 3, 4, 'SPCT020', 16, 8950000, 5370000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10020.png'),
+(11, 4, 2, 'SPCT021', 23, 9000000, 5400000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10021.png'),
+(12, 2, 3, 'SPCT022', 30, 2750000, 1650000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10022.png'),
+(12, 3, 4, 'SPCT023', 37, 2800000, 1680000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10023.png'),
+(12, 4, 2, 'SPCT024', 11, 2850000, 1710000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10024.png'),
+(13, 2, 3, 'SPCT025', 18, 1990000, 1194000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10025.png'),
+(13, 3, 4, 'SPCT026', 25, 2040000, 1224000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10026.png'),
+(13, 4, 2, 'SPCT027', 32, 2090000, 1254000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10027.png'),
+(14, 2, 3, 'SPCT028', 39, 2350000, 1410000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10028.png'),
+(14, 3, 4, 'SPCT029', 13, 2400000, 1440000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10029.png'),
+(14, 4, 2, 'SPCT030', 20, 2450000, 1470000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10030.png'),
+(15, 2, 3, 'SPCT031', 27, 890000, 534000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10031.png'),
+(15, 3, 4, 'SPCT032', 34, 940000, 564000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10032.png'),
+(15, 4, 2, 'SPCT033', 8, 990000, 594000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10033.png'),
+(16, 2, 3, 'SPCT034', 15, 950000, 570000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10034.png'),
+(16, 3, 4, 'SPCT035', 22, 1000000, 600000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10035.png'),
+(16, 4, 2, 'SPCT036', 29, 1050000, 630000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10036.png'),
+(17, 2, 3, 'SPCT037', 36, 1250000, 750000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10037.png'),
+(17, 3, 4, 'SPCT038', 10, 1300000, 780000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10038.png'),
+(17, 4, 2, 'SPCT039', 17, 1350000, 810000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10039.png'),
+(18, 2, 3, 'SPCT040', 24, 780000, 468000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10040.png'),
+(18, 3, 4, 'SPCT041', 31, 830000, 498000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10041.png'),
+(18, 4, 2, 'SPCT042', 38, 880000, 528000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10042.png'),
+(19, 2, 3, 'SPCT043', 12, 6900000, 4140000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10043.png'),
+(19, 3, 4, 'SPCT044', 19, 6950000, 4170000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10044.png'),
+(19, 4, 2, 'SPCT045', 26, 7000000, 4200000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10045.png'),
+(20, 2, 3, 'SPCT046', 33, 690000, 414000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10046.png'),
+(20, 3, 4, 'SPCT047', 40, 740000, 444000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10047.png'),
+(20, 4, 2, 'SPCT048', 14, 790000, 474000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10048.png'),
+(21, 2, 3, 'SPCT049', 21, 620000, 372000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10049.png'),
+(21, 3, 4, 'SPCT050', 28, 670000, 402000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10050.png'),
+(21, 4, 2, 'SPCT051', 35, 720000, 432000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10051.png'),
+(22, 2, 3, 'SPCT052', 9, 750000, 450000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10052.png'),
+(22, 3, 4, 'SPCT053', 16, 800000, 480000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10053.png'),
+(22, 4, 2, 'SPCT054', 23, 850000, 510000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10054.png'),
+(23, 2, 3, 'SPCT055', 30, 9500000, 5700000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10055.png'),
+(23, 3, 4, 'SPCT056', 37, 9550000, 5730000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10056.png'),
+(23, 4, 2, 'SPCT057', 11, 9600000, 5760000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10057.png'),
+(24, 2, 3, 'SPCT058', 18, 1850000, 1110000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10058.png'),
+(24, 3, 4, 'SPCT059', 25, 1900000, 1140000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10059.png'),
+(24, 4, 2, 'SPCT060', 32, 1950000, 1170000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10060.png'),
+(25, 2, 3, 'SPCT061', 39, 2650000, 1590000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10061.png'),
+(25, 3, 4, 'SPCT062', 13, 2700000, 1620000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10062.png'),
+(25, 4, 2, 'SPCT063', 20, 2750000, 1650000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10063.png'),
+(26, 2, 3, 'SPCT064', 27, 3100000, 1860000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10064.png'),
+(26, 3, 4, 'SPCT065', 34, 3150000, 1890000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10065.png'),
+(26, 4, 2, 'SPCT066', 8, 3200000, 1920000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10066.png'),
+(27, 2, 3, 'SPCT067', 15, 5900000, 3540000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10067.png'),
+(27, 3, 4, 'SPCT068', 22, 5950000, 3570000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10068.png'),
+(27, 4, 2, 'SPCT069', 29, 6000000, 3600000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10069.png'),
+(28, 2, 3, 'SPCT070', 36, 4200000, 2520000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10070.png'),
+(28, 3, 4, 'SPCT071', 10, 4250000, 2550000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10071.png'),
+(28, 4, 2, 'SPCT072', 17, 4300000, 2580000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10072.png'),
+(29, 2, 3, 'SPCT073', 24, 3800000, 2280000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10073.png'),
+(29, 3, 4, 'SPCT074', 31, 3850000, 2310000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10074.png'),
+(29, 4, 2, 'SPCT075', 38, 3900000, 2340000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10075.png'),
+(30, 2, 3, 'SPCT076', 12, 2450000, 1470000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10076.png'),
+(30, 3, 4, 'SPCT077', 19, 2500000, 1500000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10077.png'),
+(30, 4, 2, 'SPCT078', 26, 2550000, 1530000, N'admin', N'admin', 1, 0, '/images/shoes/img_shoe_10078.png');
+go
 -- 2.12 vai_tro  (quyen = CSV of allowed screen keys; '*' = tất cả)
 -- Đây chỉ là TEMPLATE: bộ quyền mặc định chép sang nhan_vien_quyen khi tạo NV / đổi
 -- vai trò. Quyền hiệu lực của từng người nằm ở bảng nhan_vien_quyen.

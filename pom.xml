@@ -46,6 +46,13 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
+        <!-- Bean Validation. Hibernate chỉ chạy các annotation @NotNull/@DecimalMin
+             trên entity khi có provider trên classpath, nên starter này chính là thứ
+             biến ràng buộc "biến thể phải có giá & màu & size" thành bất biến thật. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.thymeleaf.extras</groupId>
             <artifactId>thymeleaf-extras-springsecurity6</artifactId>

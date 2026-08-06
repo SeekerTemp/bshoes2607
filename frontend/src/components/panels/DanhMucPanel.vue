@@ -40,12 +40,21 @@ async function loadProducts() { try { products.value = await sanPhamApi.findAll(
 function selectCat(c) { selectedCat.value = c; form.value = { id: c.id, ma: c.ma, ten: c.ten, moTa: c.moTa || '', trangThai: c.trangThai !== false }; addProductId.value = '' }
 function newCat() { selectedCat.value = null; form.value = blank() }
 
-async function saveCat() {
+// Tạo mới / Lưu (Sửa) tách đôi — một nút tự đổi nghĩa theo dòng đang chọn khiến
+// "chọn danh mục, đổi tên, tạo thành danh mục mới" ghi đè bản gốc thay vì tạo mới.
+async function taoMoiCat() {
   if (!form.value.ten) { notify('Nhập tên danh mục', 'warning'); return }
   try {
-    if (form.value.id) await loaiSanPhamApi.update({ ...form.value })
-    else await loaiSanPhamApi.create({ ...form.value })
-    notify('Đã lưu danh mục', 'success'); await loadCats()
+    await loaiSanPhamApi.create({ ...form.value, id: null, ma: '' })
+    notify('Đã thêm danh mục', 'success'); newCat(); await loadCats()
+  } catch (e) { notify('Lưu thất bại (backend offline?)', 'warning') }
+}
+async function saveCat() {
+  if (!form.value.id) { notify('Chọn danh mục trong danh sách để sửa', 'warning'); return }
+  if (!form.value.ten) { notify('Nhập tên danh mục', 'warning'); return }
+  try {
+    await loaiSanPhamApi.update({ ...form.value })
+    notify('Đã cập nhật danh mục', 'success'); await loadCats()
   } catch (e) { notify('Lưu thất bại (backend offline?)', 'warning') }
 }
 async function removeCat() {
@@ -113,14 +122,14 @@ onMounted(async () => { await Promise.all([loadCats(), loadProducts()]) })
           </div>
           <div style="max-height:300px;overflow:auto;border:1px solid #e5e9ef;border-radius:8px">
             <table class="table table-sm table-hover align-middle mb-0 dm-table">
-              <thead><tr><th style="width:44px">STT</th><th>Tên danh mục</th><th class="text-center">SP</th><th class="text-center">TT</th></tr></thead>
+              <thead><tr><th style="width:44px">STT</th><th>Mã</th><th>Tên danh mục</th><th class="text-center">SP</th><th class="text-center">TT</th></tr></thead>
               <tbody>
                 <tr v-for="(c,i) in filteredCats" :key="c.id" @click="selectCat(c)" style="cursor:pointer" :class="{ sel: selectedCat && c.id === selectedCat.id }">
-                  <td>{{ i+1 }}</td><td class="fw-semibold">{{ c.ten }}</td>
+                  <td>{{ i+1 }}</td><td class="fw-semibold">{{ c.ma }}</td><td>{{ c.ten }}</td>
                   <td class="text-center">{{ countIn(c) }}</td>
                   <td class="text-center"><i class="bi" :class="c.trangThai !== false ? 'bi-toggle-on text-success' : 'bi-toggle-off text-muted'"></i></td>
                 </tr>
-                <tr v-if="filteredCats.length === 0"><td colspan="4" class="text-center text-muted py-4">Chưa có danh mục</td></tr>
+                <tr v-if="filteredCats.length === 0"><td colspan="5" class="text-center text-muted py-4">Chưa có danh mục</td></tr>
               </tbody>
             </table>
           </div>
@@ -128,7 +137,11 @@ onMounted(async () => { await Promise.all([loadCats(), loadProducts()]) })
 
         <div class="card"><div class="card-body">
           <h6 class="fw-bold mb-3">Nhóm danh mục</h6>
-          <div class="mb-2"><label class="form-label small mb-1">Mã</label><input class="form-control form-control-sm" v-model="form.ma" placeholder="Tự sinh nếu bỏ trống"></div>
+          <!-- Mã luôn do server sinh ("LSP" + id). Ô nhập cũ là ảo: giá trị gõ vào bị
+               LoaiSanPhamServiceImpl.create() ghi đè, người dùng không hề biết. -->
+          <div class="mb-2"><label class="form-label small mb-1">Mã</label>
+            <p class="ma-static" :class="{ 'chua-co': !form.ma }">{{ form.ma || 'Tự sinh khi lưu' }}</p>
+          </div>
           <div class="mb-2"><label class="form-label small mb-1">Tên danh mục *</label><input class="form-control form-control-sm" v-model="form.ten"></div>
           <div class="mb-2"><label class="form-label small mb-1">Mô tả</label><textarea class="form-control form-control-sm" rows="2" v-model="form.moTa"></textarea></div>
           <div class="mb-3">
@@ -136,9 +149,11 @@ onMounted(async () => { await Promise.all([loadCats(), loadProducts()]) })
             <div class="form-check form-check-inline"><input class="form-check-input" type="radio" :value="true" v-model="form.trangThai" id="dm-on"><label class="form-check-label" for="dm-on">Bật</label></div>
             <div class="form-check form-check-inline"><input class="form-check-input" type="radio" :value="false" v-model="form.trangThai" id="dm-off"><label class="form-check-label" for="dm-off">Tắt</label></div>
           </div>
-          <div class="d-flex gap-2">
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-outline-secondary flex-fill" @click="newCat">Làm mới</button>
+            <button class="btn btn-success flex-fill" @click="taoMoiCat">Tạo mới</button>
+            <button class="btn btn-success flex-fill" :disabled="!form.id" @click="saveCat">Lưu (Sửa)</button>
             <button class="btn btn-outline-danger flex-fill" :disabled="!form.id" @click="removeCat">Xoá danh mục</button>
-            <button class="btn btn-success flex-fill" @click="saveCat">Lưu</button>
           </div>
         </div></div>
       </div>
@@ -220,6 +235,10 @@ onMounted(async () => { await Promise.all([loadCats(), loadProducts()]) })
 </template>
 
 <style scoped>
+/* Mã do server sinh: hiển thị dạng chữ, không phải ô nhập bị vô hiệu hoá. */
+.ma-static { margin: 0; padding: 6px 0; font-size: 13px; font-weight: 600; letter-spacing: .3px; }
+.ma-static.chua-co { font-weight: 400; opacity: .7; font-style: italic; }
+
 .dm-grid { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 16px; align-items: start; }
 .dm-table thead th { position: sticky; top: 0; background: var(--c-primary, #0B895A); color: #fff; font-size: 12px; white-space: nowrap; }
 .dm-table tbody tr.sel > td { background: var(--c-primary-subtle, #E7F4EF); }

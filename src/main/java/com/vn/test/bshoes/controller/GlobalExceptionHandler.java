@@ -1,6 +1,8 @@
 package com.vn.test.bshoes.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Turns business-rule failures (bad args, illegal state like "not enough stock")
@@ -26,6 +29,24 @@ public class GlobalExceptionHandler {
         log.warn("400 on {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", true, "message", ex.getMessage() == null ? "Yêu cầu không hợp lệ" : ex.getMessage()));
+    }
+
+    /**
+     * Bean Validation trên entity (ví dụ "biến thể phải có đơn giá > 0") nổ lúc
+     * Hibernate flush, tức là SAU khi controller đã chạy xong — không có handler này
+     * thì nó rơi vào catch-all và người dùng chỉ thấy "lỗi hệ thống". Gộp các thông
+     * điệp lại để SPA toast đúng ràng buộc nào bị vi phạm.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleValidation(ConstraintViolationException ex, HttpServletRequest request) {
+        String message = ex.getConstraintViolations().stream()
+                .map(v -> ((ConstraintViolation<?>) v).getMessage())
+                .distinct()
+                .collect(Collectors.joining("; "));
+        if (message.isBlank()) message = "Dữ liệu không hợp lệ";
+        log.warn("400 on {} {}: {}", request.getMethod(), request.getRequestURI(), message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", true, "message", message));
     }
 
     // A multipart just over the servlet limit (e.g. an image near/over 1MB with

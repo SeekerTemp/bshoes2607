@@ -13,7 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class SanPhamServiceImpl implements SanPhamService {
@@ -62,9 +64,22 @@ public class SanPhamServiceImpl implements SanPhamService {
         dto.setThuongHieu(s.getIdThuongHieu() != null ? s.getIdThuongHieu().getTenThuongHieu() : null);
         dto.setKieuDang(s.getIdKieuDang() != null ? s.getIdKieuDang().getTenKieuDang() : null);
         dto.setChatLieu(s.getIdChatLieu() != null ? s.getIdChatLieu().getTenChatLieu() : null);
-        dto.setGia(!bienThe.isEmpty() ? bienThe.get(0).getGia() : null);
-        dto.setImageUrl(!bienThe.isEmpty() ? bienThe.get(0).getImageUrl() : null);
+        dto.setImageUrl(bienThe.stream()
+                .map(BienTheDto::getImageUrl)
+                .filter(StringUtils::hasText)
+                .findFirst().orElse(null));
         dto.setMoTa(s.getMoTa());
+
+        // Số liệu tổng hợp từ biến thể — sản phẩm cha không tự có giá / tồn / màu / size.
+        dto.setSoBienThe(bienThe.size());
+        dto.setGiaTu(bienThe.stream().map(BienTheDto::getGia).filter(Objects::nonNull)
+                .min(BigDecimal::compareTo).orElse(null));
+        dto.setGiaDen(bienThe.stream().map(BienTheDto::getGia).filter(Objects::nonNull)
+                .max(BigDecimal::compareTo).orElse(null));
+        dto.setTongTon(bienThe.stream().map(BienTheDto::getTon).filter(Objects::nonNull)
+                .mapToInt(Integer::intValue).sum());
+        dto.setDangBan(bienThe.stream().anyMatch(v -> Boolean.TRUE.equals(v.getTrangThai())));
+
         dto.setBienThe(bienThe);
         return dto;
     }

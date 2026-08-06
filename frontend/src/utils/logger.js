@@ -73,14 +73,24 @@ export function selectUnsent(buf, limit) {
   return typeof limit === 'number' ? unsent.slice(0, limit) : unsent
 }
 
-// Returns a NEW array where every entry that is one of `entries` (by
-// reference) is replaced with a copy carrying `sent: true`; every other
-// entry is left exactly as-is (same reference, same value) - so entries that
-// were not part of this flush are never lost or altered.
+// Returns a NEW array where every entry that is one of `entries` is replaced
+// with a copy carrying `sent: true`; every other entry is left exactly as-is -
+// so entries that were not part of this flush are never lost or altered.
+//
+// Matching is by `id`, NOT by object reference. flushLogs() re-reads the buffer
+// from localStorage inside its .then(), so the entries it hands back here have
+// been through JSON.parse and are different objects than the ones it shipped.
+// Reference matching silently marked nothing, and every flush re-sent the whole
+// history (log 2026-08-05: ~100 real events, 6.902 dòng, mỗi cái lặp 66 lần).
+// Reference matching is kept as a fallback for entries logged before ids existed.
 export function markSent(buf, entries) {
   if (!Array.isArray(buf)) return []
-  const sentSet = new Set(entries)
-  return buf.map((e) => (sentSet.has(e) ? { ...e, sent: true } : e))
+  const sentRefs = new Set(entries)
+  const sentIds = new Set((entries || []).map((e) => e && e.id).filter((id) => id != null))
+  return buf.map((e) => {
+    const daGui = sentRefs.has(e) || (e && e.id != null && sentIds.has(e.id))
+    return daGui ? { ...e, sent: true } : e
+  })
 }
 
 // ---- storage plumbing -------------------------------------------------------
@@ -128,6 +138,15 @@ function currentUser() {
 
 // ---- public API --------------------------------------------------------
 
+// Id duy nhất cho mỗi entry. Phải duy nhất cả GIỮA các tab/lần tải trang, vì
+// buffer nằm trong localStorage dùng chung — nên có phần ngẫu nhiên, không chỉ
+// là bộ đếm theo phiên.
+let entrySeq = 0
+const LOGGER_RUN = Math.random().toString(36).slice(2, 8)
+function nextEntryId() {
+  return `${LOGGER_RUN}-${Date.now().toString(36)}-${++entrySeq}`
+}
+
 // Pushes one log entry. Never throws.
 export function logEvent({ level = 'info', category = 'app', message = '', detail } = {}) {
   try {
@@ -148,6 +167,9 @@ export function logEvent({ level = 'info', category = 'app', message = '', detai
     }
 
     const entry = {
+      // Danh tính bền vững qua JSON.stringify/parse, để markSent() biết entry nào
+      // đã gửi rồi. Timestamp không đủ: hai sự kiện có thể trùng mili giây.
+      id: nextEntryId(),
       t: new Date().toISOString(),
       level,
       category,

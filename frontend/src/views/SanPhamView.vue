@@ -71,13 +71,39 @@ const spRows = computed(() => {
     (!k || p.ma.toLowerCase().includes(k) || p.ten.toLowerCase().includes(k)) &&
     (spDim.value === 'all' || !spDimVal.value || p[spDim.value] === spDimVal.value))
 })
-function firstVariant(p) { return (p.bienThe && p.bienThe[0]) || {} }
+
+// Giá của sản phẩm cha là KHOẢNG giá của các biến thể (backend trả giaTu/giaDen).
+// Trước đây cột giá lấy bienThe[0] nên sản phẩm nhiều biến thể hiển thị sai.
+//
+// Khi backend offline, useCrud rơi về mock data vốn không có các trường tổng hợp —
+// nên tự tính lại từ bienThe để màn demo vẫn hiển thị đúng thay vì "chưa có biến thể".
+function rollup(p) {
+  const bt = p?.bienThe || []
+  if (p?.soBienThe != null) {
+    return { soBienThe: p.soBienThe, giaTu: p.giaTu, giaDen: p.giaDen, tongTon: p.tongTon, dangBan: p.dangBan }
+  }
+  const gias = bt.map(v => v.gia).filter(g => g != null)
+  return {
+    soBienThe: bt.length,
+    giaTu: gias.length ? Math.min(...gias) : null,
+    giaDen: gias.length ? Math.max(...gias) : null,
+    tongTon: bt.reduce((s, v) => s + (Number(v.ton) || 0), 0),
+    dangBan: bt.some(v => v.trangThai !== false),
+  }
+}
+
+function khoangGia(p) {
+  const r = rollup(p)
+  if (!r.soBienThe) return 'Chưa có biến thể'
+  if (r.giaTu == null) return '—'
+  return r.giaTu === r.giaDen ? vnd(r.giaTu) : `${vnd(r.giaTu)} – ${vnd(r.giaDen)}`
+}
 
 function blankSP() {
   return {
     id: null, ma: '', ten: '', loaiSP: '', chatLieu: chatLieuList[0] || '',
     kieuDang: '', coGiay: '', dayGiay: '', thuongHieu: thuongHieuList[0] || '',
-    xuatXu: '', gia: 0, moTa: '', imageUrl: '', bienThe: [],
+    xuatXu: '', moTa: '', imageUrl: '', bienThe: [],
   }
 }
 const spForm = ref(blankSP())
@@ -86,7 +112,6 @@ function selectSP(p) {
   spSelectedId.value = p.id
   spForm.value = { ...blankSP(), ...JSON.parse(JSON.stringify(p)) }
 }
-function spThem() { spSelectedId.value = null; spForm.value = blankSP() }
 // double-click a product → jump to its variants (Sản phẩm chi tiết tab), filtered by product id
 function openBienThe(p) {
   selectSP(p)
@@ -95,21 +120,39 @@ function openBienThe(p) {
   ctSelectedKey.value = null
   tab.value = 'chitiet'
 }
-function spLamMoi() {
-  if (spSelectedId.value) { const p = filtered.value.find(x => x.id === spSelectedId.value); if (p) selectSP(p) }
-  else spForm.value = blankSP()
+// Từ inspector sản phẩm → sang tab biến thể, form đã điền sẵn sản phẩm cha.
+function themBienTheCho(p) {
+  ctFilterProductId.value = p.id
+  ctSearch.value = ''
+  ctLamMoi()
+  ctForm.value.idSanPham = p.id
+  tab.value = 'chitiet'
 }
-async function spLuu() {
+// "Làm mới" = XOÁ TRẮNG inspector (trước đây nó nạp lại sản phẩm đang chọn).
+function spLamMoi() {
+  spSelectedId.value = null
+  spForm.value = blankSP()
+}
+
+/** Luôn TẠO MỚI từ nội dung inspector, bỏ id + mã + biến thể của bản gốc. */
+async function spTaoMoi() {
   if (!spForm.value.ten) { notify('Nhập tên sản phẩm', 'warning'); return }
   try {
-    if (spForm.value.id) {
-      await update({ ...spForm.value })
-      notify('Đã cập nhật sản phẩm', 'success')
-    } else {
-      await add({ ...spForm.value })
-      notify('Đã thêm sản phẩm', 'success')
-      spThem()
-    }
+    await add({ ...spForm.value, id: null, ma: '', bienThe: [] })
+    notify('Đã thêm sản phẩm', 'success')
+    spLamMoi()
+  } catch (e) {
+    notify(crudErrorMessage(e), 'warning')
+  }
+}
+
+/** Chỉ CẬP NHẬT sản phẩm đang chọn. */
+async function spLuu() {
+  if (!spForm.value.id) { notify('Chọn sản phẩm trong danh sách để sửa', 'warning'); return }
+  if (!spForm.value.ten) { notify('Nhập tên sản phẩm', 'warning'); return }
+  try {
+    await update({ ...spForm.value })
+    notify('Đã cập nhật sản phẩm', 'success')
   } catch (e) {
     notify(crudErrorMessage(e), 'warning')
   }
@@ -119,7 +162,7 @@ async function spAn() {
   if (!confirm(`Ẩn (xóa mềm) sản phẩm ${spForm.value.ma}?`)) return
   try {
     await remove(spForm.value.ma)
-    spThem()
+    spLamMoi()
   } catch (e) {
     notify(crudErrorMessage(e), 'warning')
   }
@@ -236,18 +279,49 @@ function blankCT() {
 }
 const ctForm = ref(blankCT())
 function selectCT(r) { ctSelectedKey.value = r.key; ctForm.value = { ...r }; ctNhap.value = 0 }
-function ctThem() { ctSelectedKey.value = null; ctForm.value = blankCT() }
-function ctLamMoi() { const r = ctRows.value.find(x => x.key === ctSelectedKey.value); ctForm.value = r ? { ...r } : blankCT() }
+// "Làm mới" = XOÁ TRẮNG inspector (trước đây nó nạp lại biến thể đang chọn).
+function ctLamMoi() { ctSelectedKey.value = null; ctForm.value = blankCT() }
+
+// Cùng bộ ràng buộc mà entity SanPhamChiTiet enforce ở backend — chặn sớm ở đây để
+// người dùng thấy lỗi ngay tại ô nhập thay vì đợi một toast 400 từ server.
+function ctLoi(f, { batBuocTon }) {
+  if (!f.mau) return 'Chọn màu sắc cho biến thể'
+  if (!f.size) return 'Chọn kích cỡ cho biến thể'
+  if (!(Number(f.gia) > 0)) return 'Đơn giá bán phải lớn hơn 0'
+  if (Number(f.ton) < 0) return 'Số lượng tồn không được âm'
+  if (batBuocTon && !(Number(f.ton) > 0)) return 'Biến thể mới phải có số lượng > 0 thì mới ở trạng thái Đang bán'
+  return ''
+}
+// Không gửi `ma`: mã là của server (SPCT<id>-<màu>-<cỡ>), client gửi lên cũng bị bỏ qua.
+function ctDto(f) {
+  return { mau: f.mau, size: f.size, gia: f.gia, giaNhap: f.giaNhap, ton: f.ton, trangThai: f.trangThai, imageUrl: f.imageUrl }
+}
+
+/** Luôn TẠO MỚI biến thể từ nội dung inspector, kể cả khi đang chọn một biến thể khác. */
+async function ctTaoMoi() {
+  const f = ctForm.value
+  // selectCT() giữ lại idSanPham của dòng đang chọn, nên "chọn một biến thể, đổi màu,
+  // Tạo mới" tạo đúng biến thể mới cho cùng sản phẩm cha.
+  if (!f.idSanPham) { notify('Chọn sản phẩm cho biến thể', 'warning'); return }
+  const loi = ctLoi(f, { batBuocTon: true })
+  if (loi) { notify(loi, 'warning'); return }
+  try {
+    await bienTheApi.create(f.idSanPham, ctDto(f))
+    notify('Đã thêm biến thể', 'success')
+    await load(); ctLamMoi()
+  } catch (e) { notify(crudErrorMessage(e), 'warning') }
+}
+
+/** Chỉ CẬP NHẬT biến thể đang chọn. */
 async function ctLuu() {
   const f = ctForm.value
-  const dto = { ma: f.ma, mau: f.mau, size: f.size, gia: f.gia, giaNhap: f.giaNhap, ton: f.ton, trangThai: f.trangThai, imageUrl: f.imageUrl }
+  if (!f.idSpct) { notify('Chọn biến thể trong danh sách để sửa', 'warning'); return }
+  const loi = ctLoi(f, { batBuocTon: false })
+  if (loi) { notify(loi, 'warning'); return }
   try {
-    if (f.idSpct) { await bienTheApi.update(f.idSpct, dto); notify('Đã cập nhật biến thể', 'success') }
-    else {
-      if (!f.idSanPham) { notify('Chọn sản phẩm cho biến thể', 'warning'); return }
-      await bienTheApi.create(f.idSanPham, dto); notify('Đã thêm biến thể', 'success')
-    }
-    await load(); ctThem()
+    await bienTheApi.update(f.idSpct, ctDto(f))
+    notify('Đã cập nhật biến thể', 'success')
+    await load()
   } catch (e) { notify(crudErrorMessage(e), 'warning') }
 }
 async function ctNhapKho() {
@@ -260,7 +334,7 @@ async function ctNhapKho() {
 async function ctAn() {
   if (!ctForm.value.idSpct) { notify('Chọn biến thể để ẩn', 'warning'); return }
   if (!confirm('Ẩn (xóa mềm) biến thể ' + ctForm.value.ma + '?')) return
-  try { await bienTheApi.remove(ctForm.value.idSpct); notify('Đã ẩn biến thể', 'success'); await load(); ctThem() }
+  try { await bienTheApi.remove(ctForm.value.idSpct); notify('Đã ẩn biến thể', 'success'); await load(); ctLamMoi() }
   catch (e) { notify('Thao tác thất bại', 'warning') }
 }
 </script>
@@ -304,16 +378,22 @@ async function ctAn() {
           </header>
           <div class="table-scroll" style="height: 460px">
             <table class="table table-sm table-hover align-middle sp-table mb-0">
+              <!-- Không còn cột Màu sắc / Kích thước: đó là thuộc tính của BIẾN THỂ.
+                   Thay bằng khoảng giá + số biến thể + tồn, tổng hợp từ các con. -->
               <thead><tr>
                 <th class="text-center">STT</th><th>Mã SP</th><th>Tên sp</th><th>Chất liệu</th>
-                <th>Màu sắc</th><th>Kích thước</th><th>Kiểu dáng</th><th>Kiểu cỡ giày</th>
-                <th>Kiểu dây giày</th><th>Thương hiệu</th>
+                <th>Kiểu dáng</th><th>Thương hiệu</th>
+                <th class="text-end">Giá bán</th><th class="text-center">Biến thể</th>
+                <th class="text-end">Tồn</th><th>Trạng thái</th>
               </tr></thead>
               <tbody>
                 <tr v-for="(p, i) in spRows" :key="p.id" :class="{ 'row-active': p.id === spSelectedId }" @click="selectSP(p)" @dblclick="openBienThe(p)" title="Double-click để xem biến thể">
                   <td class="text-center">{{ i + 1 }}</td><td class="fw-medium">{{ p.ma }}</td><td>{{ p.ten }}</td>
-                  <td>{{ p.chatLieu }}</td><td>{{ firstVariant(p).mau || '—' }}</td><td>{{ firstVariant(p).size || '—' }}</td>
-                  <td>{{ p.kieuDang || '—' }}</td><td>{{ p.coGiay || '—' }}</td><td>{{ p.dayGiay || '—' }}</td><td>{{ p.thuongHieu }}</td>
+                  <td>{{ p.chatLieu }}</td><td>{{ p.kieuDang || '—' }}</td><td>{{ p.thuongHieu }}</td>
+                  <td class="text-end" :class="{ 'text-danger': !rollup(p).soBienThe }">{{ khoangGia(p) }}</td>
+                  <td class="text-center">{{ rollup(p).soBienThe }}</td>
+                  <td class="text-end">{{ rollup(p).tongTon }}</td>
+                  <td>{{ rollup(p).dangBan ? 'Đang bán' : 'Chưa bán' }}</td>
                 </tr>
                 <tr v-if="spRows.length === 0"><td colspan="10" class="text-center text-muted py-3">Không có sản phẩm</td></tr>
               </tbody>
@@ -334,7 +414,10 @@ async function ctAn() {
             </button>
           </div>
           <dl class="green-fields">
-            <div class="gf"><dt>Mã sản phẩm</dt><dd><input class="form-control form-control-sm" v-model="spForm.ma" readonly></dd></div>
+            <!-- Mã do server sinh ("SP" + id) khi tạo — hiển thị chữ, không phải ô nhập. -->
+            <div class="gf"><dt>Mã sản phẩm</dt><dd>
+              <p class="ins-static" :class="{ 'chua-co': !spForm.ma }">{{ spForm.ma || 'Tự sinh khi lưu' }}</p>
+            </dd></div>
             <div class="gf"><dt>Tên sản phẩm</dt><dd><input class="form-control form-control-sm" v-model="spForm.ten"></dd></div>
             <div class="gf"><dt>Loại sản phẩm</dt><dd><AppSelect v-model="spForm.loaiSP" :options="loaiSanPhamList" /></dd></div>
             <div class="gf"><dt>Chất liệu</dt><dd><AppSelect v-model="spForm.chatLieu" :options="chatLieuList" /></dd></div>
@@ -344,10 +427,26 @@ async function ctAn() {
             <div class="gf"><dt>Thương hiệu</dt><dd><AppSelect v-model="spForm.thuongHieu" :options="thuongHieuList" /></dd></div>
             <div class="gf"><dt>Xuất xứ</dt><dd><AppSelect v-model="spForm.xuatXu" :options="xuatXuList" /></dd></div>
           </dl>
+
+          <!-- Giá / tồn / trạng thái chỉ đọc: chúng thuộc về biến thể, sửa ở tab
+               "Sản phẩm chi tiết". Sản phẩm cha không có ô nhập giá. -->
+          <div class="sp-rollup" v-if="spForm.id">
+            <div class="sp-rollup-row"><span>Giá bán</span><b>{{ khoangGia(spForm) }}</b></div>
+            <div class="sp-rollup-row"><span>Tổng tồn</span><b>{{ rollup(spForm).tongTon }}</b></div>
+            <div class="sp-rollup-row"><span>Số biến thể</span><b>{{ rollup(spForm).soBienThe }}</b></div>
+            <div class="sp-rollup-row"><span>Trạng thái</span><b>{{ rollup(spForm).dangBan ? 'Đang bán' : 'Chưa bán' }}</b></div>
+            <p v-if="!rollup(spForm).soBienThe" class="sp-rollup-warn">
+              Sản phẩm chưa có biến thể nào nên chưa có giá và chưa thể bán.
+              Thêm biến thể (màu, kích cỡ, giá, số lượng) để mở bán.
+            </p>
+            <button class="btn btn-sm btn-light w-100 mt-2" @click="themBienTheCho(spForm)">
+              <i class="bi bi-plus-lg"></i> Thêm biến thể cho sản phẩm này
+            </button>
+          </div>
         </div>
         <div class="green-actions">
-          <button class="btn btn-success w-100" @click="spThem">Thêm</button>
-          <button class="btn btn-success w-100" @click="spLuu">{{ spForm.id ? 'Lưu (Sửa)' : 'Tạo sản phẩm' }}</button>
+          <button class="btn btn-success w-100" @click="spTaoMoi">Tạo mới</button>
+          <button class="btn btn-success w-100" :disabled="!spForm.id" @click="spLuu">Lưu (Sửa)</button>
           <button class="btn btn-success w-100" @click="spLamMoi">Làm mới</button>
           <button class="btn btn-outline-danger w-100" :disabled="!spForm.id" @click="spAn">Ẩn (Xóa mềm)</button>
           <button class="btn btn-light w-100" @click="spXuatJson">Xuất json thông tin sản phẩm</button>
@@ -420,24 +519,33 @@ async function ctAn() {
             </div>
           </div>
           <dl class="green-fields">
-            <div class="gf" v-if="!ctForm.idSpct"><dt>Sản phẩm</dt><dd>
+            <!-- Luôn cho chọn, kể cả khi đang chọn một biến thể: nếu khoá lại thì không
+                 thể "Tạo mới" một biến thể cho sản phẩm khác từ nội dung đang có. -->
+            <div class="gf"><dt>Sản phẩm <span class="req">*</span></dt><dd>
               <select class="form-select form-select-sm" v-model="ctForm.idSanPham">
                 <option value="">-- Chọn sản phẩm --</option>
                 <option v-for="p in filtered" :key="p.id" :value="p.id">{{ p.ma }} · {{ p.ten }}</option>
               </select>
             </dd></div>
-            <div class="gf" v-else><dt>Sản phẩm</dt><dd><input class="form-control form-control-sm" :value="ctForm.tenSP" readonly></dd></div>
-            <div class="gf"><dt>Mã biến thể</dt><dd><input class="form-control form-control-sm" v-model="ctForm.ma" placeholder="Tự sinh nếu bỏ trống"></dd></div>
-            <div class="gf"><dt>Màu sắc</dt><dd><AppSelect v-model="ctForm.mau" :options="mauSacList" /></dd></div>
-            <div class="gf"><dt>Kích cỡ</dt><dd><AppSelect v-model="ctForm.size" :options="kichThuocList" /></dd></div>
-            <div class="gf"><dt>Đơn giá (bán)</dt><dd><input type="number" class="form-control form-control-sm text-end" v-model.number="ctForm.gia"></dd></div>
-            <div class="gf"><dt>Giá nhập (vốn)</dt><dd><input type="number" class="form-control form-control-sm text-end" v-model.number="ctForm.giaNhap"></dd></div>
-            <div class="gf"><dt>Số lượng tồn</dt><dd><input type="number" class="form-control form-control-sm text-end" v-model.number="ctForm.ton"></dd></div>
+            <!-- Mã biến thể do server sinh: SPCT<id>-<mã màu>-<mã cỡ>. Trước đây là ô
+                 nhập tự do và mọi biến thể của cùng sản phẩm dùng chung một mã. -->
+            <div class="gf"><dt>Mã biến thể</dt><dd>
+              <p class="ins-static" :class="{ 'chua-co': !ctForm.ma }">{{ ctForm.ma || 'Tự sinh khi lưu' }}</p>
+            </dd></div>
+            <div class="gf"><dt>Màu sắc <span class="req">*</span></dt><dd><AppSelect v-model="ctForm.mau" :options="mauSacList" /></dd></div>
+            <div class="gf"><dt>Kích cỡ <span class="req">*</span></dt><dd><AppSelect v-model="ctForm.size" :options="kichThuocList" /></dd></div>
+            <div class="gf"><dt>Đơn giá (bán) <span class="req">*</span></dt><dd><input type="number" min="1" class="form-control form-control-sm text-end" :class="{ 'is-invalid': !(Number(ctForm.gia) > 0) }" v-model.number="ctForm.gia"></dd></div>
+            <div class="gf"><dt>Giá nhập (vốn)</dt><dd><input type="number" min="0" class="form-control form-control-sm text-end" v-model.number="ctForm.giaNhap"></dd></div>
+            <div class="gf"><dt>Số lượng tồn <span class="req">*</span></dt><dd><input type="number" min="0" class="form-control form-control-sm text-end" :class="{ 'is-invalid': !ctForm.idSpct && !(Number(ctForm.ton) > 0) }" v-model.number="ctForm.ton"></dd></div>
             <div class="gf"><dt>Trạng thái</dt><dd class="d-flex gap-3 align-items-center">
               <label class="green-radio"><input type="radio" :value="true" v-model="ctForm.trangThai"> Đang bán</label>
               <label class="green-radio"><input type="radio" :value="false" v-model="ctForm.trangThai"> Ngừng bán</label>
             </dd></div>
           </dl>
+          <p class="ct-hint">
+            Biến thể chỉ được mở bán khi có đủ màu, kích cỡ, đơn giá &gt; 0 và số lượng &gt; 0.
+            Hết hàng vẫn giữ trạng thái Đang bán để khách đặt trước.
+          </p>
           <div class="ct-nhapkho" v-if="ctForm.idSpct">
             <span>Nhập kho:</span>
             <input type="number" min="1" class="form-control form-control-sm text-end" style="width:90px" v-model.number="ctNhap" placeholder="SL">
@@ -445,8 +553,8 @@ async function ctAn() {
           </div>
         </div>
         <div class="green-actions">
-          <button class="btn btn-success w-100" @click="ctThem">Thêm mới</button>
-          <button class="btn btn-success w-100" @click="ctLuu">{{ ctForm.idSpct ? 'Lưu (Sửa)' : 'Tạo biến thể' }}</button>
+          <button class="btn btn-success w-100" @click="ctTaoMoi">Tạo mới</button>
+          <button class="btn btn-success w-100" :disabled="!ctForm.idSpct" @click="ctLuu">Lưu (Sửa)</button>
           <button class="btn btn-success w-100" @click="ctLamMoi">Làm mới</button>
           <button class="btn btn-outline-danger w-100" :disabled="!ctForm.idSpct" @click="ctAn">Ẩn (Xóa mềm)</button>
         </div>
@@ -499,6 +607,17 @@ async function ctAn() {
 .sp-tab.active { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
 .sp-tab-link { text-decoration: none; color: var(--c-primary); }
 .sp-tab-link:hover { background: var(--c-primary-subtle); }
+.req { color: #ffd9d9; font-weight: 700; }
+/* Giá trị chỉ đọc do server sinh (mã). Là <p>, không phải input đã disable. */
+.ins-static { margin: 0; padding: 6px 0; font-size: 13px; font-weight: 600; letter-spacing: .3px; word-break: break-all; }
+.ins-static.chua-co { font-weight: 400; opacity: .75; font-style: italic; }
+.ct-hint { margin: 10px 0 0; font-size: 12px; line-height: 1.45; opacity: .9; }
+
+/* tóm tắt chỉ đọc trong inspector sản phẩm cha */
+.sp-rollup { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.25); font-size: 13px; }
+.sp-rollup-row { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+.sp-rollup-warn { margin: 8px 0 0; font-size: 12px; line-height: 1.45; color: #ffe08a; }
+
 .ct-nhapkho { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.25); font-size: 13px; }
 
 .sp-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; align-items: start; }

@@ -31,4 +31,10 @@ public interface NhanVienRepository extends JpaRepository<NhanVien, Integer> {
     boolean existsByMaNhanVien(String ma);
 
     boolean existsByTaiKhoan(String tk);
+
+    /**
+     * Dùng để chặn trùng tài khoản khi tạo / sửa nhân viên. Trả về entity chứ không
+     * phải boolean: khi SỬA cần biết bản ghi trùng có phải chính nó hay không.
+     */
+    NhanVien findByTaiKhoan(String taiKhoan);
 }

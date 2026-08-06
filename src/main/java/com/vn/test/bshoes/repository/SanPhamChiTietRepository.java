@@ -47,6 +47,18 @@ public interface SanPhamChiTietRepository extends JpaRepository<SanPhamChiTiet, 
            "where s.id = :id and s.soLuongTon >= :n")
     int decrementStock(@Param("id") int id, @Param("n") int n);
 
+    /**
+     * Ẩn (xóa mềm) một biến thể bằng bulk update, KHÔNG qua repo.save().
+     *
+     * Cố ý như vậy: entity giờ có Bean Validation (phải có màu, kích cỡ, đơn giá > 0),
+     * mà validation chạy lúc flush nên nó áp cho cả những dòng cũ được tạo từ trước khi
+     * có ràng buộc. Nếu ẩn cũng đi qua save() thì đúng những dòng dữ liệu hỏng — thứ
+     * người dùng muốn dọn nhất — lại là thứ không thể ẩn. Dọn dẹp phải luôn thực hiện được.
+     */
+    @Modifying
+    @Query("update SanPhamChiTiet s set s.trangThaiXoa = true, s.ngayCapNhat = CURRENT_TIMESTAMP where s.id = :id")
+    int softDeleteById(@Param("id") int id);
+
     /** Atomically return {@code n} units to stock (invoice line removed / cancelled). */
     @Modifying
     @Query("update SanPhamChiTiet s set s.soLuongTon = s.soLuongTon + :n, s.ngayCapNhat = CURRENT_TIMESTAMP " +

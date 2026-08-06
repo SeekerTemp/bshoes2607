@@ -41,7 +41,9 @@ watch([mauChon, sizeChon, bienThe], () => {
 })
 
 const anh = computed(() => chon.value?.imageUrl || sp.value?.imageUrl || PLACEHOLDER)
-const gia = computed(() => chon.value?.gia ?? sp.value?.gia ?? 0)
+// Giá luôn thuộc về biến thể. Chưa chọn biến thể thì lấy giá thấp nhất (giaTu) do
+// backend tổng hợp — sản phẩm cha không còn trường `gia` của riêng nó.
+const gia = computed(() => chon.value?.gia ?? sp.value?.giaTu ?? 0)
 const ton = computed(() => chon.value?.ton ?? 0)
 const conHang = computed(() => ton.value > 0)
 

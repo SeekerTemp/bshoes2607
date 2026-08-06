@@ -3,14 +3,11 @@ import { ref } from 'vue'
 import AppShell from '../components/layout/AppShell.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
 import DemoDataBanner from '../components/ui/DemoDataBanner.vue'
-import AppButton from '../components/ui/AppButton.vue'
 import SearchBar from '../components/ui/SearchBar.vue'
-import DataTable from '../components/ui/DataTable.vue'
-import AppModal from '../components/ui/AppModal.vue'
 import ConfirmDialog from '../components/ui/ConfirmDialog.vue'
-import FormField from '../components/ui/FormField.vue'
 import AppSelect from '../components/ui/AppSelect.vue'
-import StatusBadge from '../components/ui/StatusBadge.vue'
+import InspectorPanel from '../components/ui/InspectorPanel.vue'
+import InspectorField from '../components/ui/InspectorField.vue'
 import { useKhachHang } from '../composables/useKhachHang'
 import { useToast } from '../composables/useToast'
 import { crudErrorMessage } from '../composables/useCrud'
@@ -21,46 +18,66 @@ const { notify } = useToast()
 
 const tab = ref('kh')   // 'kh' | 'diachi'
 
-const columns = [
-  { key: 'ma', label: 'Mã KH' },
-  { key: 'ten', label: 'Tên' },
-  { key: 'gioiTinh', label: 'Giới tính' },
-  { key: 'sdt', label: 'SĐT' },
-  { key: 'email', label: 'Email' },
-  { key: 'diaChi', label: 'Địa chỉ' },
-  { key: 'trangThai', label: 'Trạng thái' }
-]
-
 const gioiTinhOptions = ['Nam', 'Nữ']
 
 function blankForm() {
   return { id: null, ma: '', ten: '', gioiTinh: 'Nam', sdt: '', email: '', diaChi: '', trangThai: true }
 }
 
-const modalOpen = ref(false)
+// Master-detail thay cho modal: chọn dòng là form bên phải điền luôn, không phải mở /
+// đóng popup cho từng lần sửa.
 const form = ref(blankForm())
+const selectedId = ref(null)
 const confirmOpen = ref(false)
 const target = ref(null)
 
-function openCreate() {
+function selectRow(row) {
+  selectedId.value = row.id
+  form.value = { ...blankForm(), ...JSON.parse(JSON.stringify(row)) }
+}
+
+// "Làm mới" = XOÁ TRẮNG inspector. Trước đây nó nạp lại dòng đang chọn, nên bấm vào
+// không thấy gì thay đổi và không có cách nào dọn form về rỗng.
+function lamMoi() {
+  selectedId.value = null
   form.value = blankForm()
-  modalOpen.value = true
 }
 
-function openEdit(row) {
-  form.value = JSON.parse(JSON.stringify(row))
-  modalOpen.value = true
+// Chỉ SĐT là bắt buộc — bảng khach_hang không có cột CCCD.
+function loiForm() {
+  if (!form.value.ten?.trim()) return 'Nhập tên khách hàng'
+  if (!form.value.sdt?.trim()) return 'Số điện thoại là bắt buộc'
+  if (!/^0\d{8,10}$/.test(form.value.sdt.trim())) return 'Số điện thoại không hợp lệ (bắt đầu bằng 0, 9–11 chữ số)'
+  return ''
 }
 
-async function save() {
+/*
+ * Hai nút, hai việc rõ ràng — trước đây chỉ có một nút tự đổi nghĩa theo việc đang
+ * chọn dòng hay không, nên thao tác "chọn một khách hàng, sửa tên, tạo thành khách
+ * hàng mới" là KHÔNG THỂ: nút đã âm thầm chuyển thành Lưu (Sửa) và ghi đè bản gốc.
+ */
+
+/** Luôn TẠO MỚI từ nội dung inspector hiện tại, bỏ id + mã (server tự sinh mã). */
+async function taoMoi() {
+  const loi = loiForm()
+  if (loi) { notify(loi, 'warning'); return }
   try {
-    if (form.value.id) {
-      await update(form.value)
-    } else {
-      await add(form.value)
-    }
-    modalOpen.value = false
-    notify('Đã lưu', 'success')
+    await add({ ...form.value, id: null, ma: '' })
+    notify('Đã thêm khách hàng', 'success')
+    lamMoi()
+  } catch (e) {
+    notify(crudErrorMessage(e), 'warning')
+  }
+}
+
+/** Chỉ CẬP NHẬT dòng đang chọn. */
+async function luuSua() {
+  if (!form.value.id) { notify('Chọn khách hàng trong danh sách để sửa', 'warning'); return }
+  const loi = loiForm()
+  if (loi) { notify(loi, 'warning'); return }
+  try {
+    await update(form.value)
+    notify('Đã cập nhật khách hàng', 'success')
   } catch (e) {
     notify(crudErrorMessage(e), 'warning')
   }
@@ -75,6 +92,7 @@ async function doDelete() {
   try {
     await remove(target.value.id)
     confirmOpen.value = false
+    if (target.value.id === selectedId.value) lamMoi()
     notify('Đã xoá', 'success')
   } catch (e) {
     notify(crudErrorMessage(e), 'warning')
@@ -94,13 +112,28 @@ async function loadAddresses() {
 }
 function editAddr(a) { addrForm.value = { ...a } }
 function newAddr() { addrForm.value = blankAddr() }
-async function saveAddr() {
-  if (!addrKhId.value) { notify('Chọn khách hàng trước', 'warning'); return }
-  if (!addrForm.value.diaChiMacDinh && !addrForm.value.thanhPho) { notify('Nhập địa chỉ', 'warning'); return }
+
+function loiAddr() {
+  if (!addrKhId.value) return 'Chọn khách hàng trước'
+  if (!addrForm.value.diaChiMacDinh && !addrForm.value.thanhPho) return 'Nhập địa chỉ'
+  return ''
+}
+// Cùng quy ước với inspector khách hàng: Tạo mới luôn tạo, Lưu (Sửa) chỉ sửa.
+async function taoMoiAddr() {
+  const loi = loiAddr()
+  if (loi) { notify(loi, 'warning'); return }
   try {
-    if (addrForm.value.id) await diaChiApi.update(addrForm.value.id, addrForm.value)
-    else await diaChiApi.create({ ...addrForm.value, idKhachHang: Number(addrKhId.value) })
-    notify('Đã lưu địa chỉ', 'success'); await loadAddresses()
+    await diaChiApi.create({ ...addrForm.value, id: null, idKhachHang: Number(addrKhId.value) })
+    notify('Đã thêm địa chỉ', 'success'); await loadAddresses()
+  } catch (e) { notify('Lưu địa chỉ thất bại', 'warning') }
+}
+async function saveAddr() {
+  if (!addrForm.value.id) { notify('Chọn địa chỉ trong danh sách để sửa', 'warning'); return }
+  const loi = loiAddr()
+  if (loi) { notify(loi, 'warning'); return }
+  try {
+    await diaChiApi.update(addrForm.value.id, addrForm.value)
+    notify('Đã cập nhật địa chỉ', 'success'); await loadAddresses()
   } catch (e) { notify('Lưu địa chỉ thất bại', 'warning') }
 }
 async function removeAddr(a) {
@@ -113,27 +146,73 @@ async function removeAddr(a) {
 <template>
   <AppShell>
     <DemoDataBanner v-if="isDemo" what="danh sách khách hàng" @retry="load" />
-    <PageHeader title="Khách hàng">
-      <template #actions>
-        <AppButton icon="plus-lg" @click="openCreate">Thêm khách hàng</AppButton>
-      </template>
-    </PageHeader>
+    <PageHeader title="Khách hàng" />
 
     <div class="kh-tabs mb-3">
       <button class="kh-tab" :class="{ active: tab === 'kh' }" @click="tab = 'kh'">Khách hàng</button>
       <button class="kh-tab" :class="{ active: tab === 'diachi' }" @click="tab = 'diachi'">Địa chỉ</button>
     </div>
 
-    <div v-show="tab === 'kh'">
-    <SearchBar v-model="keyword" class="mb-3" placeholder="Tìm theo mã / tên / SĐT..." />
+    <!-- Master-detail: bảng bên trái, inspector bên phải (bỏ modal) -->
+    <div v-show="tab === 'kh'" class="kh-grid">
+      <div class="kh-master">
+        <SearchBar v-model="keyword" class="mb-2" placeholder="Tìm theo mã / tên / SĐT..." />
+        <div class="table-scroll">
+          <table class="table table-sm table-hover align-middle mb-0 kh-table">
+            <thead><tr>
+              <th class="text-center">STT</th><th>Mã KH</th><th>Tên</th><th>Giới tính</th>
+              <th>SĐT</th><th>Email</th><th>Địa chỉ</th><th>Trạng thái</th><th></th>
+            </tr></thead>
+            <tbody>
+              <tr v-for="(k, i) in filtered" :key="k.id" :class="{ 'row-active': k.id === selectedId }" @click="selectRow(k)">
+                <td class="text-center">{{ i + 1 }}</td>
+                <td class="fw-medium">{{ k.ma }}</td><td>{{ k.ten }}</td><td>{{ k.gioiTinh }}</td>
+                <td>{{ k.sdt }}</td><td>{{ k.email }}</td><td>{{ k.diaChi }}</td>
+                <td>{{ k.trangThai ? 'Hoạt động' : 'Ngừng' }}</td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-danger py-0 px-2" @click.stop="askDelete(k)" title="Xoá">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="!filtered.length"><td colspan="9" class="text-center text-muted py-4">Không có khách hàng</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-    <DataTable :columns="columns" :rows="filtered">
-      <template #cell-trangThai="{ value }"><StatusBadge :active="value" /></template>
-      <template #actions="{ row }">
-        <AppButton size="sm" variant="outline-secondary" icon="pencil" @click="openEdit(row)">Sửa</AppButton>
-        <AppButton size="sm" variant="outline-danger" icon="trash" class="ms-1" @click="askDelete(row)">Xoá</AppButton>
-      </template>
-    </DataTable>
+      <InspectorPanel :tab-label="form.id ? 'Sửa khách hàng' : 'Thêm khách hàng'" title="Thông tin khách hàng">
+        <!-- Mã do server sinh ("KH" + id) khi tạo, nên hiển thị dạng chữ chứ không phải ô nhập. -->
+        <InspectorField label="Mã KH">
+          <p class="ins-static" :class="{ 'chua-co': !form.ma }">{{ form.ma || 'Tự sinh khi lưu' }}</p>
+        </InspectorField>
+        <InspectorField label="Tên" required>
+          <input class="form-control form-control-sm" v-model="form.ten">
+        </InspectorField>
+        <InspectorField label="Giới tính">
+          <AppSelect v-model="form.gioiTinh" :options="gioiTinhOptions" />
+        </InspectorField>
+        <InspectorField label="Số điện thoại" required>
+          <input class="form-control form-control-sm" v-model="form.sdt" :class="{ 'is-invalid': !form.sdt }" placeholder="0xxxxxxxxx">
+        </InspectorField>
+        <InspectorField label="Email">
+          <input type="email" class="form-control form-control-sm" v-model="form.email">
+        </InspectorField>
+        <InspectorField label="Địa chỉ">
+          <input class="form-control form-control-sm" v-model="form.diaChi">
+        </InspectorField>
+        <InspectorField label="Trạng thái">
+          <label class="kh-radio"><input type="radio" :value="true" v-model="form.trangThai"> Hoạt động</label>
+          <label class="kh-radio ms-3"><input type="radio" :value="false" v-model="form.trangThai"> Ngừng</label>
+        </InspectorField>
+
+        <template #actions>
+          <button class="btn btn-success w-100" @click="taoMoi">Tạo mới</button>
+          <button class="btn btn-success w-100" :disabled="!form.id" @click="luuSua">Lưu (Sửa)</button>
+          <button class="btn btn-success w-100" @click="lamMoi">Làm mới</button>
+          <button class="btn btn-outline-danger w-100" :disabled="!form.id" @click="askDelete(form)">Xoá</button>
+        </template>
+      </InspectorPanel>
     </div>
 
     <!-- ===== Địa chỉ tab ===== -->
@@ -175,27 +254,12 @@ async function removeAddr(a) {
           <div class="form-check mb-3"><input class="form-check-input" type="checkbox" v-model="addrForm.trangThai" id="addr-tt"><label class="form-check-label" for="addr-tt">Hoạt động</label></div>
           <div class="d-flex gap-2">
             <button class="btn btn-outline-secondary flex-fill" @click="newAddr">Làm mới</button>
-            <button class="btn btn-success flex-fill" :disabled="!addrKhId" @click="saveAddr">Lưu</button>
+            <button class="btn btn-success flex-fill" :disabled="!addrKhId" @click="taoMoiAddr">Tạo mới</button>
+            <button class="btn btn-success flex-fill" :disabled="!addrForm.id" @click="saveAddr">Lưu (Sửa)</button>
           </div>
         </div></div></div>
       </div>
     </div>
-
-    <AppModal v-model:open="modalOpen" :title="form.id ? 'Sửa khách hàng' : 'Thêm khách hàng'">
-      <FormField label="Tên"><input class="form-control" v-model="form.ten"></FormField>
-      <FormField label="Giới tính"><AppSelect v-model="form.gioiTinh" :options="gioiTinhOptions" /></FormField>
-      <FormField label="Số điện thoại"><input class="form-control" v-model="form.sdt"></FormField>
-      <FormField label="Email"><input type="email" class="form-control" v-model="form.email"></FormField>
-      <FormField label="Địa chỉ"><input class="form-control" v-model="form.diaChi"></FormField>
-      <div class="form-check">
-        <input class="form-check-input" type="checkbox" v-model="form.trangThai" id="kh-trangthai">
-        <label class="form-check-label" for="kh-trangthai">Hoạt động</label>
-      </div>
-      <template #footer>
-        <AppButton variant="secondary" @click="modalOpen = false">Huỷ</AppButton>
-        <AppButton @click="save">Lưu</AppButton>
-      </template>
-    </AppModal>
 
     <ConfirmDialog v-model:open="confirmOpen" :message="`Xoá khách hàng ${target?.ma}?`" @confirm="doDelete" />
   </AppShell>
@@ -209,6 +273,21 @@ async function removeAddr(a) {
   background: #eef1f4; color: var(--c-text-muted); font-weight: 500; cursor: pointer;
 }
 .kh-tab.active { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
+
+.kh-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; }
+.kh-master { min-width: 0; }
+.table-scroll { overflow: auto; max-height: 560px; border: 1px solid var(--c-border); border-radius: var(--radius-sm); }
+.kh-table { min-width: 720px; }
+.kh-table thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--c-primary); color: #fff; font-weight: 600; font-size: 12px; white-space: nowrap;
+}
+.kh-table tbody td { font-size: 13px; }
+.kh-table tbody tr { cursor: pointer; }
+.kh-table tbody tr.row-active > td { background: var(--c-primary); color: #fff; }
+.kh-radio { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+
+@media (max-width: 992px) { .kh-grid { grid-template-columns: 1fr; } }
 .kh-addr-table thead th { position: sticky; top: 0; background: var(--c-primary); color: #fff; font-size: 12px; white-space: nowrap; }
 .kh-addr-table tbody tr.sel > td { background: var(--c-primary-subtle); }
 </style>
