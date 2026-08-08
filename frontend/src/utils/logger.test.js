@@ -168,4 +168,29 @@ describe('markSent', () => {
     expect(markSent(null, [])).toEqual([])
     expect(markSent(undefined, [])).toEqual([])
   })
+
+  // Hồi quy cho log 2026-08-05: file 6.902 dòng chỉ chứa ~100 sự kiện thật, mỗi sự
+  // kiện lặp đúng 66 lần = số lần flush. Nguyên nhân: flushLogs() gọi readBuffer()
+  // LẦN NỮA trong .then(), tức là JSON.parse ra các object MỚI, nên markSent() so
+  // sánh theo tham chiếu không khớp gì cả -> không entry nào được đánh dấu sent ->
+  // mọi flush gửi lại toàn bộ lịch sử.
+  it('marks entries sent across a localStorage round-trip (not by reference)', () => {
+    const buf = [
+      { id: 'a1', t: '2026-08-05T10:00:00.000Z', message: 'x' },
+      { id: 'a2', t: '2026-08-05T10:00:01.000Z', message: 'y' },
+    ]
+    const shipped = JSON.parse(JSON.stringify(buf))   // bản đã "gửi đi"
+    const reread = JSON.parse(JSON.stringify(buf))    // bản đọc lại từ localStorage
+
+    const out = markSent(reread, shipped)
+
+    expect(out.map((e) => e.sent)).toEqual([true, true])
+    expect(selectUnsent(out)).toEqual([])
+  })
+
+  it('still matches legacy entries that carry no id, by reference', () => {
+    const e1 = { message: 'cũ' }
+    const e2 = { message: 'cũ hơn' }
+    expect(markSent([e1, e2], [e1])).toEqual([{ message: 'cũ', sent: true }, { message: 'cũ hơn' }])
+  })
 })

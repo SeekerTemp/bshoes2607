@@ -44,14 +44,28 @@ function pickFilter(key) { filterKey.value = key; kw.value = ''; load() }
 function edit(r) { form.value = { id: r.id, ma: r.ma, ten: r.ten, moTa: r.moTa || '', trangThai: r.trangThai !== false, loai: r._typeKey } }
 function reset() { form.value = blank(); if (filterKey.value !== 'all') form.value.loai = filterKey.value }
 
-async function save() {
+function payloadOf(id) {
+  const p = { id, ten: form.value.ten, trangThai: form.value.trangThai }
+  if (formType.value.moTa) p.moTa = form.value.moTa
+  return p   // không gửi `ma`: server luôn tự sinh và ghi đè
+}
+
+// Tạo mới / Lưu (Sửa) tách đôi — trước đây một nút tự đổi nghĩa theo dòng đang chọn,
+// nên "chọn thuộc tính, đổi tên, tạo thành thuộc tính mới" lại ghi đè bản gốc.
+async function taoMoi() {
   if (!form.value.ten) { notify('Nhập tên thuộc tính', 'warning'); return }
-  const api = catalogApi(form.value.loai)
-  const payload = { id: form.value.id, ma: form.value.ma, ten: form.value.ten, trangThai: form.value.trangThai }
-  if (formType.value.moTa) payload.moTa = form.value.moTa
   try {
-    if (form.value.id) await api.update(payload); else await api.create(payload)
-    notify('Đã lưu ' + formType.value.label, 'success')
+    await catalogApi(form.value.loai).create(payloadOf(null))
+    notify('Đã thêm ' + formType.value.label, 'success')
+    reset(); await load()
+  } catch (e) { notify('Lưu thất bại (backend offline?)', 'warning') }
+}
+async function save() {
+  if (!form.value.id) { notify('Chọn thuộc tính trong danh sách để sửa', 'warning'); return }
+  if (!form.value.ten) { notify('Nhập tên thuộc tính', 'warning'); return }
+  try {
+    await catalogApi(form.value.loai).update(payloadOf(form.value.id))
+    notify('Đã cập nhật ' + formType.value.label, 'success')
     await load()
   } catch (e) { notify('Lưu thất bại (backend offline?)', 'warning') }
 }
@@ -139,7 +153,11 @@ onMounted(load)
             <option v-for="t in ATTR_TYPES" :key="t.key" :value="t.key">{{ t.label }}</option>
           </select>
         </div>
-        <div class="mb-2"><label class="form-label small mb-1">Mã</label><input class="form-control form-control-sm" v-model="form.ma" placeholder="Tự sinh nếu bỏ trống"></div>
+        <!-- Mã luôn do server sinh ("TH"/"CL"/"KD"… + id). Ô nhập cũ là ảo: giá trị gõ
+             vào bị service create() ghi đè, người dùng không hề biết. -->
+        <div class="mb-2"><label class="form-label small mb-1">Mã</label>
+          <p class="ma-static" :class="{ 'chua-co': !form.ma }">{{ form.ma || 'Tự sinh khi lưu' }}</p>
+        </div>
         <div class="mb-2"><label class="form-label small mb-1">Tên thuộc tính *</label><input class="form-control form-control-sm" v-model="form.ten"></div>
         <div class="mb-2" v-if="formType.moTa"><label class="form-label small mb-1">Mô tả</label><textarea class="form-control form-control-sm" rows="3" maxlength="300" v-model="form.moTa"></textarea></div>
         <div class="mb-3">
@@ -149,7 +167,8 @@ onMounted(load)
         </div>
         <div class="d-flex gap-2">
           <button class="btn btn-outline-secondary flex-fill" @click="reset">Làm mới</button>
-          <button class="btn btn-success flex-fill" @click="save">Lưu</button>
+          <button class="btn btn-success flex-fill" @click="taoMoi">Tạo mới</button>
+          <button class="btn btn-success flex-fill" :disabled="!form.id" @click="save">Lưu (Sửa)</button>
         </div>
       </div></div>
     </div>
@@ -157,6 +176,10 @@ onMounted(load)
 </template>
 
 <style scoped>
+/* Mã do server sinh: hiển thị dạng chữ, không phải ô nhập bị vô hiệu hoá. */
+.ma-static { margin: 0; padding: 6px 0; font-size: 13px; font-weight: 600; letter-spacing: .3px; }
+.ma-static.chua-co { font-weight: 400; opacity: .7; font-style: italic; }
+
 .tt-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
 .tt-table thead th { position: sticky; top: 0; background: var(--c-primary, #0B895A); color: #fff; font-size: 12px; white-space: nowrap; }
 .tt-table tbody tr.sel > td { background: var(--c-primary-subtle, #E7F4EF); }

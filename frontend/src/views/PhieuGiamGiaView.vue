@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import AppShell from '../components/layout/AppShell.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
+import DemoDataBanner from '../components/ui/DemoDataBanner.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import SearchBar from '../components/ui/SearchBar.vue'
 import DataTable from '../components/ui/DataTable.vue'
@@ -15,7 +16,7 @@ import { useToast } from '../composables/useToast'
 import { crudErrorMessage } from '../composables/useCrud'
 import { vnd } from '../utils/format'
 
-const { keyword, filtered, add, update, remove } = usePhieuGiamGia()
+const { keyword, filtered, add, update, remove, load, isDemo } = usePhieuGiamGia()
 const { notify } = useToast()
 
 const columns = [
@@ -86,6 +87,7 @@ async function doDelete() {
 
 <template>
   <AppShell>
+    <DemoDataBanner v-if="isDemo" what="danh sách phiếu giảm giá" @retry="load" />
     <PageHeader title="Phiếu giảm giá">
       <template #actions>
         <AppButton icon="plus-lg" @click="openCreate">Thêm phiếu</AppButton>

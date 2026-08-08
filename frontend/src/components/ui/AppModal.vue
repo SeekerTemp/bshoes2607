@@ -11,7 +11,29 @@ onMounted(() => {
   if (props.open) modal.show()
 })
 watch(() => props.open, (v) => { v ? modal?.show() : modal?.hide() })
-onBeforeUnmount(() => modal?.dispose())
+
+// Tearing the component down while bootstrap is still animating the hide left
+// its transition callback running against a disposed instance:
+//   Uncaught TypeError: Cannot read properties of null (reading 'style')
+//       at _Modal._hideModal (bootstrap.js)
+// (seen in logs/bshoes.log via the CLIENT logger when navigating away from a
+// screen with an open modal). Dropping `fade` first makes bootstrap tear down
+// synchronously, so no callback survives the unmount.
+onBeforeUnmount(() => {
+  try {
+    el.value?.classList.remove('fade')
+    modal?.hide()
+    modal?.dispose()
+  } catch {
+    // teardown must never throw during unmount
+  }
+  // A modal unmounted mid-transition can also strand its backdrop, leaving a
+  // grey overlay that swallows every click on the next screen.
+  document.querySelectorAll('.modal-backdrop').forEach((b) => b.remove())
+  document.body.classList.remove('modal-open')
+  document.body.style.removeProperty('overflow')
+  document.body.style.removeProperty('padding-right')
+})
 </script>
 
 <template>

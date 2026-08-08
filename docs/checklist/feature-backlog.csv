@@ -1,0 +1,171 @@
+﻿Screen / Class,Feature ID,Feature,Status
+"Login — LoginView.vue / AuthController + AuthServiceImpl",F-AUTH-01,"Đăng nhập bằng tài khoản + mật khẩu (POST /api/auth/login)",Implemented
+"Login — LoginView.vue / useAuth.js",F-AUTH-02,"Điều hướng sau đăng nhập theo vai trò (landingRoute)",Implemented
+"Login — LoginView.vue / useAuth.js",F-AUTH-03,"Nút ""Vào demo (Admin)"" — xem giao diện offline, không có token nên API trả 401 và màn hiện banner dữ liệu demo",Implemented
+"Login — LoginView.vue",F-AUTH-04,"Thông báo lỗi khi sai tài khoản / mất kết nối máy chủ",Implemented
+"Router — router/index.js + config/screens.js",F-AUTH-05,"Chặn truy cập màn hình chưa đăng nhập (redirect /login kèm ?redirect=)",Implemented
+"Router — router/index.js",F-AUTH-06,"Chặn màn hình vai trò không có quyền, đẩy về landing của vai trò",Implemented
+"Backend — security/ApiAuthFilter + ScreenPermissions",F-AUTH-07,"Bảo vệ API theo màn hình ở phía server (token + quyền từ nhan_vien_quyen)",Implemented
+"Backend — AuthServiceImpl / NhanVien",F-AUTH-08,"Mã hoá mật khẩu (hash) — CỐ Ý bỏ qua: bản prototype dùng cho user testing",Not implemented
+"Hệ Thống — HeThongView.vue / useAuth.js",F-AUTH-09,"Đăng xuất (có hộp thoại xác nhận) — thực sự xoá phiên, không chỉ chuyển trang",Implemented
+"Storefront — HomeView.vue / SanPhamChiTietController /store",F-HOME-01,"Danh sách sản phẩm cửa hàng (gồm cả hàng hết tồn để đặt trước)",Implemented
+"Storefront — HomeView.vue / LoaiSanPhamController",F-HOME-02,"Nav danh mục lấy từ loai_san_pham + lọc lưới sản phẩm theo danh mục",Implemented
+"Storefront — HomeView.vue / utils/catalog.js",F-HOME-03,"Sắp xếp giá tăng / giá giảm / bán chạy (cộng dồn với bộ lọc danh mục)",Implemented
+"Storefront — HomeView.vue / utils/catalog.js filterByKeyword",F-HOME-04,"Ô tìm kiếm ở header — lọc theo tên / thương hiệu / màu-size, bỏ dấu tiếng Việt",Implemented
+"Storefront — HomeView.vue / useCart.js",F-HOME-05,"Thêm sản phẩm vào giỏ từ lưới (chặn khi tồn = 0)",Implemented
+"Storefront — HomeView.vue / DatTruocModal.vue",F-HOME-06,"Đặt trước khi hết hàng (mở modal đặt trước từ thẻ sản phẩm)",Implemented
+"Storefront — HomeView.vue",F-HOME-07,"Mở trang chi tiết sản phẩm khi bấm ảnh / tên sản phẩm",Implemented
+"Storefront — HomeView.vue / DemoDataBanner.vue",F-HOME-08,"Fallback mock khi API lỗi — hiện banner đỏ ""ĐANG HIỂN THỊ DỮ LIỆU DEMO"" kèm nút Thử lại",Implemented
+"Chi tiết SP — SanPhamDetailView.vue / SanPhamChiTietController",F-SPD-01,"Xem chi tiết sản phẩm theo id (ảnh, giá, mô tả)",Implemented
+"Chi tiết SP — SanPhamDetailView.vue",F-SPD-02,"Chọn màu sắc, đánh dấu màu hết hàng",Implemented
+"Chi tiết SP — SanPhamDetailView.vue",F-SPD-03,"Chọn kích cỡ, đánh dấu size hết hàng",Implemented
+"Chi tiết SP — SanPhamDetailView.vue",F-SPD-04,"Tăng / giảm số lượng, chặn vượt tồn kho của biến thể",Implemented
+"Chi tiết SP — SanPhamDetailView.vue / useCart.js",F-SPD-05,"Thêm vào giỏ",Implemented
+"Chi tiết SP — SanPhamDetailView.vue",F-SPD-06,"Mua ngay (thêm giỏ + sang trang giỏ hàng)",Implemented
+"Chi tiết SP — SanPhamDetailView.vue / DatTruocModal.vue",F-SPD-07,"Đặt trước biến thể hết hàng",Implemented
+"Giỏ hàng — GioHangView.vue / useCart.js",F-CART-01,"Xem giỏ hàng (lưu localStorage, giữ qua reload)",Implemented
+"Giỏ hàng — GioHangView.vue / useCart.js",F-CART-02,"Tăng / giảm số lượng dòng, chặn vượt tồn (cảnh báo toast)",Implemented
+"Giỏ hàng — GioHangView.vue / useCart.js",F-CART-03,"Xoá 1 dòng khỏi giỏ",Implemented
+"Giỏ hàng — GioHangView.vue / useCart.js",F-CART-04,"Xoá toàn bộ giỏ",Implemented
+"Giỏ hàng — GioHangView.vue / GioHangController /checkout",F-CART-05,"Đặt hàng online (tạo hoá đơn chờ giao, trừ tồn kho)",Implemented
+"Giỏ hàng — GioHangView.vue / GioHangController /don-hang",F-CART-06,"Tra cứu đơn của tôi theo số điện thoại",Implemented
+"Giỏ hàng — GioHangView.vue / GioHangController /nhan-hang",F-CART-07,"Khách xác nhận ""Đã nhận hàng"" (đóng đơn)",Implemented
+"Giỏ hàng — GioHangView.vue",F-CART-08,"Màn hình xác nhận sau khi đặt hàng thành công (mã đơn + mua tiếp)",Implemented
+"Doanh Thu — DashboardView.vue / ThongKeController /hom-nay",F-DASH-01,"KPI hôm nay (doanh thu, số đơn, …)",Implemented
+"Doanh Thu — DashboardView.vue / ThongKeController /tong-quan",F-DASH-02,"Tổng quan doanh thu",Implemented
+"Doanh Thu — DashboardView.vue / ThongKeController /theo-ngay|/theo-thang|/theo-nam",F-DASH-03,"Biểu đồ doanh thu theo ngày / tháng / năm",Implemented
+"Doanh Thu — DashboardView.vue / ThongKeController /nam",F-DASH-04,"Bộ lọc chọn năm (danh sách năm lấy từ dữ liệu thật)",Implemented
+"Doanh Thu — DashboardView.vue / ThongKeController /san-pham",F-DASH-05,"Top sản phẩm bán chạy",Implemented
+"Doanh Thu — DashboardView.vue / ThongKeController /dong-tien",F-DASH-06,"Báo cáo dòng tiền",Implemented
+"Doanh Thu — DashboardView.vue / ThongKeController /roi",F-DASH-07,"Báo cáo ROI",Implemented
+"Doanh Thu — DashboardView.vue / ThongKeController /retention",F-DASH-08,"Báo cáo giữ chân khách hàng (retention)",Implemented
+"Doanh Thu — DashboardView.vue / ThongKeController /trending",F-DASH-09,"Sản phẩm xu hướng (trending)",Implemented
+"Doanh Thu — DashboardView.vue",F-DASH-10,"Xuất Excel (.xls dạng HTML table) cho KPI + top sản phẩm",Implemented
+"Doanh Thu — DashboardView.vue / DemoDataBanner.vue",F-DASH-11,"Fallback mock khi API lỗi — hiện banner đỏ cảnh báo toàn bộ số liệu là demo",Implemented
+"Sản Phẩm > tab Sản phẩm — SanPhamView.vue / SanPhamQlController",F-SP-01,"Danh sách sản phẩm quản trị",Implemented
+"Sản Phẩm > tab Sản phẩm — SanPhamView.vue / SanPhamQlController /search",F-SP-02,"Tìm kiếm sản phẩm theo từ khoá",Implemented
+"Sản Phẩm > tab Sản phẩm — SanPhamView.vue / SanPhamQlController POST",F-SP-03,"Tạo sản phẩm mới",Implemented
+"Sản Phẩm > tab Sản phẩm — SanPhamView.vue / SanPhamQlController PUT",F-SP-04,"Sửa sản phẩm",Implemented
+"Sản Phẩm > tab Sản phẩm — SanPhamView.vue / SanPhamQlController /soft/{ma}",F-SP-05,"Ẩn sản phẩm (xoá mềm)",Implemented
+"Sản Phẩm > tab Sản phẩm — SanPhamView.vue / SanPhamQlController /recycle,/restore",F-SP-06,"Xem danh sách sản phẩm bị ẩn trong modal và khôi phục từng dòng",Implemented
+"Sản Phẩm > tab Sản phẩm — SanPhamView.vue / ImagePicker.vue",F-SP-07,"Chọn ảnh sản phẩm từ kho ảnh có sẵn",Implemented
+"Sản Phẩm > tab Sản phẩm — SanPhamView.vue / utils/csv.js",F-SP-08,"Xuất JSON danh sách sản phẩm đang hiển thị (theo bộ lọc)",Implemented
+"Sản Phẩm > tab Sản phẩm — SanPhamView.vue",F-SP-09,"Import sản phẩm từ file JSON (bỏ id cũ, tạo bản ghi mới, báo rõ dòng lỗi) — CSV/Excel chưa hỗ trợ",Implemented
+"Sản Phẩm > tab Chi tiết — SanPhamView.vue / SanPhamChiTietController /by-product",F-SPCT-01,"Danh sách biến thể, lọc theo sản phẩm đang chọn",Implemented
+"Sản Phẩm > tab Chi tiết — SanPhamView.vue / SanPhamChiTietController POST /product/{id}",F-SPCT-02,"Tạo biến thể (màu, size, giá, tồn)",Implemented
+"Sản Phẩm > tab Chi tiết — SanPhamView.vue / SanPhamChiTietController PUT /{id}",F-SPCT-03,"Sửa biến thể",Implemented
+"Sản Phẩm > tab Chi tiết — SanPhamView.vue / SanPhamChiTietController DELETE /{id}",F-SPCT-04,"Ẩn biến thể (xoá mềm)",Implemented
+"Sản Phẩm > tab Chi tiết — SanPhamView.vue / SanPhamChiTietController /nhap-kho",F-SPCT-05,"Nhập kho (cộng tồn cho biến thể)",Implemented
+"Sản Phẩm > tab Chi tiết — SanPhamView.vue / UploadController + utils/upload.js",F-SPCT-06,"Tải ảnh biến thể từ máy (chặn file không phải ảnh / ≥ 1MB)",Implemented
+"Sản Phẩm > tab Chi tiết — SanPhamView.vue / WebConfig /api/uploads/**",F-SPCT-07,"Ảnh đã tải lên được phục vụ lại qua /api/uploads/…",Implemented
+"Sản Phẩm > tab Danh mục — DanhMucPanel.vue / LoaiSanPhamController",F-DM-01,"CRUD danh mục sản phẩm",Implemented
+"Sản Phẩm > tab Danh mục — DanhMucPanel.vue / SanPhamQlController /{id}/danh-muc",F-DM-02,"Gán sản phẩm vào danh mục / bỏ khỏi danh mục",Implemented
+"Sản Phẩm > tab Danh mục — DanhMucPanel.vue / ThuongHieuController, KieuDangController",F-DM-03,"Xem sản phẩm theo chiều Thương hiệu / Kiểu dáng",Implemented
+"Sản Phẩm > tab Danh mục — DanhMucPanel.vue",F-DM-04,"Export CSV danh mục",Implemented
+"Sản Phẩm > tab Danh mục — DanhMucPanel.vue",F-DM-05,"Import CSV danh mục",Implemented
+"Sản Phẩm > tab Thuộc tính — ThuocTinhPanel.vue / ChatLieu|KichCo|KieuCoGiay|KieuDang|KieuDayGiay|MauSac|XuatSu|ThuongHieuController",F-TT-01,"CRUD 8 loại thuộc tính (chất liệu, kích cỡ, kiểu cổ giày, kiểu dáng, kiểu dây giày, màu sắc, xuất xứ, thương hiệu)",Implemented
+"Sản Phẩm > tab Thuộc tính — ThuocTinhPanel.vue",F-TT-02,"Lọc theo loại thuộc tính + tìm kiếm",Implemented
+"Sản Phẩm > tab Thuộc tính — ThuocTinhPanel.vue",F-TT-03,"Import / Export CSV thuộc tính",Implemented
+"Bán Hàng (POS) — HoaDonView.vue / HoaDonController /pos-products",F-POS-01,"Danh sách sản phẩm bán tại quầy (kèm tồn kho)",Implemented
+"Bán Hàng (POS) — HoaDonView.vue / QrScanner.vue + /by-ma/{ma}",F-POS-02,"Quét QR / nhập mã biến thể (dùng ma_san_pham_chi_tiet THẬT, không còn bịa SP1/SP2)",Implemented
+"Bán Hàng (POS) — HoaDonView.vue",F-POS-03,"Nhập tay dòng hàng",Implemented
+"Bán Hàng (POS) — HoaDonView.vue / HoaDonController /{id}/items",F-POS-04,"Thêm dòng hàng vào hoá đơn",Implemented
+"Bán Hàng (POS) — HoaDonView.vue / HoaDonController PUT /items/{id}",F-POS-05,"Tăng / giảm số lượng dòng hàng",Implemented
+"Bán Hàng (POS) — HoaDonView.vue / HoaDonController DELETE /items/{id}",F-POS-06,"Bỏ sản phẩm khỏi hoá đơn",Implemented
+"Bán Hàng (POS) — HoaDonView.vue / useHoaDon.hoanTra()",F-POS-07,"Hoàn trả 1 dòng hàng — MỚI CHỈ đổi nhãn trên màn, không gọi API và không cộng lại tồn kho",Partial
+"Bán Hàng (POS) — HoaDonView.vue / HoaDonController /create-empty",F-POS-08,"Tạo hoá đơn mới (nhiều hoá đơn chờ song song)",Implemented
+"Bán Hàng (POS) — HoaDonView.vue",F-POS-09,"Chuyển qua lại giữa các hoá đơn chờ / đóng 1 hoá đơn chờ",Implemented
+"Bán Hàng (POS) — HoaDonView.vue / KhachHangController /search",F-POS-10,"Tìm khách hàng hội viên theo số điện thoại",Implemented
+"Bán Hàng (POS) — HoaDonView.vue / AddKhachHangModal.vue",F-POS-11,"Thêm nhanh khách hàng mới rồi gán vào hoá đơn",Implemented
+"Bán Hàng (POS) — HoaDonView.vue",F-POS-12,"Chọn khách vãng lai (Khách lẻ)",Implemented
+"Bán Hàng (POS) — HoaDonView.vue / HoaDonRepository.getVouchersActive + VoucherActiveView",F-POS-13,"Áp phiếu giảm giá đang hiệu lực (đã sửa 500 do map view vào entity)",Implemented
+"Bán Hàng (POS) — HoaDonView.vue / HoaDonController /{id}/thanh-toan",F-POS-14,"Thanh toán tiền mặt (trừ tồn, ghi lịch sử)",Implemented
+"Bán Hàng (POS) — HoaDonView.vue",F-POS-15,"Thanh toán chuyển khoản (hiển thị QR + xác nhận thủ công)",Implemented
+"Bán Hàng (POS) — HoaDonView.vue / utils/receipt.js",F-POS-16,"In phiếu tạm tính",Implemented
+"Bán Hàng (POS) — HoaDonView.vue / HoaDonController /{id}/huy",F-POS-17,"Huỷ hoá đơn",Implemented
+"Bán Hàng (POS) — tab Đặt hàng — HoaDonView.vue / HoaDonController /thanh-toan (giao hàng)",F-POS-18,"Tạo đơn giao hàng (thanh toán + trạng thái Chờ giao)",Implemented
+"Bán Hàng (POS) — tab Đặt hàng — HoaDonView.vue / HoaDonController /{id}/da-giao",F-POS-19,"Đánh dấu đã giao",Implemented
+"Bán Hàng (POS) — tab Đặt hàng — HoaDonView.vue / HoaDonController /{id}/tra-hang",F-POS-20,"Trả hàng (hoàn tồn kho)",Implemented
+"Bán Hàng (POS) — HoaDonView.vue / utils/csv.js",F-POS-21,"Xuất JSON danh mục sản phẩm bán tại quầy",Implemented
+"Bán Hàng (POS) — HoaDonView.vue",F-POS-22,"Import dòng hàng từ file JSON ({ma, soLuong}, đối chiếu tồn kho thật) — CSV/Excel chưa hỗ trợ",Implemented
+"Giao Hàng — DonHangView.vue / HoaDonController",F-DH-01,"Danh sách đơn theo tab trạng thái",Implemented
+"Giao Hàng — DonHangView.vue / HoaDonChiTietController /by-hoa-don",F-DH-02,"Xem chi tiết dòng hàng của đơn đang chọn",Implemented
+"Giao Hàng — DonHangView.vue / HoaDonController /{id}/da-giao",F-DH-03,"Đánh dấu đã giao",Implemented
+"Giao Hàng — DonHangView.vue / HoaDonController /{id}/tra-hang",F-DH-04,"Trả hàng",Implemented
+"Giao Hàng — DonHangView.vue / utils/receipt.js",F-DH-05,"In hoá đơn",Implemented
+"Giao Hàng — DonHangView.vue / AddKhachHangModal.vue",F-DH-06,"Thêm khách hàng nhanh từ màn giao hàng",Implemented
+"Đặt Trước — DatTruocView.vue / DatTruocController",F-DT-01,"Danh sách phiếu đặt trước theo tab trạng thái",Implemented
+"Đặt Trước — DatTruocView.vue / DatTruocController POST",F-DT-02,"Tạo phiếu đặt trước (từ storefront / chi tiết SP)",Implemented
+"Đặt Trước — DatTruocView.vue / DatTruocController /dem",F-DT-03,"Đếm số phiếu đặt trước theo biến thể",Implemented
+"Đặt Trước — DatTruocView.vue / DatTruocController /{id}/trang-thai",F-DT-04,"Đổi trạng thái phiếu (Chờ hàng / Đã có hàng / …)",Implemented
+"Đặt Trước — DatTruocView.vue / DatTruocController /{id}/chuyen-don",F-DT-05,"Chuyển phiếu đặt trước thành đơn hàng",Implemented
+"Đặt Trước — DatTruocView.vue / DatTruocController DELETE",F-DT-06,"Xoá / huỷ phiếu đặt trước",Implemented
+"Nhân Viên > tab Danh sách — NhanVienView.vue / NhanVienController",F-NV-01,"Danh sách nhân viên",Implemented
+"Nhân Viên > tab Danh sách — NhanVienView.vue / NhanVienController /search",F-NV-02,"Tìm kiếm nhân viên",Implemented
+"Nhân Viên > tab Danh sách — NhanVienView.vue / NhanVienController POST",F-NV-03,"Thêm nhân viên (vai trò lấy từ DB, có mật khẩu)",Implemented
+"Nhân Viên > tab Danh sách — NhanVienView.vue / NhanVienController PUT",F-NV-04,"Sửa nhân viên; để trống mật khẩu thì giữ nguyên mật khẩu cũ",Implemented
+"Nhân Viên > tab Danh sách — NhanVienView.vue / NhanVienController DELETE",F-NV-05,"Xoá nhân viên (xoá mềm)",Implemented
+"Nhân Viên > tab Phân quyền — PhanQuyenPanel.vue / NhanVienController /quyen",F-NV-06,"Ma trận phân quyền nhân viên × màn hình, lưu hàng loạt",Implemented
+"Nhân Viên > tab Phân quyền — PhanQuyenPanel.vue / NhanVienController /ap-template",F-NV-07,"Áp bộ quyền mặc định của vai trò cho 1 nhân viên",Implemented
+"Nhân Viên > tab Phân quyền — PhanQuyenPanel.vue",F-NV-08,"Vai trò Quản trị luôn toàn quyền (khoá ô tick)",Implemented
+"Nhân Viên > tab Vai trò — VaiTroPanel.vue / VaiTroController /{id}/quyen",F-NV-09,"Sửa template quyền theo vai trò",Implemented
+"Khách Hàng > tab Khách hàng — KhachHangView.vue / KhachHangController",F-KH-01,"Danh sách + tìm kiếm khách hàng",Implemented
+"Khách Hàng > tab Khách hàng — KhachHangView.vue / KhachHangController POST/PUT",F-KH-02,"Thêm / sửa khách hàng",Implemented
+"Khách Hàng > tab Khách hàng — KhachHangView.vue / KhachHangController DELETE",F-KH-03,"Xoá khách hàng (xoá mềm)",Implemented
+"Khách Hàng > tab Địa chỉ — KhachHangView.vue / DiaChiController",F-KH-04,"CRUD địa chỉ theo khách hàng",Implemented
+"Lịch Sử — LichSuView.vue / LichSuHoaDonController",F-LS-01,"Danh sách lịch sử hoá đơn",Implemented
+"Lịch Sử — LichSuView.vue / HoaDonChiTietController",F-LS-02,"Xem chi tiết 1 hoá đơn (dòng hàng, tổng tiền)",Implemented
+"Lịch Sử — LichSuView.vue / utils/receipt.js",F-LS-03,"In hoá đơn từ lịch sử",Implemented
+"Lịch Sử — LichSuView.vue / HoaDonController /{id}/da-giao",F-LS-04,"Đánh dấu Đã giao cho đơn Chờ giao",Implemented
+"Lịch Sử — LichSuView.vue / HoaDonController /{id}/tra-hang",F-LS-05,"Trả hàng từ lịch sử",Implemented
+"Bảo Hành — BaoHanhView.vue / BaoHanhController",F-BH-01,"Danh sách phiếu bảo hành theo tab / trạng thái xử lý",Implemented
+"Bảo Hành — BaoHanhView.vue / BaoHanhController POST",F-BH-02,"Thêm mới đơn bảo hành",Implemented
+"Bảo Hành — BaoHanhView.vue / BaoHanhController /{id}/trang-thai",F-BH-03,"Xác nhận xử lý / đổi trạng thái phiếu",Implemented
+"Bảo Hành — BaoHanhView.vue / BaoHanhController DELETE",F-BH-04,"Huỷ phiếu bảo hành",Implemented
+"Bảo Hành — BaoHanhView.vue / utils/warranty.js",F-BH-05,"In phiếu bảo hành",Implemented
+"Bảo Hành — BaoHanhView.vue",F-BH-06,"Tìm kiếm theo mã BH / serial / model (nút Tìm kiếm + Enter, nút Đặt lại)",Implemented
+"Bảo Hành — BaoHanhView.vue / utils/csv.js",F-BH-07,"Export CSV danh sách bảo hành đang hiển thị (UTF-8 BOM cho Excel)",Implemented
+"Bảo Hành — BaoHanhView.vue / utils/csv.js",F-BH-08,"Import CSV danh sách bảo hành, báo rõ số dòng thành công và dòng lỗi",Implemented
+"Bảo Hành — BaoHanhView.vue / DemoDataBanner.vue",F-BH-09,"Fallback mock khi API lỗi — hiện banner đỏ; danh sách rỗng thật không còn bị thay bằng mock",Implemented
+"Khuyến Mãi — PhieuGiamGiaView.vue / PhieuGiamGiaController",F-PGG-01,"Danh sách + tìm kiếm phiếu giảm giá",Implemented
+"Khuyến Mãi — PhieuGiamGiaView.vue / PhieuGiamGiaController POST/PUT",F-PGG-02,"Thêm / sửa phiếu giảm giá (loại, giá trị, hạn dùng)",Implemented
+"Khuyến Mãi — PhieuGiamGiaView.vue / PhieuGiamGiaController DELETE",F-PGG-03,"Xoá phiếu giảm giá",Implemented
+"Hệ Thống — HeThongView.vue",F-HT-01,"Xem thông tin phiên đăng nhập + phiên bản ứng dụng",Implemented
+"Hệ Thống — HeThongView.vue / utils/logger.js",F-HT-02,"Tải file log JSON của client",Implemented
+"Hệ Thống — HeThongView.vue / utils/logger.js",F-HT-03,"Xoá log client (có xác nhận)",Implemented
+"Toàn hệ thống — utils/logger.js",F-SYS-01,"Ring-buffer log client trong localStorage (tối đa 400 bản ghi)",Implemented
+"Toàn hệ thống — utils/logger.js",F-SYS-02,"Che thông tin nhạy cảm (matKhau/password/token) trước khi ghi log",Implemented
+"Toàn hệ thống — utils/logger.js / ClientLogController",F-SYS-03,"Tự đẩy log client lên backend mỗi 20s + khi rời trang (sendBeacon)",Implemented
+"Toàn hệ thống — logback-spring.xml",F-SYS-04,"Ghi log server + client vào cùng file xoay vòng logs/bshoes.log, encoder UTF-8 để đọc được tiếng Việt",Implemented
+"Toàn hệ thống — RequestLoggingFilter",F-SYS-05,"Log mọi request HTTP (method, path, status, thời gian)",Implemented
+"Toàn hệ thống — GlobalExceptionHandler",F-SYS-06,"Trả lỗi JSON thống nhất cho mọi exception",Implemented
+"Toàn hệ thống — api/http.js",F-SYS-07,"Interceptor axios ghi log mọi lỗi API",Implemented
+"Toàn hệ thống — useCrud.js + các view",F-SYS-08,"Toast lỗi thật khi lưu thất bại (không báo ""Đã lưu"" giả)",Implemented
+"Toàn hệ thống — useCrud.js + DemoDataBanner.vue",F-SYS-09,"Cờ isDemo khi fallback mock, mọi màn danh sách hiện banner đỏ thay vì im lặng",Implemented
+"Toàn hệ thống — PingController",F-SYS-10,"Endpoint /api/ping kiểm tra sống + /api/ping/echo",Implemented
+"Toàn hệ thống — WebConfig",F-SYS-11,"Phục vụ file ảnh đã upload qua /api/uploads/**",Implemented
+"Toàn hệ thống — pom.xml:37-40 (starter-security đang bị comment)",F-SYS-13,"Spring Security — KHÔNG dùng; bảo vệ API làm bằng servlet filter thuần (F-AUTH-07)",Legacy
+"Toàn hệ thống — LogLocationReporter",F-SYS-12,"In đường dẫn thư mục log khi khởi động",Implemented
+"Legacy — PageController + templates/*.html",F-LEG-01,"Các trang Thymeleaf cũ (/,/login,/san-pham,…) — đã bị SPA Vue thay thế",Legacy
+"Style Guide — StyleGuideView.vue",F-DEV-01,"Trang style guide design system (chỉ dùng cho dev)",Implemented
+"Toàn hệ thống — security/SessionRegistry.java",F-AUTH-10,"Phiên đăng nhập bằng token trong bộ nhớ (TTL 8 giờ, tự dọn phiên hết hạn)",Implemented
+"Toàn hệ thống — api/http.js",F-AUTH-11,"Tự gắn header X-Auth-Token vào mọi request API",Implemented
+"Toàn hệ thống — api/http.js",F-AUTH-12,"Token hết hạn (401) → xoá phiên và đưa về /login?expired=1 (bỏ qua cho chế độ demo)",Implemented
+"Login/Logout — AuthController /logout, /me",F-AUTH-13,"Đăng xuất huỷ token phía server; /me kiểm tra token còn hiệu lực",Implemented
+"Toàn hệ thống — utils/csv.js",F-SYS-14,"Tiện ích CSV/JSON dùng chung (BOM UTF-8, parse ô có dấu phẩy/nháy kép)",Implemented
+"Bán Hàng (POS) — utils/voucher.js tinhGiamGia()",F-POS-23,"Tính tiền giảm khớp dbo.tinh_tien_giam_gia; giảm tối đa NULL/0 = KHÔNG giới hạn",Implemented
+"DB — sqlBshoes.sql §2.16b",F-PGG-04,"Tự sinh phiếu giảm giá cho cả 2025-2030 (72 phiếu tháng + 6 phiếu năm), chạy lại không trùng",Implemented
+"DB — sqlBshoes.sql §3.2 tinh_tien_giam_gia",F-PGG-05,"Hàm tính giảm chịu được NULL, không giảm quá hoá đơn, giảm tối đa NULL/0 = không giới hạn",Implemented
+"Nhân Viên — NhanVienRepository fetch join + @Transactional",F-NV-10,"Đọc danh sách/chi tiết nhân viên không còn LazyInitializationException",Implemented
+"Toàn hệ thống — application.properties",F-SYS-15,"GIỮ pin hibernate.dialect — bỏ đi thì app KHÔNG khởi động được khi SQL Server chưa chạy (đã thử và phải revert)",Implemented
+"Bán Hàng (POS) — VoucherRules.java + HoaDonServiceImpl.thanhToan",F-POS-24,"Kiểm tra hiệu lực phiếu giảm giá lúc THANH TOÁN (hết hạn / bị tắt / đã xoá / hết lượt) và trừ so_luong",Implemented
+"Giỏ hàng — useCart.readCart()",F-CART-09,"Giỏ hàng hỏng trong localStorage không làm chết app; bỏ dòng thiếu id / số lượng sai",Implemented
+"Login — useAuth.readUser()",F-AUTH-14,"Phiên hỏng trong localStorage không làm chết app, chỉ coi như chưa đăng nhập",Implemented
+"Toàn hệ thống — utils/format.js",F-SYS-16,"Định dạng tiền VNĐ đúng cả khi giá trị là chuỗi số",Implemented
+"Toàn hệ thống — config/screens.js + router",F-SYS-17,"Khoá màn hình trong SCREENS luôn khớp route và không lọt vào danh sách công khai",Implemented
+"Toàn hệ thống — vitest.setup.js",F-SYS-18,"localStorage giả lập thật trong test (trước đây là stub no-op nên không test được gì lưu trữ)",Implemented
+"Toàn hệ thống — WebConfig.addCorsMappings",F-SYS-19,"CORS cho /api/** — chỉ mở cho origin dev đã khai báo, cho phép header X-Auth-Token, không cho credentials",Implemented
+"Điều hướng — AppSidebar.vue + AppShell.vue",F-NAV-01,"Sidebar chỉ hiện những màn hình nhân viên có quyền",Implemented
+"Điều hướng — useLayout.js + AppHeader.vue",F-NAV-02,"Thu gọn / mở rộng sidebar, header và sidebar đồng bộ nhau",Implemented
+"Toàn hệ thống — useToast.js + ToastHost.vue",F-SYS-20,"Hệ thống thông báo toast dùng chung (success / warning / danger / info)",Implemented
+"Toàn hệ thống — AppModal.vue",F-SYS-21,"Đóng modal an toàn khi rời màn: không lỗi JS, tự dọn lớp phủ xám",Implemented

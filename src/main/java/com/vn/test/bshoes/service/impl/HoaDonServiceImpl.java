@@ -20,7 +20,9 @@ import com.vn.test.bshoes.repository.LichSuHoaDonRepository;
 import com.vn.test.bshoes.repository.NhanVienRepository;
 import com.vn.test.bshoes.repository.PhieuGiamGiaRepository;
 import com.vn.test.bshoes.repository.SanPhamChiTietRepository;
+import com.vn.test.bshoes.repository.VoucherActiveView;
 import com.vn.test.bshoes.service.HoaDonService;
+import com.vn.test.bshoes.service.VoucherRules;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -124,6 +126,23 @@ public class HoaDonServiceImpl implements HoaDonService {
         return dto;
     }
 
+    /** Same DTO, built from the active-vouchers view projection. */
+    private PhieuGiamGiaDto voucherViewToDto(VoucherActiveView v) {
+        PhieuGiamGiaDto dto = new PhieuGiamGiaDto();
+        dto.setId(v.getId_phieu_giam_gia());
+        dto.setMa(v.getMa_phieu_giam());
+        dto.setTen(v.getTen_phieu_giam());
+        dto.setLoai(v.getLoai_giam_gia());
+        dto.setGiaTri(v.getGia_tri_giam());
+        dto.setDonToiThieu(v.getDon_toi_thieu());
+        dto.setGiamToiDa(v.getGiam_toi_da());
+        dto.setSoLuong(v.getSo_luong());
+        dto.setBatDau(v.getThoi_gian_bat_dau() != null ? v.getThoi_gian_bat_dau().toString() : null);
+        dto.setKetThuc(v.getThoi_gian_ket_thuc() != null ? v.getThoi_gian_ket_thuc().toString() : null);
+        dto.setTrangThai(v.getTrang_thai());
+        return dto;
+    }
+
     // ------------------------------------------------------------------ reads
 
     @Override
@@ -151,6 +170,8 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .map(s -> {
                     PosSanPhamDto dto = new PosSanPhamDto();
                     dto.setId(s.getId());
+                    dto.setMa(s.getMaSanPhamChiTiet());
+                    dto.setIdSanPham(s.getIdSanPham() != null ? s.getIdSanPham().getId() : null);
                     dto.setTen(s.getIdSanPham() != null ? s.getIdSanPham().getTenSanPham() : null);
                     dto.setMau(s.getIdMauSac() != null ? s.getIdMauSac().getTenMauSac() : null);
                     dto.setSize(s.getIdKichCo() != null ? s.getIdKichCo().getTenKichCo() : null);
@@ -166,7 +187,7 @@ public class HoaDonServiceImpl implements HoaDonService {
     @Transactional(readOnly = true)
     public List<PhieuGiamGiaDto> vouchersActive() {
         return hoaDonRepository.getVouchersActive().stream()
-                .map(this::voucherToDto)
+                .map(this::voucherViewToDto)
                 .toList();
     }
 
@@ -319,12 +340,28 @@ public class HoaDonServiceImpl implements HoaDonService {
         BigDecimal banDau = sumLines(lines);
         BigDecimal giam = BigDecimal.ZERO;
         if (req.getIdPhieuGiamGia() != null) {
-            PhieuGiamGia pgg = phieuGiamGiaRepository.findById(req.getIdPhieuGiamGia()).orElse(null);
-            if (pgg != null) {
-                h.setIdPhieuGiamGia(pgg);
-                BigDecimal d = hoaDonRepository.tinhGiamGia(pgg.getId(), banDau);
-                if (d != null) giam = d;
+            PhieuGiamGia pgg = phieuGiamGiaRepository.findById(req.getIdPhieuGiamGia())
+                    .orElseThrow(() -> new IllegalArgumentException("Phiếu giảm giá không tồn tại."));
+
+            // Re-check validity at APPLY time, not just at list time: the client
+            // posts a raw id, and the voucher may have expired, been switched
+            // off, been soft-deleted or run out of uses since the list loaded.
+            String loi = VoucherRules.validate(pgg.getTrangThai(), pgg.getTrangThaiXoa(),
+                    pgg.getThoiGianBatDau(), pgg.getThoiGianKetThuc(),
+                    pgg.getSoLuong(), Instant.now());
+            if (loi != null) {
+                throw new IllegalStateException(loi);
             }
+
+            // Consume one use. Conditional on so_luong > 0 so two tills paying at
+            // the same moment cannot both take the last one.
+            if (pgg.getSoLuong() != null && phieuGiamGiaRepository.consumeOne(pgg.getId()) == 0) {
+                throw new IllegalStateException("Phiếu giảm giá đã hết lượt sử dụng.");
+            }
+
+            h.setIdPhieuGiamGia(pgg);
+            BigDecimal d = hoaDonRepository.tinhGiamGia(pgg.getId(), banDau);
+            if (d != null) giam = d;
         }
         BigDecimal phiShip = req.getPhiShip() != null ? req.getPhiShip() : BigDecimal.ZERO;
         h.setPhiShip(phiShip);

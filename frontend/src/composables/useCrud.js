@@ -14,13 +14,19 @@ import { ref, computed, onMounted } from 'vue'
 export function useCrud(api, seed, { searchKeys = [] } = {}) {
   const rows = ref([])
   const keyword = ref('')
+  // True while `rows` holds the offline mock seed rather than server data, so
+  // the view can say so out loud (DemoDataBanner) instead of silently showing
+  // fake rows that look exactly like real ones.
+  const isDemo = ref(false)
 
   async function load() {
     try {
       rows.value = await api.findAll()
+      isDemo.value = false
     } catch (e) {
       console.warn('API offline, using mock', e)
       rows.value = JSON.parse(JSON.stringify(seed))
+      isDemo.value = true
     }
   }
   onMounted(load)
@@ -46,7 +52,7 @@ export function useCrud(api, seed, { searchKeys = [] } = {}) {
     await load()
   }
 
-  return { rows, keyword, filtered, add, update, remove, load }
+  return { rows, keyword, filtered, add, update, remove, load, isDemo }
 }
 
 // Extracts a human-readable message from an API error, in priority order:

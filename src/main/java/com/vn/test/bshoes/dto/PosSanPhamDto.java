@@ -11,6 +11,10 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class PosSanPhamDto {
     private Integer id;              // id_san_pham_chi_tiet (biến thể)
+    // Mã thật của biến thể (ma_san_pham_chi_tiet) — dùng cho quét QR / nhập mã.
+    // Trước đây DTO không có trường này nên POS tự bịa 'SP1', 'SP2'... rồi tra
+    // /san-pham-chi-tiet/by-ma/sp1 và luôn nhận 404.
+    private String ma;
     private Integer idSanPham;       // sản phẩm cha — storefront cần để mở trang chi tiết
     private String ten;
     private String mau;

@@ -111,6 +111,54 @@ describe('useCrud write contract', () => {
   })
 })
 
+// The mock fallback above is what makes a broken screen look like a working
+// one, so `isDemo` is the flag the views use to say it out loud. If it ever
+// stops tracking the fallback, that warning silently disappears again.
+describe('useCrud isDemo flag', () => {
+  it('is false after a successful load', async () => {
+    const api = fakeApi({ findAll: vi.fn().mockResolvedValue([{ id: 1 }]) })
+    const { load, isDemo } = useCrud(api, [])
+
+    await load()
+
+    expect(isDemo.value).toBe(false)
+  })
+
+  it('is true once load() has fallen back to the mock seed', async () => {
+    const api = fakeApi({ findAll: vi.fn().mockRejectedValue(new Error('offline')) })
+    const { load, isDemo } = useCrud(api, [{ id: 1, ten: 'Mock' }])
+
+    await load()
+
+    expect(isDemo.value).toBe(true)
+  })
+
+  it('clears again when a later load() succeeds', async () => {
+    const findAll = vi.fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce([{ id: 1 }])
+    const { load, isDemo } = useCrud(fakeApi({ findAll }), [{ id: 9 }])
+
+    await load()
+    expect(isDemo.value).toBe(true)
+
+    await load()
+    expect(isDemo.value).toBe(false)
+  })
+
+  it('is true after a failed reload even though rows were real before', async () => {
+    const findAll = vi.fn()
+      .mockResolvedValueOnce([{ id: 1 }])
+      .mockRejectedValueOnce(new Error('backend died'))
+    const { load, isDemo } = useCrud(fakeApi({ findAll }), [{ id: 9 }])
+
+    await load()
+    await load()
+
+    expect(isDemo.value).toBe(true)
+  })
+})
+
 describe('crudErrorMessage', () => {
   it('returns the backend-provided response message when present', () => {
     const err = { response: { data: { message: 'Mã đã tồn tại' } }, message: 'Request failed with status code 400' }

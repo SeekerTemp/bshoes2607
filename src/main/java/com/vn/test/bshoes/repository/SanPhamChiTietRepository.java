@@ -21,6 +21,18 @@ public interface SanPhamChiTietRepository extends JpaRepository<SanPhamChiTiet, 
     @Query("select s from SanPhamChiTiet s where s.trangThai = true and s.soLuongTon > 0")
     List<SanPhamChiTiet> findAvailable();
 
+    /** Thùng rác biến thể — đối xứng với SanPhamRepository.findRecycle() cho sản phẩm. */
+    @Query("select s from SanPhamChiTiet s where s.trangThaiXoa = true")
+    List<SanPhamChiTiet> findRecycle();
+
+    /**
+     * Khôi phục biến thể đã ẩn. Bulk update cùng lý do với softDeleteById: dòng dữ liệu
+     * cũ thiếu màu / kích cỡ / đơn giá vẫn phải khôi phục được để rồi sửa cho đúng.
+     */
+    @Modifying
+    @Query("update SanPhamChiTiet s set s.trangThaiXoa = false, s.ngayCapNhat = CURRENT_TIMESTAMP where s.id = :id")
+    int restoreById(@Param("id") int id);
+
     /**
      * Storefront listing: every variant on sale, including the ones with no stock —
      * those are what customers đặt trước (pre-order).
@@ -46,6 +58,18 @@ public interface SanPhamChiTietRepository extends JpaRepository<SanPhamChiTiet, 
     @Query("update SanPhamChiTiet s set s.soLuongTon = s.soLuongTon - :n, s.ngayCapNhat = CURRENT_TIMESTAMP " +
            "where s.id = :id and s.soLuongTon >= :n")
     int decrementStock(@Param("id") int id, @Param("n") int n);
+
+    /**
+     * Ẩn (xóa mềm) một biến thể bằng bulk update, KHÔNG qua repo.save().
+     *
+     * Cố ý như vậy: entity giờ có Bean Validation (phải có màu, kích cỡ, đơn giá > 0),
+     * mà validation chạy lúc flush nên nó áp cho cả những dòng cũ được tạo từ trước khi
+     * có ràng buộc. Nếu ẩn cũng đi qua save() thì đúng những dòng dữ liệu hỏng — thứ
+     * người dùng muốn dọn nhất — lại là thứ không thể ẩn. Dọn dẹp phải luôn thực hiện được.
+     */
+    @Modifying
+    @Query("update SanPhamChiTiet s set s.trangThaiXoa = true, s.ngayCapNhat = CURRENT_TIMESTAMP where s.id = :id")
+    int softDeleteById(@Param("id") int id);
 
     /** Atomically return {@code n} units to stock (invoice line removed / cancelled). */
     @Modifying

@@ -5,15 +5,17 @@ import PageHeader from '../components/ui/PageHeader.vue'
 import AppSelect from '../components/ui/AppSelect.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import QrScanner from '../components/ui/QrScanner.vue'
+import DemoDataBanner from '../components/ui/DemoDataBanner.vue'
 import { useHoaDon } from '../composables/useHoaDon'
 import { useToast } from '../composables/useToast'
 import { vnd } from '../utils/format'
 import { hoaDonApi } from '../api/hoaDon'
 import { khachHangApi } from '../api/khachHang'
 import { printReceipt as printReceiptDoc } from '../utils/receipt'
+import { downloadJson, stamp } from '../utils/csv'
 
 const {
-  sanPham, khachHangOptions, voucherOptions, hinhThucOptions,
+  sanPham, khachHangOptions, voucherOptions, hinhThucOptions, isDemo, load,
   keyword, ketQua, orderTab, leftTab,
   hoaDons, activeId, active, createHoaDon, switchHoaDon, removeHoaDon,
   tongHoaDonHomNay, tongTienHomNay,
@@ -23,6 +25,57 @@ const {
   thanhToan, checkout,
 } = useHoaDon()
 const { notify } = useToast()
+
+// ---- xuất / nhập JSON danh mục sản phẩm bán tại quầy ----
+function xuatJsonSanPham() {
+  if (!sanPham.value.length) { notify('Không có sản phẩm nào để xuất', 'warning'); return }
+  const ok = downloadJson(`pos-san-pham-${stamp()}.json`, {
+    exportedAt: new Date().toISOString(),
+    count: sanPham.value.length,
+    sanPham: sanPham.value,
+  })
+  notify(ok ? `Đã xuất ${sanPham.value.length} sản phẩm` : 'Không xuất được file', ok ? 'success' : 'warning')
+}
+
+const jsonInput = ref(null)
+function triggerNhapJson() { jsonInput.value?.click() }
+
+// Adds cart lines from a JSON list of { ma, soLuong }. Each code is resolved
+// against the live catalogue, so an import can never invent stock that is not
+// really there.
+async function nhapJsonSanPham(ev) {
+  const file = ev.target.files?.[0]
+  if (!file) return
+  ev.target.value = ''
+
+  let items
+  try {
+    const parsed = JSON.parse(await file.text())
+    items = Array.isArray(parsed) ? parsed : parsed?.sanPham
+  } catch (e) {
+    notify('File JSON không hợp lệ', 'warning')
+    return
+  }
+  if (!Array.isArray(items) || !items.length) { notify('File JSON không có sản phẩm nào', 'warning'); return }
+
+  let ok = 0
+  const loi = []
+  for (const [i, item] of items.entries()) {
+    const ma = String(item?.ma ?? '').trim()
+    const p = sanPham.value.find(x => String(x.ma) === ma || String(x.id) === ma)
+    if (!p) { loi.push(`mục ${i + 1}: không tìm thấy mã ${ma || '(trống)'}`); continue }
+    if (p.ton <= 0) { loi.push(`mục ${i + 1}: ${p.ten} đã hết hàng`); continue }
+    const lan = Math.max(1, Number(item?.soLuong) || 1)
+    try {
+      for (let n = 0; n < lan; n++) await addLine(p)
+      ok++
+    } catch (e) {
+      loi.push(`mục ${i + 1} (${p.ten}): ${e?.response?.data?.message || e?.message || 'lỗi'}`)
+    }
+  }
+  if (ok) notify(`Đã thêm ${ok}/${items.length} dòng hàng từ file`, 'success')
+  if (loi.length) notify(`${loi.length} mục lỗi — ${loi.slice(0, 3).join('; ')}`, 'warning')
+}
 
 const showScanner = ref(false)
 async function onScan(text) {
@@ -216,6 +269,7 @@ function taoHoaDon() {
 
 <template>
   <AppShell>
+    <DemoDataBanner v-if="isDemo" what="danh mục sản phẩm bán tại quầy" @retry="load" />
     <PageHeader title="Bán hàng tại quầy" />
 
     <div class="pos-grid">
@@ -398,8 +452,8 @@ function taoHoaDon() {
               <button class="btn btn-success w-100" @click="taoHoaDon">Tạo hóa đơn</button>
               <button class="btn btn-success w-100" :disabled="gio.length === 0" @click="inTamTinh">Phiếu tạm tính</button>
               <button class="btn btn-outline-danger w-100" @click="huy">Hủy</button>
-              <button class="btn btn-light w-100" disabled>Xuất json thông tin sản phẩm</button>
-              <button class="btn btn-light w-100" disabled>Import sản phẩm bằng list json/csv/excel</button>
+              <button class="btn btn-light w-100" @click="xuatJsonSanPham">Xuất json thông tin sản phẩm</button>
+              <button class="btn btn-light w-100" @click="triggerNhapJson">Import sản phẩm bằng list json</button>
             </div>
           </template>
 
@@ -435,8 +489,8 @@ function taoHoaDon() {
               <button class="btn btn-success w-100" :disabled="gio.length === 0 || paying" @click="giaoHang">Giao hàng (thanh toán)</button>
               <button class="btn btn-success w-100" @click="daGiaoAction">Đã giao</button>
               <button class="btn btn-outline-danger w-100" @click="traHangAction">Hoàn trả</button>
-              <button class="btn btn-light w-100" disabled>Xuất json thông tin sản phẩm</button>
-              <button class="btn btn-light w-100" disabled>Import sản phẩm bằng list json/csv/excel</button>
+              <button class="btn btn-light w-100" @click="xuatJsonSanPham">Xuất json thông tin sản phẩm</button>
+              <button class="btn btn-light w-100" @click="triggerNhapJson">Import sản phẩm bằng list json</button>
             </div>
           </template>
         </div>
@@ -493,6 +547,7 @@ function taoHoaDon() {
         </div>
       </div>
     </div>
+    <input ref="jsonInput" type="file" accept=".json,application/json" class="d-none" @change="nhapJsonSanPham">
   </AppShell>
 </template>
 

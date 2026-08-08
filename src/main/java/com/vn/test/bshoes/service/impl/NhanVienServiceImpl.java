@@ -45,40 +45,72 @@ public class NhanVienServiceImpl implements NhanVienService {
         );
     }
 
+    /**
+     * Vai trò là nguồn sự thật duy nhất cho chức vụ. Form nhân viên trước đây có thêm
+     * một ô text "Chức vụ" tự do bên cạnh dropdown vai trò, nên hai trường cùng nghĩa
+     * dễ lệch nhau. Nay chỉ còn dropdown, và chuc_vu được suy ra từ tên vai trò để cột
+     * cũ trong DB vẫn nhất quán.
+     */
     private void applyVaiTro(NhanVienDto dto, NhanVien e) {
         if (dto.getIdVaiTro() != null) {
             e.setIdVaiTro(vaiTroRepository.findById(dto.getIdVaiTro()).orElse(null));
         } else {
             e.setIdVaiTro(null);
         }
+        e.setChucVu(e.getIdVaiTro() != null ? e.getIdVaiTro().getTenVaiTro() : null);
     }
 
+    // The three reads below are @Transactional(readOnly = true) AND use the
+    // fetch-join queries: toDto() dereferences the LAZY idVaiTro proxy, and with
+    // spring.jpa.open-in-view=false that blew up outside a session
+    // (LazyInitializationException -> 500 on GET /api/nhan-vien).
     @Override
+    @Transactional(readOnly = true)
     public List<NhanVienDto> findAll() {
         return repo.findActive().stream().map(this::toDto).toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public NhanVienDto findById(int id) {
-        return repo.findById(id).map(this::toDto).orElse(null);
+        NhanVien e = repo.findWithVaiTro(id);
+        return e != null ? toDto(e) : null;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<NhanVienDto> search(String ten, String gioiTinh) {
         String gt = StringUtils.hasText(gioiTinh) ? gioiTinh : "all";
         return repo.search(ten, gt).stream().map(this::toDto).toList();
     }
 
+    /**
+     * Tài khoản phải là duy nhất — cột tai_khoan KHÔNG có ràng buộc unique trong DDL,
+     * và findByTaiKhoanAndMatKhau() sẽ trả về một bản ghi bất kỳ nếu có trùng, tức là
+     * đăng nhập vào nhầm người. Chỉ chặn được ở đây.
+     *
+     * Trước đây existsByTaiKhoan() có trong repository nhưng không nơi nào gọi. Việc
+     * inspector cho phép "Tạo mới" từ một nhân viên đang chọn khiến trùng tài khoản
+     * trở thành thao tác một-cú-nhấp, nên bỏ trống chỗ này không còn chấp nhận được.
+     */
+    private void kiemTraTaiKhoanTrung(String taiKhoan, Integer idHienTai) {
+        if (!StringUtils.hasText(taiKhoan)) return;
+        NhanVien trung = repo.findByTaiKhoan(taiKhoan);
+        if (trung != null && !Objects.equals(trung.getId(), idHienTai)) {
+            throw new IllegalArgumentException("Tài khoản \"" + taiKhoan + "\" đã tồn tại, chọn tên khác");
+        }
+    }
+
     @Override
     @Transactional
     public NhanVienDto create(NhanVienDto dto) {
+        kiemTraTaiKhoanTrung(dto.getTaiKhoan(), null);
         NhanVien e = new NhanVien();
         e.setTenNhanVien(dto.getTen());
         e.setTaiKhoan(dto.getTaiKhoan());
         e.setEmail(dto.getEmail());
         e.setSoDienThoai(dto.getSdt());
         e.setCccd(dto.getCccd());
-        e.setChucVu(dto.getChucVu());
         e.setGioiTinh(dto.getGioiTinh());
         e.setMatKhau(dto.getMatKhau());
         e.setTrangThai(dto.getTrangThai() == null ? Boolean.TRUE : dto.getTrangThai());
@@ -96,6 +128,7 @@ public class NhanVienServiceImpl implements NhanVienService {
     @Override
     @Transactional
     public NhanVienDto update(NhanVienDto dto) {
+        kiemTraTaiKhoanTrung(dto.getTaiKhoan(), dto.getId());
         NhanVien e = repo.findById(dto.getId()).orElseThrow();
         Integer vaiTroCu = e.getIdVaiTro() != null ? e.getIdVaiTro().getId() : null;
         e.setTenNhanVien(dto.getTen());
@@ -103,7 +136,6 @@ public class NhanVienServiceImpl implements NhanVienService {
         e.setEmail(dto.getEmail());
         e.setSoDienThoai(dto.getSdt());
         e.setCccd(dto.getCccd());
-        e.setChucVu(dto.getChucVu());
         e.setGioiTinh(dto.getGioiTinh());
         if (org.springframework.util.StringUtils.hasText(dto.getMatKhau())) e.setMatKhau(dto.getMatKhau());
         if (dto.getTrangThai() != null) e.setTrangThai(dto.getTrangThai());

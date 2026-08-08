@@ -7,13 +7,17 @@ export function useLichSu() {
   const rows = ref([])
   const keyword = ref('')
   const trangThai = ref('')
+  // See useCrud(): true while showing the offline mock seed instead of real data.
+  const isDemo = ref(false)
 
   async function load() {
     try {
       rows.value = await lichSuApi.findAll()
+      isDemo.value = false
     } catch (e) {
       console.warn('API offline, using mock', e)
       rows.value = JSON.parse(JSON.stringify(lichSu))
+      isDemo.value = true
     }
   }
   onMounted(load)
@@ -26,5 +30,5 @@ export function useLichSu() {
     )
   })
 
-  return { rows, keyword, trangThai, filtered, load }
+  return { rows, keyword, trangThai, filtered, load, isDemo }
 }

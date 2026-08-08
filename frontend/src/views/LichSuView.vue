@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import AppShell from '../components/layout/AppShell.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
+import DemoDataBanner from '../components/ui/DemoDataBanner.vue'
 import SearchBar from '../components/ui/SearchBar.vue'
 import AppSelect from '../components/ui/AppSelect.vue'
 import DataTable from '../components/ui/DataTable.vue'
@@ -15,7 +16,7 @@ import { hoaDonApi } from '../api/hoaDon'
 import { vnd } from '../utils/format'
 import { printReceipt } from '../utils/receipt'
 
-const { keyword, trangThai, filtered, load } = useLichSu()
+const { keyword, trangThai, filtered, load, isDemo } = useLichSu()
 const { notify } = useToast()
 const { user } = useAuth()
 
@@ -90,6 +91,7 @@ function inHoaDon() {
 
 <template>
   <AppShell>
+    <DemoDataBanner v-if="isDemo" what="lịch sử hoá đơn" @retry="load" />
     <PageHeader title="Lịch sử hoá đơn" />
 
     <div class="d-flex gap-2 mb-3">

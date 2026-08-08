@@ -5,6 +5,7 @@ import AppModal from '../components/ui/AppModal.vue'
 import ConfirmDialog from '../components/ui/ConfirmDialog.vue'
 import FormField from '../components/ui/FormField.vue'
 import AppSelect from '../components/ui/AppSelect.vue'
+import DemoDataBanner from '../components/ui/DemoDataBanner.vue'
 import { baoHanhApi } from '../api/baoHanh'
 import { khachHangApi } from '../api/khachHang'
 import { nhanVienApi } from '../api/nhanVien'
@@ -13,11 +14,17 @@ import { crudErrorMessage } from '../composables/useCrud'
 import { vnd } from '../utils/format'
 import { printHtml } from '../utils/receipt'
 import { buildWarrantyHtml } from '../utils/warranty'
+import { buildCsv, parseCsv, downloadText, stamp } from '../utils/csv'
 
 const { notify } = useToast()
 
+// `kwInput` is what the user is typing; `kw` is what the list is filtered by.
+// Keeping them separate is what gives the "Tìm kiếm" button a real job.
+const kwInput = ref('')
 const kw = ref(''); const proc = ref('all'); const tab = ref('all'); const sel = ref(null)
 const rows = ref([])
+// True while `rows` holds the local mock array instead of server data.
+const isDemo = ref(false)
 const steps = ['Xác thực SP', 'Chẩn đoán', 'Ước tính chi phí', 'Xác nhận sửa']
 const statuses = ['Chưa xử lý', 'Đã chẩn đoán', 'Đang xử lý', 'Đã xử lý', 'Đã thu phí', 'Đã trả']
 const tabs = [
@@ -60,10 +67,14 @@ function fmtDate(s) { return s ? String(s).slice(0, 10) : '—' }
 async function load() {
   try {
     const data = await baoHanhApi.findAll()
-    rows.value = (data && data.length) ? data : mock
+    // An empty list from a healthy backend is real data, not a reason to show
+    // fake rows — only a failed call falls back to the mock.
+    rows.value = data || []
+    isDemo.value = false
   } catch (e) {
     console.warn('API offline, using mock warranty', e)
-    rows.value = mock
+    rows.value = JSON.parse(JSON.stringify(mock))
+    isDemo.value = true
   }
   sel.value = rows.value[0] || null
 }
@@ -140,6 +151,94 @@ async function doDeleteSel() {
   }
 }
 
+// --- Tìm kiếm ---
+function timKiem() {
+  kw.value = kwInput.value.trim()
+  notify(`Tìm thấy ${filtered.value.length} đơn bảo hành`, filtered.value.length ? 'info' : 'warning')
+}
+function datLai() {
+  kwInput.value = ''
+  kw.value = ''
+}
+
+// --- Export / Import CSV ---
+const CSV_COLUMNS = [
+  { key: 'ma', label: 'ma' },
+  { key: 'serial', label: 'serial' },
+  { key: 'model', label: 'model' },
+  { key: 'mauSize', label: 'mauSize' },
+  { key: 'tenKH', label: 'tenKH' },
+  { key: 'sdt', label: 'sdt' },
+  { key: 'maHD', label: 'maHD' },
+  { key: 'loai', label: 'loai' },
+  { key: 'donVi', label: 'donVi' },
+  { key: 'moTa', label: 'moTa' },
+  { key: 'chiPhi', label: 'chiPhi' },
+  { key: 'thayLinhKien', label: 'thayLinhKien', get: (r) => (r.thayLinhKien ? 'true' : 'false') },
+  { key: 'batDau', label: 'batDau', get: (r) => fmtDate(r.batDau) },
+  { key: 'hetHan', label: 'hetHan', get: (r) => fmtDate(r.hetHan) },
+  { key: 'trangThai', label: 'trangThai' },
+]
+
+// Exports what is currently on screen (after tab / trạng thái / từ khoá filters),
+// which is what a user means by "export this list".
+function exportCsv() {
+  if (!filtered.value.length) { notify('Không có dòng nào để xuất', 'warning'); return }
+  const ok = downloadText(`bao-hanh-${stamp()}.csv`, buildCsv(filtered.value, CSV_COLUMNS))
+  notify(ok ? `Đã xuất ${filtered.value.length} đơn bảo hành` : 'Không xuất được file', ok ? 'success' : 'warning')
+}
+
+const fileInput = ref(null)
+function triggerImport() { fileInput.value?.click() }
+
+async function importCsv(ev) {
+  const file = ev.target.files?.[0]
+  if (!file) return
+  ev.target.value = ''
+
+  let records
+  try {
+    records = parseCsv(await file.text())
+  } catch (e) {
+    notify('Không đọc được file CSV', 'warning')
+    return
+  }
+  if (!records.length) { notify('File CSV không có dòng dữ liệu', 'warning'); return }
+
+  let ok = 0
+  const loi = []
+  for (const [i, r] of records.entries()) {
+    if (!r.serial && !r.model) { loi.push(`dòng ${i + 2}: thiếu serial và model`); continue }
+    try {
+      await baoHanhApi.create({
+        serial: r.serial || '',
+        model: r.model || '',
+        mauSize: r.mauSize || '',
+        tenKH: r.tenKH || '',
+        sdt: r.sdt || '',
+        maHD: r.maHD || '',
+        loai: r.loai || '',
+        donVi: r.donVi || '',
+        moTa: r.moTa || '',
+        chiPhi: Number(r.chiPhi) || 0,
+        thayLinhKien: String(r.thayLinhKien).toLowerCase() === 'true',
+        batDau: r.batDau || null,
+        hetHan: r.hetHan || null,
+        trangThai: r.trangThai || statuses[0],
+      })
+      ok++
+    } catch (e) {
+      loi.push(`dòng ${i + 2}: ${crudErrorMessage(e)}`)
+    }
+  }
+
+  // Report failures out loud — a partial import that reports only successes is
+  // exactly the kind of silent lie this pass is meant to remove.
+  if (ok) notify(`Đã nhập ${ok}/${records.length} đơn bảo hành`, 'success')
+  if (loi.length) notify(`${loi.length} dòng lỗi — ${loi.slice(0, 3).join('; ')}`, 'warning')
+  await load()
+}
+
 // --- In phiếu bảo hành ---
 function printWarranty() {
   if (!sel.value) return
@@ -153,6 +252,7 @@ onMounted(() => { load(); loadOptions() })
 <template>
   <AppShell>
     <div class="bh">
+      <DemoDataBanner v-if="isDemo" what="danh sách bảo hành" @retry="load" />
       <div class="bh-tabs">
         <div v-for="t in tabs" :key="t.key" class="bh-tab" :class="{active:tab===t.key}" @click="tab=t.key">
           {{ t.label }}<span class="n">{{ countFor(t.key) }}</span>
@@ -166,14 +266,15 @@ onMounted(() => { load(); loadOptions() })
             <h5 class="title">DỊCH VỤ BẢO HÀNH</h5>
             <div class="d-flex align-items-center gap-2">
               <input type="date" class="form-control form-control-sm" style="width:150px">
-              <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i> Export</button>
+              <button class="btn btn-sm btn-outline-secondary" @click="exportCsv"><i class="bi bi-download"></i> Export</button>
             </div>
           </div>
           <div class="toolbar d-flex gap-2 mb-2">
             <select class="form-select form-select-sm" style="max-width:150px"><option>-- Đơn vị --</option><option>BShoes Center</option></select>
-            <input class="form-control form-control-sm" v-model="kw" placeholder="Nhập mã bảo hành / serial...">
-            <button class="btn btn-green btn-sm px-3">Tìm kiếm</button>
-            <button class="btn btn-outline-secondary btn-sm" @click="kw=''">Đặt lại</button>
+            <input class="form-control form-control-sm" v-model="kwInput" placeholder="Nhập mã bảo hành / serial..."
+                   @keyup.enter="timKiem">
+            <button class="btn btn-green btn-sm px-3" @click="timKiem">Tìm kiếm</button>
+            <button class="btn btn-outline-secondary btn-sm" @click="datLai">Đặt lại</button>
           </div>
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="btn-group seg">
@@ -201,7 +302,8 @@ onMounted(() => { load(); loadOptions() })
             </div>
             <div class="side-actions d-flex flex-column gap-2">
               <button class="btn btn-outline-secondary btn-sm" @click="load">Làm mới</button>
-              <button class="btn btn-outline-secondary btn-sm" @click="notify('Import (demo)','info')">Import</button>
+              <button class="btn btn-outline-secondary btn-sm" @click="triggerImport">Import</button>
+              <input ref="fileInput" type="file" accept=".csv" class="d-none" @change="importCsv">
               <button class="btn btn-outline-danger btn-sm" :disabled="!sel" @click="askDeleteSel">Hủy phiếu</button>
             </div>
           </div>
@@ -284,7 +386,8 @@ onMounted(() => { load(); loadOptions() })
       </template>
     </AppModal>
 
-    <ConfirmDialog v-model:open="confirmOpen" title="Hủy đơn bảo hành" :message="`Hủy đơn bảo hành ${sel?.ma}?`" @confirm="doDeleteSel" />
+    <ConfirmDialog v-model:open="confirmOpen" title="Hủy đơn bảo hành" :message="`Hủy đơn bảo hành ${sel?.ma}?`"
+                   confirm-text="Hủy đơn" @confirm="doDeleteSel" />
   </AppShell>
 </template>
 

@@ -1,0 +1,227 @@
+﻿Feature,Feature ID,Testcase ID,Testcase Name,Test Status,Log Reference
+Đăng nhập bằng tài khoản + mật khẩu,F-AUTH-01,TC-AUTH-01-01,Đăng nhập đúng tài khoản/mật khẩu → vào được hệ thống,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Đăng nhập bằng tài khoản + mật khẩu,F-AUTH-01,TC-AUTH-01-02,"Sai mật khẩu → báo lỗi, không đăng nhập",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Đăng nhập bằng tài khoản + mật khẩu,F-AUTH-01,TC-AUTH-01-03,Tài khoản không tồn tại → báo lỗi,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Điều hướng theo vai trò,F-AUTH-02,TC-AUTH-02-01,Quản trị đăng nhập → vào Doanh Thu (/),Pass,R3 2026-08-04 12:05 · vitest src/composables/useAuth.landing.test.js (8/8) · frontend 132/132
+Điều hướng theo vai trò,F-AUTH-02,TC-AUTH-02-02,Nhân viên bán hàng → vào màn được phép đầu tiên,Pass,R3 2026-08-04 12:05 · vitest src/composables/useAuth.landing.test.js (8/8) · frontend 132/132
+Điều hướng theo vai trò,F-AUTH-02,TC-AUTH-02-03,Vai trò không có quyền nào → quay lại /login,Pass,R3 2026-08-04 12:05 · vitest src/composables/useAuth.landing.test.js (8/8) · frontend 132/132
+Nút Vào demo (Admin),F-AUTH-03,TC-AUTH-03-01,"Bấm ""Vào demo"" khi backend tắt → vào hệ thống với toàn quyền",Pass,"R3 2026-08-04 14:00 · Edge headless + CDP · bấm ""Vào demo"" → bshoes_user={""ma"":""ADMIN"",""quyen"":""*"",""token"":null}, vào được hệ thống"
+Nút Vào demo (Admin),F-AUTH-03,TC-AUTH-03-02,RỦI RO: nút demo cho toàn quyền không cần mật khẩu — xác nhận có chặn ở bản phát hành,Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Thông báo lỗi đăng nhập,F-AUTH-04,TC-AUTH-04-01,"Tắt backend rồi đăng nhập → hiện ""Không kết nối được máy chủ""",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Chặn màn hình chưa đăng nhập,F-AUTH-05,TC-AUTH-05-01,Vào /nhan-vien khi chưa đăng nhập → chuyển /login?redirect=/nhan-vien,Pass,"R3 2026-08-04 14:00 · Edge headless + CDP · sau khi đăng xuất, mở /nhan-vien → /login?redirect=/nhan-vien"
+Chặn màn hình chưa đăng nhập,F-AUTH-05,TC-AUTH-05-02,Đăng nhập xong → quay lại đúng trang đã yêu cầu,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Chặn màn hình không có quyền,F-AUTH-06,TC-AUTH-06-01,Nhân viên bán hàng gõ URL /nhan-vien → bị đẩy về landing của vai trò,Pass,R3 2026-08-04 12:05 · vitest src/composables/useAuth.landing.test.js (8/8) · frontend 132/132
+Bảo vệ API theo vai trò ở server,F-AUTH-07,TC-AUTH-07-01,Gọi thẳng API quản trị bằng curl không đăng nhập → phải bị từ chối theo vai trò,Pass,R3 2026-08-04 12:05 · curl: /nhan-vien 401 · /san-pham-ql 401 · /thong-ke/hom-nay 401 · /bao-hanh 401 · token rác 401
+Mã hoá mật khẩu,F-AUTH-08,TC-AUTH-08-01,SELECT mat_khau FROM nhan_vien → không được là plaintext,Fail,R3 2026-08-04 12:05 · CỐ Ý bỏ qua theo yêu cầu (prototype user testing). Giữ Fail để không quên trước khi lên bản thật
+Đăng xuất,F-AUTH-09,TC-AUTH-09-01,"Đăng xuất → xoá phiên, vào lại /nhan-vien bị chặn",Pass,"R3 2026-08-04 14:00 · Edge headless + CDP · Hệ Thống → Đăng xuất → xác nhận → localStorage bshoes_user = null, chuyển /login"
+Danh sách sản phẩm storefront,F-HOME-01,TC-HOME-01-01,Mở /home → hiện sản phẩm THẬT từ DB (không phải 10 sản phẩm mock),Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Danh sách sản phẩm storefront,F-HOME-01,TC-HOME-01-02,"Sản phẩm tồn = 0 vẫn hiện, kèm nút Đặt trước",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Lọc theo danh mục,F-HOME-02,TC-HOME-02-01,Nav danh mục lấy từ bảng loai_san_pham,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Lọc theo danh mục,F-HOME-02,TC-HOME-02-02,"Bấm 1 danh mục → lưới lọc đúng; ""Tất cả"" hiện hết",Pass,R3 2026-08-04 12:05 · vitest src/utils/catalog.test.js (9/9) · frontend 132/132
+Sắp xếp giá / bán chạy,F-HOME-03,TC-HOME-03-01,Sắp xếp giá tăng / giảm / bán chạy hoạt động cùng bộ lọc danh mục,Pass,R3 2026-08-04 12:05 · vitest src/utils/catalog.test.js (9/9) · frontend 132/132
+Ô tìm kiếm storefront,F-HOME-04,TC-HOME-04-01,Gõ tên giày vào ô tìm kiếm + Enter → lưới lọc theo từ khoá,Pass,"R3 2026-08-04 12:05 · Edge headless + CDP: gõ ""nike"" → 10 SP còn 2 (""Nike Air Max phối màu"", ""Giày thể thao Nike Air Zoom""); gõ ""giay"" (không dấu) → 4 SP"
+Thêm vào giỏ từ lưới,F-HOME-05,TC-HOME-05-01,"Bấm ""Thêm vào giỏ"" → toast thành công, badge giỏ tăng",Pass,"R3 2026-08-04 12:05 · Edge headless + CDP: bấm ""Thêm vào giỏ"" → localStorage bshoes_cart = [{""id"":7,...,""soLuong"":1}]"
+Thêm vào giỏ từ lưới,F-HOME-05,TC-HOME-05-02,"Thêm quá tồn kho → bị chặn, không tăng",Pass,R3 2026-08-04 12:05 · vitest src/composables/useCart.test.js (20/20) · frontend 132/132
+Đặt trước từ storefront,F-HOME-06,TC-HOME-06-01,Sản phẩm hết hàng → mở modal đặt trước và lưu được phiếu,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Mở trang chi tiết sản phẩm,F-HOME-07,TC-HOME-07-01,Bấm ảnh/tên → sang /san-pham/:id đúng sản phẩm,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Fallback mock storefront,F-HOME-08,TC-HOME-08-01,"Tắt backend → phải có dấu hiệu ""dữ liệu demo"" trên màn, không im lặng hiện hàng giả",Pass,"R3 2026-08-04 12:05 · Edge headless: backend lỗi 500 → banner đỏ ""ĐANG HIỂN THỊ DỮ LIỆU DEMO"" hiện trên đầu màn /home (đã chụp màn hình)"
+Xem chi tiết sản phẩm,F-SPD-01,TC-SPD-01-01,"Mở /san-pham/:id → đúng ảnh, tên, giá, mô tả",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Chọn màu sắc,F-SPD-02,TC-SPD-02-01,Chọn màu → size khả dụng cập nhật; màu hết hàng bị mờ,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Chọn kích cỡ,F-SPD-03,TC-SPD-03-01,Chọn size → hiện đúng tồn kho của biến thể,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Tăng/giảm số lượng,F-SPD-04,TC-SPD-04-01,Không tăng được vượt tồn kho của biến thể,Pass,R3 2026-08-04 12:05 · vitest src/composables/useCart.test.js (20/20) · frontend 132/132
+Thêm vào giỏ từ chi tiết,F-SPD-05,TC-SPD-05-01,Thêm vào giỏ → đúng biến thể (màu/size) trong giỏ,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Mua ngay,F-SPD-06,TC-SPD-06-01,Mua ngay → sang /gio-hang với dòng vừa chọn,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Đặt trước từ chi tiết,F-SPD-07,TC-SPD-07-01,Biến thể hết hàng → đặt trước lưu được,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Xem giỏ hàng,F-CART-01,TC-CART-01-01,Thêm hàng rồi F5 → giỏ vẫn còn (localStorage),Pass,R3 2026-08-04 12:05 · vitest src/composables/useCart.test.js (20/20) · frontend 132/132
+Sửa số lượng trong giỏ,F-CART-02,TC-CART-02-01,Tăng/giảm số lượng → tổng tiền cập nhật đúng,Pass,R3 2026-08-04 12:05 · vitest src/composables/useCart.test.js (20/20) · frontend 132/132
+Sửa số lượng trong giỏ,F-CART-02,TC-CART-02-02,"Tăng vượt tồn → bị chặn, số lượng giữ nguyên",Pass,R3 2026-08-04 12:05 · vitest src/composables/useCart.test.js (20/20) · frontend 132/132
+Xoá dòng khỏi giỏ,F-CART-03,TC-CART-03-01,"Xoá 1 dòng → dòng biến mất, tổng tiền đúng",Pass,R3 2026-08-04 12:05 · vitest src/composables/useCart.test.js (20/20) · frontend 132/132
+Xoá toàn bộ giỏ,F-CART-04,TC-CART-04-01,Xoá hết giỏ → giỏ trống sau khi F5,Pass,R3 2026-08-04 12:05 · vitest src/composables/useCart.test.js (20/20) · frontend 132/132
+Đặt hàng online,F-CART-05,TC-CART-05-01,"Đặt hàng → tạo hoá đơn Chờ giao, hiện mã đơn",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Đặt hàng online,F-CART-05,TC-CART-05-02,Đặt hàng → tồn kho biến thể giảm đúng số lượng,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Đặt hàng online,F-CART-05,TC-CART-05-03,"Đặt hàng khi backend lỗi → toast lỗi thật, KHÔNG xoá giỏ",Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Tra cứu đơn theo SĐT,F-CART-06,TC-CART-06-01,Nhập SĐT đã đặt → hiện đúng danh sách đơn,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Tra cứu đơn theo SĐT,F-CART-06,TC-CART-06-02,"SĐT không có đơn → thông báo rỗng, không lỗi",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Khách xác nhận đã nhận hàng,F-CART-07,TC-CART-07-01,"Bấm ""Đã nhận hàng"" → trạng thái đơn đổi, F5 vẫn giữ",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Màn xác nhận sau đặt hàng,F-CART-08,TC-CART-08-01,Sau đặt hàng hiện mã đơn + nút Mua tiếp / Xem đơn của tôi,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+KPI hôm nay,F-DASH-01,TC-DASH-01-01,KPI khớp với dữ liệu hoá đơn trong ngày,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Tổng quan doanh thu,F-DASH-02,TC-DASH-02-01,"Chỉ tính hoá đơn Thành công/Đã giao, bỏ đơn Huỷ và Trả hàng",Pass,R3 2026-08-04 12:05 · surefire HoaDonDoanhThuTest (4/4) · backend 48/48
+Doanh thu theo ngày/tháng/năm,F-DASH-03,TC-DASH-03-01,Đổi năm → 3 biểu đồ cập nhật đúng kỳ,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Bộ lọc năm,F-DASH-04,TC-DASH-04-01,"Danh sách năm lấy từ dữ liệu thật, không hardcode",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Top sản phẩm bán chạy,F-DASH-05,TC-DASH-05-01,Top sản phẩm khớp số lượng đã bán trong DB,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Báo cáo dòng tiền,F-DASH-06,TC-DASH-06-01,Dòng tiền vào/ra khớp hoá đơn + trả hàng,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Báo cáo ROI,F-DASH-07,TC-DASH-07-01,"ROI hiện dữ liệu THẬT, không phải roiMock",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Retention,F-DASH-08,TC-DASH-08-01,Retention khớp số khách quay lại,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Trending,F-DASH-09,TC-DASH-09-01,"Trending hiện dữ liệu thật, không phải trendingMock",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Xuất Excel,F-DASH-10,TC-DASH-10-01,"Bấm Xuất Excel → tải BShoes-ThongKe.xls mở được, đúng KPI",Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Fallback mock dashboard,F-DASH-11,TC-DASH-11-01,Backend lỗi → màn phải báo rõ là dữ liệu demo,Pass,"R3 2026-08-04 14:00 · Edge headless + CDP · mở / khi API lỗi → banner ""ĐANG HIỂN THỊ DỮ LIỆU DEMO — ... toàn bộ số liệu thống kê"""
+Danh sách sản phẩm quản trị,F-SP-01,TC-SP-01-01,"Mở tab Sản phẩm → đúng danh sách từ DB, không mock",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Tìm kiếm sản phẩm,F-SP-02,TC-SP-02-01,Nhập từ khoá → lọc đúng theo tên/mã,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Tạo sản phẩm,F-SP-03,TC-SP-03-01,Tạo sản phẩm → toast thành công → F5 → vẫn còn,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Tạo sản phẩm,F-SP-03,TC-SP-03-02,"Tắt backend rồi tạo → toast LỖI (không phải ""Đã lưu"" giả)",Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Sửa sản phẩm,F-SP-04,TC-SP-04-01,Sửa tên/giá → F5 → thay đổi được lưu,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Ẩn sản phẩm (xoá mềm),F-SP-05,TC-SP-05-01,Ẩn sản phẩm → biến khỏi danh sách và khỏi storefront,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Xem danh sách bị ẩn / khôi phục,F-SP-06,TC-SP-06-01,"Bấm ""Xem danh sách bị ẩn"" → hiện SP đã ẩn và khôi phục được",Blocked,"R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này · Đã nối nút vào /recycle + /restore (modal ""Sản phẩm đã ẩn""); cần DB để chạy thật"
+Chọn ảnh sản phẩm từ kho,F-SP-07,TC-SP-07-01,Chọn ảnh từ kho → ảnh hiện trên form và lưu được,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Xuất JSON sản phẩm,F-SP-08,TC-SP-08-01,Bấm Xuất JSON → tải file JSON danh sách sản phẩm,Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Import sản phẩm,F-SP-09,TC-SP-09-01,Import file JSON → thêm sản phẩm hàng loạt,Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Danh sách biến thể,F-SPCT-01,TC-SPCT-01-01,Double-click sản phẩm → tab chi tiết lọc đúng biến thể của SP đó,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Tạo biến thể,F-SPCT-02,TC-SPCT-02-01,Tạo biến thể (màu/size/giá/tồn) → F5 → vẫn còn,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Tạo biến thể,F-SPCT-02,TC-SPCT-02-02,"Tạo trùng màu+size của cùng SP → phải báo lỗi, không tạo trùng",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Sửa biến thể,F-SPCT-03,TC-SPCT-03-01,Sửa giá/tồn → F5 → thay đổi được lưu,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Ẩn biến thể,F-SPCT-04,TC-SPCT-04-01,Ẩn biến thể → không còn bán được ở POS và storefront,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Nhập kho,F-SPCT-05,TC-SPCT-05-01,"Nhập thêm 10 → tồn tăng đúng 10, F5 vẫn đúng",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Nhập kho,F-SPCT-05,TC-SPCT-05-02,Nhập số âm / rỗng → bị chặn,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Upload ảnh biến thể,F-SPCT-06,TC-SPCT-06-01,Chọn JPG/PNG < 1MB → hiện preview ngay,Pass,R3 2026-08-04 12:05 · vitest src/utils/upload.test.js (5/5) · frontend 132/132
+Upload ảnh biến thể,F-SPCT-06,TC-SPCT-06-02,"Chọn file không phải ảnh hoặc ≥ 1MB → toast cảnh báo, không upload",Pass,R3 2026-08-04 12:05 · vitest src/utils/upload.test.js (5/5) · frontend 132/132
+Phục vụ ảnh đã upload,F-SPCT-07,TC-SPCT-07-01,Lưu biến thể có ảnh → F5 → ảnh vẫn hiện từ /api/uploads/…,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+CRUD danh mục,F-DM-01,TC-DM-01-01,Thêm/sửa/xoá danh mục → F5 → đúng trạng thái,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Gán sản phẩm vào danh mục,F-DM-02,TC-DM-02-01,Gán SP vào danh mục → SP xuất hiện đúng danh mục ở storefront,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Gán sản phẩm vào danh mục,F-DM-02,TC-DM-02-02,Bỏ SP khỏi danh mục → SP không còn trong danh mục đó,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Xem theo Thương hiệu / Kiểu dáng,F-DM-03,TC-DM-03-01,Đổi chiều xem → danh sách giá trị và SP tương ứng đúng,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Export CSV danh mục,F-DM-04,TC-DM-04-01,"Export → file CSV mở được, đúng nội dung, không lỗi font tiếng Việt",Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Import CSV danh mục,F-DM-05,TC-DM-05-01,Import CSV hợp lệ → thêm đúng danh mục,Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Import CSV danh mục,F-DM-05,TC-DM-05-02,"Import file sai định dạng → báo lỗi rõ, không hỏng dữ liệu",Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+CRUD 8 loại thuộc tính,F-TT-01,TC-TT-01-01,Thêm/sửa/xoá từng loại thuộc tính → F5 → đúng trạng thái,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+CRUD 8 loại thuộc tính,F-TT-01,TC-TT-01-02,Xoá thuộc tính đang được biến thể dùng → phải báo lỗi ràng buộc,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Lọc / tìm thuộc tính,F-TT-02,TC-TT-02-01,Lọc theo loại + tìm từ khoá cho kết quả đúng,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Import/Export CSV thuộc tính,F-TT-03,TC-TT-03-01,Export rồi Import lại chính file đó → không sinh dữ liệu rác,Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Danh sách sản phẩm POS,F-POS-01,TC-POS-01-01,Mở Bán Hàng → danh sách SP kèm tồn thật; SP tồn 0 không thêm được,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Quét QR / nhập mã,F-POS-02,TC-POS-02-01,Quét QR mã biến thể hợp lệ → thêm đúng dòng hàng,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này · Đã thêm ma vào PosSanPhamDto; cần DB để xác nhận
+Quét QR / nhập mã,F-POS-02,TC-POS-02-02,Mã không tồn tại → báo lỗi rõ,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Nhập tay dòng hàng,F-POS-03,TC-POS-03-01,Nhập tay → dòng hàng đúng giá và số lượng,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Thêm dòng hàng,F-POS-04,TC-POS-04-01,"Thêm SP → hoá đơn tăng dòng, tổng tiền đúng",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Tăng/giảm số lượng dòng,F-POS-05,TC-POS-05-01,"Tăng vượt tồn → bị chặn, có cảnh báo",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Bỏ sản phẩm khỏi hoá đơn,F-POS-06,TC-POS-06-01,Bỏ dòng → tổng tiền giảm đúng,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Hoàn trả 1 dòng hàng,F-POS-07,TC-POS-07-01,Hoàn trả dòng → tồn kho cộng lại đúng,Fail,"R3 2026-08-04 12:05 · useHoaDon.hoanTra() chỉ đổi nhãn dòng, không gọi API nào. Trả hàng thật đi qua POST /hoa-don/{id}/tra-hang (F-POS-20)"
+Tạo hoá đơn chờ,F-POS-08,TC-POS-08-01,"Tạo nhiều hoá đơn chờ song song, mỗi hoá đơn giữ giỏ riêng",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Chuyển / đóng hoá đơn chờ,F-POS-09,TC-POS-09-01,Chuyển qua lại giữa hoá đơn chờ → đúng dòng hàng từng hoá đơn,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Tìm khách hội viên theo SĐT,F-POS-10,TC-POS-10-01,Nhập SĐT có trong DB → gán đúng khách vào hoá đơn,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Tìm khách hội viên theo SĐT,F-POS-10,TC-POS-10-02,SĐT không tồn tại → báo không tìm thấy,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Thêm nhanh khách hàng,F-POS-11,TC-POS-11-01,Thêm khách mới từ POS → lưu vào DB và gán vào hoá đơn,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Khách vãng lai,F-POS-12,TC-POS-12-01,"Chọn Khách lẻ → thanh toán được, hoá đơn ghi Khách lẻ",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Áp phiếu giảm giá,F-POS-13,TC-POS-13-01,Áp phiếu còn hiệu lực → tổng tiền giảm đúng công thức,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này · Đã sửa 3 nguyên nhân (xem TC-POS-13-03/04/05); cần DB để chạy thật
+Áp phiếu giảm giá,F-POS-13,TC-POS-13-02,Phiếu hết hạn / chưa đủ điều kiện → không áp được,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Thanh toán tiền mặt,F-POS-14,TC-POS-14-01,"Thanh toán → hoá đơn Thành công, tồn kho trừ, lịch sử ghi nhận",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Thanh toán tiền mặt,F-POS-14,TC-POS-14-02,"Thanh toán khi backend lỗi → toast lỗi, KHÔNG đóng hoá đơn",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Thanh toán chuyển khoản,F-POS-15,TC-POS-15-01,"Hiện QR, bấm ""Đã chuyển khoản"" → hoá đơn hoàn tất",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+In phiếu tạm tính,F-POS-16,TC-POS-16-01,Bấm Phiếu tạm tính → mở print preview với đúng dòng hàng và tổng,Pass,R3 2026-08-04 12:05 · vitest src/utils/receipt.test.js (7/7) · frontend 132/132
+In phiếu tạm tính,F-POS-16,TC-POS-16-02,Trình duyệt chặn popup → hiện toast lỗi (không im lặng),Pass,R3 2026-08-04 12:05 · vitest src/utils/receipt.test.js (7/7) · frontend 132/132
+Huỷ hoá đơn,F-POS-17,TC-POS-17-01,"Huỷ hoá đơn → trạng thái Huỷ, tồn kho hoàn lại nếu đã trừ",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Tạo đơn giao hàng,F-POS-18,TC-POS-18-01,"Tab Đặt hàng → tạo đơn Chờ giao, hiện ở màn Giao Hàng",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Đánh dấu đã giao (POS),F-POS-19,TC-POS-19-01,"Đã giao → trạng thái đổi, doanh thu ghi nhận",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Trả hàng (POS),F-POS-20,TC-POS-20-01,"Trả hàng → tồn kho cộng lại, doanh thu trừ ra",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Xuất JSON sản phẩm (POS),F-POS-21,TC-POS-21-01,Bấm Xuất JSON → tải file,Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Import sản phẩm (POS),F-POS-22,TC-POS-22-01,"Import JSON {ma, soLuong} → thêm dòng hàng hàng loạt",Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Danh sách đơn giao hàng,F-DH-01,TC-DH-01-01,Mỗi tab trạng thái lọc đúng đơn,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Chi tiết dòng hàng của đơn,F-DH-02,TC-DH-02-01,Chọn đơn → hiện đúng dòng hàng và tổng tiền,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Đánh dấu đã giao,F-DH-03,TC-DH-03-01,"Đơn Chờ giao → Đã giao, F5 vẫn đúng",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Trả hàng,F-DH-04,TC-DH-04-01,Trả hàng → tồn kho cộng lại đúng,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+In hoá đơn (Giao Hàng),F-DH-05,TC-DH-05-01,"In hoá đơn → preview đủ mã, ngày, khách, dòng hàng, tổng",Pass,R3 2026-08-04 12:05 · vitest src/utils/receipt.test.js (7/7) · frontend 132/132
+Thêm khách hàng nhanh,F-DH-06,TC-DH-06-01,Thêm khách từ màn Giao Hàng → lưu vào DB,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Danh sách phiếu đặt trước,F-DT-01,TC-DT-01-01,Tab trạng thái lọc đúng phiếu,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Tạo phiếu đặt trước,F-DT-02,TC-DT-02-01,Đặt trước từ storefront → phiếu hiện ở màn Đặt Trước,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Đếm phiếu đặt trước,F-DT-03,TC-DT-03-01,Số phiếu theo biến thể khớp thực tế,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Đổi trạng thái phiếu,F-DT-04,TC-DT-04-01,"Chờ hàng → Đã có hàng, F5 vẫn đúng",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Chuyển phiếu thành đơn,F-DT-05,TC-DT-05-01,"Chuyển đơn khi còn tồn → tạo hoá đơn, phiếu đóng lại",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Chuyển phiếu thành đơn,F-DT-05,TC-DT-05-02,"Chuyển đơn khi tồn = 0 → bị chặn, báo lỗi",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Xoá phiếu đặt trước,F-DT-06,TC-DT-06-01,Xoá phiếu → biến mất sau F5,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Danh sách nhân viên,F-NV-01,TC-NV-01-01,Danh sách hiện đúng nhân viên còn hiệu lực,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Tìm kiếm nhân viên,F-NV-02,TC-NV-02-01,Tìm theo tên / tài khoản cho kết quả đúng,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Thêm nhân viên,F-NV-03,TC-NV-03-01,"Dropdown Vai trò lấy từ DB (Quản trị, Quản lý, NV bán hàng…)",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Thêm nhân viên,F-NV-03,TC-NV-03-02,Thêm NV có vai trò + mật khẩu → F5 → vai trò không bị trống,Pass,R3 2026-08-04 12:05 · surefire NhanVienServiceImplTest (5/5) · backend 48/48
+Thêm nhân viên,F-NV-03,TC-NV-03-03,Đăng nhập bằng NV vừa tạo → vào đúng landing của vai trò,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Sửa nhân viên,F-NV-04,TC-NV-04-01,Để trống mật khẩu khi sửa → mật khẩu cũ vẫn dùng được,Pass,R3 2026-08-04 12:05 · surefire NhanVienServiceImplTest (5/5) · backend 48/48
+Sửa nhân viên,F-NV-04,TC-NV-04-02,"Đặt mật khẩu mới → mật khẩu mới dùng được, cũ không dùng được",Pass,R3 2026-08-04 12:05 · surefire NhanVienServiceImplTest (5/5) · backend 48/48
+Xoá nhân viên,F-NV-05,TC-NV-05-01,Xoá mềm → không đăng nhập được nữa,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Ma trận phân quyền,F-NV-06,TC-NV-06-01,Tick/bỏ tick nhiều ô rồi Lưu tất cả → F5 → đúng trạng thái,Pass,R3 2026-08-04 12:05 · surefire NhanVienQuyenServiceImplTest (11/11) · backend 48/48
+Ma trận phân quyền,F-NV-06,TC-NV-06-02,Bỏ quyền 1 màn của NV → NV đó không vào được màn đó nữa,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Áp template quyền,F-NV-07,TC-NV-07-01,Áp template vai trò → bộ quyền khớp template,Pass,R3 2026-08-04 12:05 · surefire NhanVienQuyenServiceImplTest (11/11) · backend 48/48
+Quản trị toàn quyền,F-NV-08,TC-NV-08-01,"Hàng vai trò Quản trị bị khoá, luôn đủ quyền",Pass,R3 2026-08-04 12:05 · surefire NhanVienQuyenServiceImplTest (11/11) · backend 48/48
+Sửa template vai trò,F-NV-09,TC-NV-09-01,Sửa template vai trò → F5 → giữ nguyên thay đổi,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Danh sách / tìm khách hàng,F-KH-01,TC-KH-01-01,Danh sách + tìm kiếm cho kết quả đúng,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Thêm / sửa khách hàng,F-KH-02,TC-KH-02-01,Thêm khách → F5 → còn; sửa → F5 → đúng,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Thêm / sửa khách hàng,F-KH-02,TC-KH-02-02,"Tắt backend rồi thêm → toast LỖI, không có dòng ma",Pass,R3 2026-08-04 12:05 · vitest src/composables/useCrud.test.js (14/14) · frontend 132/132
+Xoá khách hàng,F-KH-03,TC-KH-03-01,Xoá mềm → biến khỏi danh sách sau F5,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+CRUD địa chỉ khách hàng,F-KH-04,TC-KH-04-01,Thêm/sửa/xoá địa chỉ theo khách → F5 → đúng,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Danh sách lịch sử hoá đơn,F-LS-01,TC-LS-01-01,"Danh sách đủ hoá đơn, đúng trạng thái",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Chi tiết hoá đơn,F-LS-02,TC-LS-02-01,Mở chi tiết → đúng dòng hàng và tổng tiền,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+In hoá đơn từ lịch sử,F-LS-03,TC-LS-03-01,"In hoá đơn → preview đúng mã, ngày, khách, dòng hàng, tổng",Pass,R3 2026-08-04 12:05 · vitest src/utils/receipt.test.js (7/7) · frontend 132/132
+Đánh dấu Đã giao (lịch sử),F-LS-04,TC-LS-04-01,Đơn Chờ giao → Đã giao từ màn lịch sử,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Trả hàng từ lịch sử,F-LS-05,TC-LS-05-01,"Trả hàng → tồn kho cộng lại, doanh thu trừ",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Danh sách phiếu bảo hành,F-BH-01,TC-BH-01-01,Danh sách hiện dữ liệu THẬT (không phải 4 phiếu mock),Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Thêm đơn bảo hành,F-BH-02,TC-BH-02-01,Thêm phiếu → F5 → vẫn còn,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Xác nhận xử lý bảo hành,F-BH-03,TC-BH-03-01,Đổi trạng thái → F5 → giữ nguyên,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Huỷ phiếu bảo hành,F-BH-04,TC-BH-04-01,Huỷ phiếu → biến mất sau F5,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+In phiếu bảo hành,F-BH-05,TC-BH-05-01,In phiếu bảo hành → preview đúng nội dung,Pass,R3 2026-08-04 12:05 · vitest src/utils/warranty.test.js (5/5) · frontend 132/132
+Tìm kiếm bảo hành,F-BH-06,TC-BH-06-01,"Bấm nút ""Tìm kiếm"" → lọc danh sách",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này · Đã tách kwInput/kw và nối @click + @keyup.enter; cần bấm thử
+Export bảo hành,F-BH-07,TC-BH-07-01,Bấm Export → tải file CSV danh sách,Pass,R3 2026-08-04 12:05 · vitest src/utils/csv.test.js (18/18) · frontend 132/132
+Import bảo hành,F-BH-08,TC-BH-08-01,Bấm Import → chọn file CSV và nạp dữ liệu,Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Fallback mock bảo hành,F-BH-09,TC-BH-09-01,Backend lỗi → màn phải báo rõ là dữ liệu demo,Pass,R3 2026-08-04 14:00 · Edge headless + CDP · mở /bao-hanh khi API lỗi → .demo-banner hiện trên màn
+Danh sách / tìm phiếu giảm giá,F-PGG-01,TC-PGG-01-01,Danh sách + tìm kiếm cho kết quả đúng,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Thêm / sửa phiếu giảm giá,F-PGG-02,TC-PGG-02-01,Thêm phiếu → F5 → còn; sửa → F5 → đúng,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Thêm / sửa phiếu giảm giá,F-PGG-02,TC-PGG-02-02,Ngày bắt đầu > ngày kết thúc → phải bị chặn,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Xoá phiếu giảm giá,F-PGG-03,TC-PGG-03-01,"Xoá phiếu → biến mất sau F5, POS không áp được nữa",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Thông tin phiên đăng nhập,F-HT-01,TC-HT-01-01,"Hiện đúng tài khoản, vai trò đang đăng nhập",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Tải file log client,F-HT-02,TC-HT-02-01,Bấm Tải file log → tải bshoes-log-YYYYMMDD-HHmm.json đọc được,Pass,R3 2026-08-04 12:05 · vitest src/utils/logger.test.js (24/24) · frontend 132/132
+Xoá log client,F-HT-03,TC-HT-03-01,Xoá log (có xác nhận) → buffer rỗng,Pass,R3 2026-08-04 12:05 · vitest src/utils/logger.test.js (24/24) · frontend 132/132
+Ring-buffer log client,F-SYS-01,TC-SYS-01-01,Ghi > 400 bản ghi → chỉ giữ 400 bản mới nhất,Pass,R3 2026-08-04 12:05 · vitest src/utils/logger.test.js (24/24) · frontend 132/132
+Che thông tin nhạy cảm,F-SYS-02,TC-SYS-02-01,Log payload có matKhau/password/token → đều thành ***,Pass,R3 2026-08-04 12:05 · vitest src/utils/logger.test.js (24/24) · frontend 132/132
+Tự đẩy log lên backend,F-SYS-03,TC-SYS-03-01,Sau 20s log client xuất hiện trong logs/bshoes.log với logger CLIENT,Pass,"R3 2026-08-04 14:00 · logs/bshoes.log · log client tự đẩy lên backend: ""ERROR CLIENT - [api] GET /thong-ke/trending -> 401 | route=/ user=Demo Admin"""
+Tự đẩy log lên backend,F-SYS-03,TC-SYS-03-02,"Backend tắt → log không mất, lần flush sau gửi lại",Pass,R3 2026-08-04 12:05 · vitest src/utils/logger.test.js (24/24) · frontend 132/132
+File log xoay vòng,F-SYS-04,TC-SYS-04-01,"Chạy app → sinh logs/bshoes.log, có cả dòng backend và CLIENT",Pass,R3 2026-08-04 14:00 · logs/bshoes.log · cùng 1 file có 40 dòng backend (c.v.t.b.*) và 812 dòng logger CLIENT
+Log request HTTP,F-SYS-05,TC-SYS-05-01,"Mỗi request có 1 dòng log kèm method, path, status, thời gian",Pass,"R3 2026-08-04 14:00 · logs/bshoes.log · RequestLoggingFilter ghi đủ method/path/status/thời gian: ""GET /api/ping -> 200 (1ms)"""
+Xử lý lỗi thống nhất,F-SYS-06,TC-SYS-06-01,"Gọi API sai id → trả JSON lỗi có message rõ ràng, không stacktrace",Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Interceptor log lỗi API,F-SYS-07,TC-SYS-07-01,API lỗi → có bản ghi log client category=api,Pass,"R3 2026-08-04 14:00 · Edge headless + CDP · log client có bản ghi category=api: [""GET /thong-ke/retention -> 401"",""GET /vai-tro -> 401"",""GET /nhan-vien -> 401""]"
+Toast lỗi thật khi lưu hỏng,F-SYS-08,TC-SYS-08-01,"add/update/remove thất bại → promise reject, danh sách KHÔNG đổi tại chỗ",Pass,R3 2026-08-04 12:05 · vitest src/composables/useCrud.test.js (14/14) · frontend 132/132
+Fallback mock che lỗi backend,F-SYS-09,TC-SYS-09-01,API list lỗi → có chỉ báo trên UI rằng đang xem dữ liệu demo,Pass,R3 2026-08-04 12:05 · vitest src/composables/useCrud.test.js (14/14) · frontend 132/132
+Endpoint /api/ping,F-SYS-10,TC-SYS-10-01,GET /api/ping trả 200 khi backend chạy,Pass,R3 2026-08-04 12:05 · curl: GET /api/ping -> 200
+Phục vụ ảnh /api/uploads/**,F-SYS-11,TC-SYS-11-01,Ảnh đã upload mở được trực tiếp qua URL /api/uploads/…,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+In đường dẫn thư mục log,F-SYS-12,TC-SYS-12-01,Khởi động app → log in ra đường dẫn file log,Pass,"R3 2026-08-04 14:00 · logs/bshoes.log · có dòng ""BShoes log file (collect this after a test run)"" lúc khởi động"
+Cấu hình Spring Security,F-SYS-13,TC-SYS-13-01,Spring Security có được cấu hình không,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Cấu hình Spring Security,F-SYS-13,TC-SYS-13-02,"Endpoint công khai (ping, storefront, giỏ hàng) KHÔNG bị filter chặn nhầm",Pass,"R3 2026-08-04 12:05 · curl: /api/ping 200, /api/san-pham 500 (lỗi DB, KHÔNG phải 401), /api/gio-hang/don-hang 500 ⇒ endpoint công khai không bị filter chặn"
+Trang Thymeleaf cũ,F-LEG-01,TC-LEG-01-01,"Xác nhận không còn ai dùng /login, /san-pham… bản Thymeleaf (cân nhắc gỡ)",Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Style guide,F-DEV-01,TC-DEV-01-01,Mở /style-guide → mọi component render đúng,Pass,"R3 2026-08-04 14:00 · Edge headless + CDP · /style-guide render 41 button + 1 table, không có lỗi runtime trên màn"
+Đăng xuất,F-AUTH-09,TC-AUTH-09-02,"Đăng xuất từ Hệ Thống → localStorage bshoes_user bị xoá, vào lại /nhan-vien bị chặn",Pass,"R3 2026-08-04 14:00 · Edge headless + CDP · cùng luồng trên; nút xác nhận nay ghi đúng ""Đăng xuất"" thay vì ""Xoá"""
+Phiên đăng nhập bằng token,F-AUTH-10,TC-AUTH-10-01,Đăng nhập → response có token; gọi API kèm X-Auth-Token → 200,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Phiên đăng nhập bằng token,F-AUTH-10,TC-AUTH-10-02,Token sai / rác → 401,Pass,R3 2026-08-04 12:05 · curl: X-Auth-Token rác -> 401
+Phiên đăng nhập bằng token,F-AUTH-10,TC-AUTH-10-03,Nhân viên không có quyền màn X gọi API của màn X → 403,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Gắn token vào request,F-AUTH-11,TC-AUTH-11-01,Mọi request API đều mang header X-Auth-Token khi đã đăng nhập,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Xử lý token hết hạn,F-AUTH-12,TC-AUTH-12-01,Token hết hạn / backend restart → tự đưa về /login?expired=1,Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Xử lý token hết hạn,F-AUTH-12,TC-AUTH-12-02,Chế độ Vào demo (không token) KHÔNG bị đá về login mà hiện banner dữ liệu demo,Pass,R3 2026-08-04 14:00 · Edge headless + CDP · chế độ demo mở /nhan-vien → path vẫn /nhan-vien (KHÔNG bị đá về login) và hiện banner demo
+Đăng xuất huỷ token phía server,F-AUTH-13,TC-AUTH-13-01,Đăng xuất rồi dùng lại token cũ bằng curl → 401,Not run,"R3 2026-08-04 12:05 · CHỜ KIỂM TAY: cần mở trình duyệt, KHÔNG cần DB"
+Tiện ích CSV/JSON dùng chung,F-SYS-14,TC-SYS-14-01,buildCsv → parseCsv giữ nguyên dữ liệu có dấu phẩy và nháy kép,Pass,R3 2026-08-04 12:05 · vitest src/utils/csv.test.js (18/18) · frontend 132/132
+Tiện ích CSV/JSON dùng chung,F-SYS-14,TC-SYS-14-02,File CSV xuất ra có BOM UTF-8 để Excel đọc đúng tiếng Việt,Pass,R3 2026-08-04 12:05 · vitest src/utils/csv.test.js (18/18) · frontend 132/132
+Áp phiếu giảm giá,F-POS-13,TC-POS-13-03,GET /api/hoa-don/vouchers-active trả 200 kèm danh sách (không còn 500),Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này · Đã đổi sang projection VoucherActiveView; cần DB để xác nhận 200
+Áp phiếu giảm giá,F-POS-13,TC-POS-13-04,Có ít nhất 1 phiếu hiệu lực ở thời điểm hiện tại (dropdown Khuyến mãi không rỗng),Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này · Đã thêm §2.16b sinh phiếu 2025-2030; cần chạy lại sqlBshoes.sql
+Áp phiếu giảm giá,F-POS-13,TC-POS-13-05,Phiếu KHÔNG đặt giảm tối đa vẫn giảm đúng (không bị kẹp về 0),Pass,R3 2026-08-04 12:05 · vitest src/utils/voucher.test.js (11/11) · frontend 132/132
+Áp phiếu giảm giá,F-POS-13,TC-POS-13-06,Số tiền giảm hiện ở quầy khớp số backend ghi (loại % và loại tiền cố định),Pass,R3 2026-08-04 12:05 · vitest src/utils/voucher.test.js (11/11) · frontend 132/132
+Tính tiền giảm,F-POS-23,TC-POS-23-01,Dưới đơn tối thiểu → giảm 0,Pass,R3 2026-08-04 12:05 · vitest src/utils/voucher.test.js (11/11) · frontend 132/132
+Tính tiền giảm,F-POS-23,TC-POS-23-02,Không giảm quá tổng hoá đơn; không trả số âm,Pass,R3 2026-08-04 12:05 · vitest src/utils/voucher.test.js (11/11) · frontend 132/132
+Tự sinh phiếu giảm giá 2025-2030,F-PGG-04,TC-PGG-04-01,Chạy sqlBshoes.sql → có 72 phiếu tháng PGGyyyyMM + 6 phiếu năm PGGYyyyy,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Tự sinh phiếu giảm giá 2025-2030,F-PGG-04,TC-PGG-04-02,Chạy lại script lần 2 → KHÔNG tạo phiếu trùng mã,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này · Đã chặn bằng WHERE NOT EXISTS; cần chạy để xác nhận
+Hàm tính giảm phía DB,F-PGG-05,TC-PGG-05-01,"SELECT dbo.tinh_tien_giam_gia với giam_toi_da NULL → trả đúng số giảm, không phải 0",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Đọc nhân viên không lỗi lazy,F-NV-10,TC-NV-10-01,GET /api/nhan-vien trả 200 (không còn LazyInitializationException),Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này · Đã fetch join + @Transactional; cần DB
+Đọc nhân viên không lỗi lazy,F-NV-10,TC-NV-10-02,"GET /api/nhan-vien/{id} và /search cũng trả về vai trò, không lỗi",Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Bỏ pin hibernate.dialect,F-SYS-15,TC-SYS-15-01,Khởi động app: chấp nhận cảnh báo HHH90000025 (đánh đổi để app lên được khi chưa có DB),Pass,R3 2026-08-04 14:00 · logs/bshoes.log · HHH90000025 VẪN xuất hiện — chấp nhận đánh đổi để app khởi động được khi chưa có DB (xem TC-SYS-15-02)
+Kiểm tra hiệu lực phiếu lúc thanh toán,F-POS-24,TC-POS-24-01,"Thanh toán với phiếu ĐÃ HẾT HẠN → bị từ chối, không giảm giá",Pass,R3 2026-08-04 12:05 · surefire VoucherRulesTest (11/11) · backend 48/48
+Kiểm tra hiệu lực phiếu lúc thanh toán,F-POS-24,TC-POS-24-02,Phiếu bị tắt / đã xoá mềm → bị từ chối,Pass,R3 2026-08-04 12:05 · surefire VoucherRulesTest (11/11) · backend 48/48
+Kiểm tra hiệu lực phiếu lúc thanh toán,F-POS-24,TC-POS-24-03,Phiếu hết lượt (so_luong = 0) → bị từ chối,Pass,R3 2026-08-04 12:05 · surefire VoucherRulesTest (11/11) · backend 48/48
+Kiểm tra hiệu lực phiếu lúc thanh toán,F-POS-24,TC-POS-24-04,Dùng phiếu thành công → so_luong giảm 1; hai quầy cùng lúc không lấy trùng lượt cuối,Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này
+Giỏ hàng chịu lỗi dữ liệu,F-CART-09,TC-CART-09-01,"localStorage giỏ hàng hỏng (JSON sai) → app vẫn mở, giỏ rỗng",Pass,R3 2026-08-04 12:05 · vitest src/composables/useCart.test.js (20/20) · frontend 132/132
+Giỏ hàng chịu lỗi dữ liệu,F-CART-09,TC-CART-09-02,"Dòng thiếu id hoặc số lượng không phải số → bị loại, tổng tiền không thành NaN",Pass,R3 2026-08-04 12:05 · vitest src/composables/useCart.test.js (20/20) · frontend 132/132
+Phiên đăng nhập chịu lỗi dữ liệu,F-AUTH-14,TC-AUTH-14-01,"localStorage phiên hỏng → app vẫn mở, coi như chưa đăng nhập",Blocked,R3 2026-08-04 12:05 · SQL Server localhost:1433 không kết nối được trong vòng này · Đã bọc try/catch trong useAuth.readUser(); cần mở trình duyệt để xác nhận
+Định dạng tiền VNĐ,F-SYS-16,TC-SYS-16-01,vnd(1500000) → 1.500.000 ₫; null/undefined/NaN → 0 ₫,Pass,R3 2026-08-04 12:05 · vitest src/utils/format.test.js (5/5) · frontend 132/132
+Định dạng tiền VNĐ,F-SYS-16,TC-SYS-16-02,Giá trị là CHUỖI số vẫn có dấu phân cách hàng nghìn,Pass,R3 2026-08-04 12:05 · vitest src/utils/format.test.js (5/5) · frontend 132/132
+Nhất quán màn hình / route,F-SYS-17,TC-SYS-17-01,Mọi khoá trong SCREENS đều có route trùng tên,Pass,R3 2026-08-04 12:05 · vitest src/config/screens.test.js (6/6) · frontend 132/132
+Nhất quán màn hình / route,F-SYS-17,TC-SYS-17-02,Không màn quản trị nào lọt vào danh sách PUBLIC của router,Pass,R3 2026-08-04 12:05 · vitest src/config/screens.test.js (6/6) · frontend 132/132
+Nhất quán màn hình / route,F-SYS-17,TC-SYS-17-03,Khoá màn backend đang chặn đều tồn tại ở SCREENS (tránh 403 vĩnh viễn),Pass,R3 2026-08-04 12:05 · vitest src/config/screens.test.js (6/6) · frontend 132/132
+localStorage giả lập trong test,F-SYS-18,TC-SYS-18-01,Test ghi rồi đọc lại được localStorage (trước đây stub luôn trả null),Pass,R3 2026-08-04 12:05 · vitest 132/132 — 20 test useCart chỉ chạy được nhờ mock localStorage thật
+CORS cho /api/**,F-SYS-19,TC-SYS-19-01,Preflight OPTIONS từ http://localhost:5173 kèm X-Auth-Token → 200 và trả đủ header Allow-Origin/Methods/Headers,Pass,"R3 2026-08-04 12:05 · curl -X OPTIONS: HTTP 200, Access-Control-Allow-Origin: http://localhost:5173, Allow-Methods GET,POST,PUT,DELETE,OPTIONS, Allow-Headers X-Auth-Token"
+CORS cho /api/**,F-SYS-19,TC-SYS-19-02,Preflight từ origin lạ (http://evil.example) bị từ chối,Pass,R3 2026-08-04 12:05 · curl -X OPTIONS Origin: http://evil.example -> 403
+Sidebar theo quyền,F-NAV-01,TC-NAV-01-01,Nhân viên chỉ thấy trong sidebar những màn được cấp quyền,Blocked,R3 2026-08-04 12:05 · CHỜ DB: SQL Server localhost:1433 không kết nối được trong vòng này
+Thu gọn sidebar,F-NAV-02,TC-NAV-02-01,Bấm nút thu gọn → sidebar và header đổi trạng thái cùng nhau,Pass,"R3 2026-08-04 14:00 · Edge headless + CDP · bấm thu gọn → class sidebar ""app-sidebar d-flex flex-column"" → ""... collapsed"""
+Toast dùng chung,F-SYS-20,TC-SYS-20-01,Toast success / warning / danger / info hiện đúng màu và tự tắt,Pass,R3 2026-08-04 14:00 · Edge headless + CDP · bấm Success/Danger toast ở style guide → 5 node toast hiển thị
+Giữ pin hibernate.dialect,F-SYS-15,TC-SYS-15-02,"Khởi động backend khi SQL Server CHƯA chạy → app vẫn lên, /api/ping trả 200",Pass,"R3 2026-08-04 12:05 · đã tái hiện lỗi khi bỏ pin (HibernateException: Unable to determine Dialect without JDBC metadata), revert xong curl /api/ping -> 200"
+Log ghi đúng tiếng Việt,F-SYS-04,TC-SYS-04-02,"Thông báo tiếng Việt trong logs/bshoes.log đọc được, không thành dấu ?",Not run,"R3 2026-08-04 14:00 · LỖI ĐÃ SỬA: log ghi ""B?n c?n ??ng nh?p"" do thiếu <charset>UTF-8</charset>; đã thêm cho cả 2 appender, cần chạy lại app để xác nhận"
+Modal đóng an toàn khi rời màn,F-SYS-21,TC-SYS-21-01,"Rời màn khi modal đang mở → không lỗi JS, không sót lớp phủ xám chặn click",Not run,"R3 2026-08-04 14:00 · LỖI ĐÃ SỬA: log CLIENT có ""Uncaught TypeError: Cannot read properties of null (reading style) at _Modal._hideModal""; đã bỏ fade + dọn backdrop khi unmount, cần kiểm lại tay"
