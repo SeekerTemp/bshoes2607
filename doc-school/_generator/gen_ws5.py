@@ -37,7 +37,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))            # …/bshoes2607
 WORKSPACE = os.path.dirname(REPO)                        # …/temp_AGILE
 
-BASE = os.path.join(REPO, "doc-school", "ws5", "BShoes_TestCase.xlsx")
+BASE = os.path.join(REPO, "doc-school", "export-260808", "BShoes_TestCase.xlsx")
 TARGETS = [
     BASE,
     os.path.join(WORKSPACE, "doc-school-request", "BShoes_TestCase.xlsx"),
