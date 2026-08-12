@@ -85,10 +85,16 @@ export const thuocTinh = [
 export const loaiThuocTinhList = ['Loại sản phẩm', 'Màu sắc', 'Chất liệu', 'Kiểu dáng', 'Kiểu cỡ giày', 'Kiểu dây giày', 'Thương hiệu']
 
 // ---- preview/hoa-don.html (POS) ----
+// POS catalogue rows are VARIANTS (san_pham_chi_tiet): one sản phẩm (`idSanPham`)
+// has many màu sắc / kích thước. Several variants per product here so the offline
+// preview exercises the same grouping the real /pos-products data does.
 export const posSanPham = [
-  { id: 1, ma: 'SP1', ten: 'Nike Air Zoom', mau: 'Đen', size: '42', ton: 12, gia: 2000000, imageUrl: '/images/shoes/img_shoe_10001.png' },
-  { id: 2, ma: 'SP2', ten: 'Adidas Ultraboost', mau: 'Trắng', size: '40', ton: 5, gia: 2500000, imageUrl: '/images/shoes/img_shoe_10003.png' },
-  { id: 3, ma: 'SP3', ten: 'Converse Classic', mau: 'Đỏ', size: '39', ton: 20, gia: 1200000, imageUrl: '/images/shoes/img_shoe_10005.png' },
+  { id: 1, ma: 'SP1', idSanPham: 1, ten: 'Nike Air Zoom', mau: 'Đen', size: '42', ton: 12, gia: 2000000, imageUrl: '/images/shoes/img_shoe_10001.png' },
+  { id: 4, ma: 'SP4', idSanPham: 1, ten: 'Nike Air Zoom', mau: 'Đen', size: '43', ton: 7, gia: 2000000, imageUrl: '/images/shoes/img_shoe_10001.png' },
+  { id: 5, ma: 'SP5', idSanPham: 1, ten: 'Nike Air Zoom', mau: 'Trắng', size: '42', ton: 3, gia: 2100000, imageUrl: '/images/shoes/img_shoe_10001.png' },
+  { id: 2, ma: 'SP2', idSanPham: 2, ten: 'Adidas Ultraboost', mau: 'Trắng', size: '40', ton: 5, gia: 2500000, imageUrl: '/images/shoes/img_shoe_10003.png' },
+  { id: 6, ma: 'SP6', idSanPham: 2, ten: 'Adidas Ultraboost', mau: 'Đen', size: '41', ton: 9, gia: 2500000, imageUrl: '/images/shoes/img_shoe_10003.png' },
+  { id: 3, ma: 'SP3', idSanPham: 3, ten: 'Converse Classic', mau: 'Đỏ', size: '39', ton: 20, gia: 1200000, imageUrl: '/images/shoes/img_shoe_10005.png' },
 ]
 
 export const posKhachHang = ['Khách lẻ', 'Nguyễn Văn A', 'Trần Thị B']

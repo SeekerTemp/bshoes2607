@@ -6,8 +6,9 @@
 // from /api/hoa-don/pos-products with a mock fallback when the backend is offline.
 import { ref, computed, onMounted } from 'vue'
 import { hoaDonApi } from '../api/hoaDon'
+import { khachHangApi } from '../api/khachHang'
 import { useAuth } from './useAuth'
-import { posSanPham, posKhachHang, posHinhThuc, posHoaDonQueue } from '../mock/data'
+import { posSanPham, posHinhThuc } from '../mock/data'
 import { tinhGiamGia } from '../utils/voucher'
 
 const deep = v => JSON.parse(JSON.stringify(v))
@@ -16,7 +17,42 @@ export function useHoaDon() {
   const { user } = useAuth()
   const nvId = () => user.value?.id ?? null
   const sanPham = ref(deep(posSanPham))
-  const khachHangOptions = ref([...posKhachHang])
+  // Real customers from /api/khach-hang — the dropdown used to be the hard-coded
+  // mock list ['Khách lẻ','Nguyễn Văn A','Trần Thị B'], so picking a name bound a
+  // string that matched no khach_hang row and the invoice was saved with
+  // idKhachHang = null. Options carry the row id so checkout() can send it.
+  const khachHangOptions = ref([])
+  async function loadKhachHang() {
+    try {
+      const rows = await khachHangApi.findAll()
+      khachHangOptions.value = (rows || [])
+        .filter(k => k.trangThai !== false)
+        .map(k => ({ value: k.id, label: k.ten + (k.sdt ? ` — ${k.sdt}` : ''), ten: k.ten, sdt: k.sdt || '' }))
+    } catch (e) {
+      // No fake customers offline — a name that resolves to no row would be saved
+      // as an anonymous sale anyway.
+      console.warn('Không tải được danh sách khách hàng', e)
+      khachHangOptions.value = []
+    }
+  }
+  // Binds a real customer row onto the active invoice (name + phone + id together,
+  // so the three never drift apart).
+  function chonKhachHang(id) {
+    const kh = khachHangOptions.value.find(o => o.value === Number(id))
+    if (!kh) return
+    active.value.idKhachHang = kh.value
+    active.value.khachHang = kh.ten
+    active.value.sdt = kh.sdt
+  }
+  // "Khách vãng lai": an anonymous walk-in — no customer row, no member fields.
+  function chonKhachVangLai() {
+    active.value.khachType = 'vanglai'
+    active.value.idKhachHang = null
+    active.value.khachHang = 'Khách lẻ'
+    active.value.sdt = ''
+    active.value.memberCode = ''
+  }
+  function chonHoiVien() { active.value.khachType = 'hoivien' }
   // Real phiếu giảm giá (id + rule) from the server. The mock `posVouchers` values
   // were discount ENCODINGS (0.1 / 50000), not row ids — sending those as
   // idPhieuGiamGia made the backend find no voucher and record giảm = 0 while the
@@ -47,10 +83,35 @@ export function useHoaDon() {
   const leftTab = ref('chitiet')     // 'chitiet' | 'thuoctinh' (left panel tabs)
 
   // ---- invoice queue (the "Danh sách hóa đơn" table) ----
-  let seqHD = posHoaDonQueue.length
+  // The queue is seeded from the SERVER (loadQueue on mount), never from mock data.
+  // It used to start as a deep copy of `posHoaDonQueue` — three fake invoices
+  // (HD001/HD002/HD003, one holding a 2.000.000đ line). Those rows have no
+  // serverId, so loadQueue()'s `!h.serverId` guard kept them forever: every reload
+  // re-seeded them and it looked as if a completed payment had never been written
+  // to SQL. Real payments were persisted all along; these placeholders were what
+  // came back. Now the only local-only row is a single blank invoice to type into.
+  // Local rows get NEGATIVE ids: server-backed rows key off the real hoa_don id, so
+  // a positive local counter could collide with one and make two queue tabs share a key.
+  let seqHD = 0
   let seqLine = 0
-  const hoaDons = ref(deep(posHoaDonQueue).map((h, i) => ({ id: i + 1, ...h })))
-  hoaDons.value.forEach(h => h.gio.forEach(l => { l.id = ++seqLine }))
+  function blankInvoice() {
+    seqHD++
+    return {
+      id: -seqHD, serverId: null, ma: 'HD' + pad(seqHD),
+      nhanVien: user.value?.ten || 'admin', khachHang: 'Khách lẻ',
+      khachType: 'vanglai',              // 'hoivien' | 'vanglai' (chip in the inspector)
+      idKhachHang: null,
+      sdt: '', diaChi: '', trangThai: 'Đang tạo', trangThaiHang: '-',
+      ngayTao: new Date().toLocaleDateString('vi-VN'),
+      voucher: 0, hinhThuc: 'Tiền mặt', khachDua: 0, memberCode: '', phiShip: 0, ghiChu: '',
+      gio: [],
+    }
+  }
+  // A row the cashier has not touched and the server has never seen — safe to drop
+  // once the real pending invoices arrive, so the queue shows no phantom extra tab.
+  const isPristineLocal = h => !h.serverId && h.gio.length === 0 && h.khachType === 'vanglai'
+
+  const hoaDons = ref([blankInvoice()])
 
   const activeId = ref(hoaDons.value[0].id)
   const active = computed(
@@ -63,14 +124,7 @@ export function useHoaDon() {
   // empties); in the background it persists a real pending hoa_don (trang_thai=0) and
   // patches in the server id + ma. checkout() reuses that serverId (no duplicate).
   function createHoaDon() {
-    seqHD++
-    const hd = {
-      id: seqHD, serverId: null, ma: 'HD' + pad(seqHD), nhanVien: 'admin', khachHang: 'Khách lẻ',
-      sdt: '', diaChi: '', trangThai: 'Đang tạo', trangThaiHang: '-',
-      ngayTao: posHoaDonQueue[0]?.ngayTao || '',
-      voucher: 0, hinhThuc: 'Tiền mặt', khachDua: 0, memberCode: '', phiShip: 0, ghiChu: '',
-      gio: [],
-    }
+    const hd = blankInvoice()
     hoaDons.value.push(hd)
     activeId.value = hd.id
     selectedLineId.value = null
@@ -104,6 +158,7 @@ export function useHoaDon() {
     const prod = sanPham.value.find(p => p.id === c.idSanPhamChiTiet) || {}
     return {
       id: c.id, spId: c.idSanPhamChiTiet, ma: prod.ma, ten: c.ten,
+      idSanPham: prod.idSanPham,          // groups the line with its sibling variants
       mau: prod.mau, size: prod.size, gia: c.donGia, ton: prod.ton,
       soLuong: c.soLuong, trangThai: '-',
     }
@@ -125,14 +180,14 @@ export function useHoaDon() {
       return existing
     }
     return {
+      ...blankInvoice(),
       id: dto.id, serverId: dto.id, ma: dto.ma || ('HD' + pad(dto.id)),
       nhanVien: dto.nhanVien || '', khachHang: dto.khach || 'Khách lẻ',
       sdt: dto.soDienThoai || '', diaChi: dto.diaChi || '',
       trangThai: dto.trangThai || 'Chờ', trangThaiHang: '-',
       ngayTao: dto.ngayTao || '',
-      voucher: 0, hinhThuc: dto.phuongThucThanhToan || 'Tiền mặt',
-      khachDua: 0, memberCode: '', phiShip: Number(dto.phiShip) || 0, ghiChu: dto.ghiChu || '',
-      idKhachHang: null,
+      hinhThuc: dto.phuongThucThanhToan || 'Tiền mặt',
+      phiShip: Number(dto.phiShip) || 0, ghiChu: dto.ghiChu || '',
       gio: gioMapped,
     }
   }
@@ -155,12 +210,18 @@ export function useHoaDon() {
         else hoaDons.value.push(serverDtoToRow(dto, null))
       }
       hoaDons.value = hoaDons.value.filter(h => !h.serverId || serverIds.has(h.serverId))
+      // Drop untouched local placeholders once real pending invoices are in — but
+      // only if at least one row survives, so the screen is never left with none.
+      if (hoaDons.value.some(h => !isPristineLocal(h))) {
+        hoaDons.value = hoaDons.value.filter(h => !isPristineLocal(h))
+      }
       if (hoaDons.value.length === 0) { createHoaDon(); return }
       if (!hoaDons.value.some(h => h.id === activeId.value)) {
         activeId.value = hoaDons.value[0].id
       }
     } catch (e) {
       console.warn('loadQueue offline — keeping local invoice queue as-is', e)
+      if (hoaDons.value.length === 0) createHoaDon()
     }
   }
 
@@ -183,17 +244,36 @@ export function useHoaDon() {
       isDemo.value = true
     }
   }
-  onMounted(() => { load(); loadQueue(); loadVouchers() })
+  onMounted(() => { load(); loadQueue(); loadVouchers(); loadKhachHang() })
+
+  // Variants of one sản phẩm are grouped by the parent product id; `ten` is the
+  // fallback for offline rows that carry no idSanPham.
+  const sanPhamKey = p => (p?.idSanPham ?? p?.ten ?? '')
+
+  // DANH SÁCH SẢN PHẨM is always sorted by product name, then màu / kích thước, so
+  // every variant of the same shoe sits together in a stable order (the server
+  // returns them in id order, which interleaves different products).
+  const viCollator = new Intl.Collator('vi', { numeric: true, sensitivity: 'base' })
+  const sortSanPham = rows => [...rows].sort(
+    (a, b) => viCollator.compare(a.ten || '', b.ten || '')
+           || viCollator.compare(String(a.mau ?? ''), String(b.mau ?? ''))
+           || viCollator.compare(String(a.size ?? ''), String(b.size ?? ''))
+  )
 
   const ketQua = computed(() => {
     const k = keyword.value.trim().toLowerCase()
-    if (!k) return sanPham.value
-    return sanPham.value.filter(
+    const rows = !k ? sanPham.value : sanPham.value.filter(
       p => p.ten.toLowerCase().includes(k) ||
            String(p.mau).toLowerCase().includes(k) ||
            String(p.ma).toLowerCase().includes(k)
     )
+    return sortSanPham(rows)
   })
+
+  // Filter the catalogue down to one product name, so every biến thể of it is on
+  // screen ready to add. Used right after adding a line.
+  function locTheoTen(ten) { keyword.value = ten || '' }
+  function xoaLoc() { keyword.value = '' }
 
   // ---- cart (SERVER-BACKED: stock is decremented on the server the moment an item
   //      is added — matching the legacy NetBeans behaviour. Each mutation calls the
@@ -240,7 +320,7 @@ export function useHoaDon() {
     if (!sid) {                       // offline — local-only cart
       const found = inv.gio.find(l => l.spId === p.id)
       if (found) { if (found.soLuong < p.ton) found.soLuong++ }
-      else if (p.ton > 0) inv.gio.push({ id: ++seqLine, spId: p.id, ma: p.ma, ten: p.ten, mau: p.mau, size: p.size, gia: p.gia, ton: p.ton, soLuong: 1, trangThai: '-' })
+      else if (p.ton > 0) inv.gio.push({ id: ++seqLine, spId: p.id, ma: p.ma, ten: p.ten, idSanPham: p.idSanPham, mau: p.mau, size: p.size, gia: p.gia, ton: p.ton, soLuong: 1, trangThai: '-' })
       return
     }
     try {
@@ -276,6 +356,63 @@ export function useHoaDon() {
     }
   }
   function selectLine(l) { selectedLineId.value = l.id }
+
+  // ---- quick variant swap on a cart line ----
+  // The sibling biến thể a cart line can be switched to. /pos-products only returns
+  // `trangThai = true and so_luong_ton > 0`, so this list is inherently "available
+  // only" — except the line's OWN variant, whose remaining stock may now be 0
+  // precisely because it is in this cart; it is always kept so the select has
+  // something to show as selected.
+  function bienTheOptions(l) {
+    if (!l) return []
+    const key = sanPhamKey(l)
+    const rows = sanPham.value.filter(p => sanPhamKey(p) === key && p.ton > 0 && p.id !== l.spId)
+    const current = sanPham.value.find(p => p.id === l.spId)
+      || { id: l.spId, mau: l.mau, size: l.size, ton: l.ton, gia: l.gia }
+    return sortSanPham([current, ...rows]).map(p => ({
+      value: p.id,
+      label: `${p.mau || '—'} / ${p.size || '—'}` + (p.id === l.spId ? '' : ` (còn ${p.ton})`),
+    }))
+  }
+
+  // Swap a cart line to a different variant of the same product, keeping the quantity.
+  // Order matters: ADD the new variant first — if it has too little stock the backend
+  // rejects it and nothing has changed yet. Removing first would return the old units
+  // to stock and could leave the cashier with no line at all when the add then fails.
+  async function doiBienThe(l, newSpId) {
+    const inv = active.value
+    const spId = Number(newSpId)
+    if (!l || !spId || spId === l.spId) return { ok: true }
+    const p = sanPham.value.find(x => x.id === spId)
+    if (!p) return { ok: false, message: 'Không tìm thấy biến thể' }
+    const qty = Number(l.soLuong) || 1
+    if (p.ton < qty) return { ok: false, message: `${p.mau} / ${p.size} chỉ còn ${p.ton} — không đủ ${qty}` }
+
+    if (!inv.serverId || typeof l.id !== 'number') {   // offline / local-only line
+      Object.assign(l, { spId: p.id, ma: p.ma, mau: p.mau, size: p.size, gia: p.gia, ton: p.ton })
+      return { ok: true }
+    }
+    const oldLineId = l.id
+    try {
+      await hoaDonApi.addItem(inv.serverId, { idSanPhamChiTiet: spId, soLuong: qty })
+    } catch (e) {
+      await resyncCartFromServer(inv)
+      return { ok: false, error: e, message: e?.response?.data?.message || e?.message || 'Không đổi được biến thể' }
+    }
+    try {
+      const dto = await hoaDonApi.removeItem(oldLineId)
+      syncCartFromServer(inv, dto)
+    } catch (e) {
+      // The new variant IS on the invoice; only dropping the old line failed. Re-sync
+      // so the cart shows both lines honestly rather than pretending a swap happened.
+      await resyncCartFromServer(inv)
+      await load()
+      return { ok: false, error: e, message: 'Đã thêm biến thể mới nhưng chưa bỏ được dòng cũ — kiểm tra lại giỏ hàng' }
+    }
+    await load()
+    if (selectedLineId.value === oldLineId) selectedLineId.value = null
+    return { ok: true }
+  }
 
   // Returns { ok:true } or { ok:false, message } — never swallows a backend
   // rejection: on failure the local cart is re-synced from server truth (so a
@@ -426,6 +563,7 @@ export function useHoaDon() {
   return {
     // catalogue + option lists
     sanPham, khachHangOptions, voucherOptions, hinhThucOptions, isDemo, load,
+    loadKhachHang, chonKhachHang, chonKhachVangLai, chonHoiVien,
     // ui state
     keyword, ketQua, orderTab, leftTab,
     // queue
@@ -434,6 +572,7 @@ export function useHoaDon() {
     // cart
     gio, selectedLineId, selectedLine, selectLine,
     addLine, removeLine, inc, dec, clampLine, hoanTra, scanAdd,
+    bienTheOptions, doiBienThe, locTheoTen, xoaLoc,
     // money
     soLuong, tamTinh, giamGia, phiShip, phaiTra, tienThua,
     // actions

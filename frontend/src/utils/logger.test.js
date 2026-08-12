@@ -30,6 +30,41 @@ describe('redact', () => {
     })
   })
 
+  // Regression for logs/bshoes-log-20260807-1509.json: axios puts the ALREADY
+  // SERIALIZED body in config.data, so requestData reaches redact() as a STRING.
+  // The old code only truncated strings, shipping POST /nhan-vien's plaintext
+  // password to the server log while the backend filter masked its own copy.
+  it('masks sensitive keys inside a SERIALIZED JSON string body', () => {
+    const out = redact({
+      status: 400,
+      url: '/nhan-vien',
+      requestData: '{"ten":"Test Quản Lý 2","taiKhoan":"quanly","matKhau":"123","idVaiTro":2}',
+    })
+    expect(out.requestData).not.toContain('123')
+    expect(JSON.parse(out.requestData)).toEqual({
+      ten: 'Test Quản Lý 2', taiKhoan: 'quanly', matKhau: '***', idVaiTro: 2,
+    })
+  })
+
+  it('masks a sensitive field in a body string that is not valid JSON', () => {
+    const out = redact('{"taiKhoan":"admin","matKhau":"secret", TRUNCATED')
+    expect(out).not.toContain('secret')
+    expect(out).toContain('"matKhau":"***"')
+  })
+
+  // The /g redaction regex must not carry lastIndex between calls, or the second
+  // identical body would be logged with the password in the clear.
+  it('masks the same non-JSON body on repeated calls', () => {
+    const body = '{"taiKhoan":"admin","matKhau":"secret", TRUNCATED'
+    expect(redact(body)).toContain('"matKhau":"***"')
+    expect(redact(body)).toContain('"matKhau":"***"')
+    expect(redact(body)).not.toContain('secret')
+  })
+
+  it('leaves a plain non-JSON string untouched', () => {
+    expect(redact('GET /hoa-don -> 200')).toBe('GET /hoa-don -> 200')
+  })
+
   it('masks sensitive keys inside arrays of objects', () => {
     const out = redact([{ ten: 'A', matKhau: 'x' }, { ten: 'B', password: 'y' }])
     expect(out).toEqual([{ ten: 'A', matKhau: '***' }, { ten: 'B', password: '***' }])

@@ -20,9 +20,14 @@ const FLUSH_INTERVAL_MS = 20000
 
 // Matches matKhau / password / pass / token at any casing, anywhere in a key name.
 const SENSITIVE_KEY_RE = /matKhau|password|pass|token/i
+// Same fields as they appear INSIDE a serialized JSON string — mirrors the backend's
+// RequestLoggingFilter.SENSITIVE_FIELD so both sides of a request redact alike.
+const SENSITIVE_TEXT_RE = /("(?:matKhau|password|pass|token)"\s*:\s*)"[^"]*"/gi
 
 const MAX_STRING = 2000       // cap for any single stored string
 const MAX_DETAIL_JSON = 4000  // cap for the whole `detail` payload once JSON-stringified
+
+const cap = s => (s.length > MAX_STRING ? s.slice(0, MAX_STRING) + '...(truncated)' : s)
 
 // ---- pure helpers (exported for testing) ----------------------------------
 
@@ -33,7 +38,23 @@ export function redact(value, seen) {
   const seenSet = seen || new WeakSet()
 
   if (typeof value === 'string') {
-    return value.length > MAX_STRING ? value.slice(0, MAX_STRING) + '...(truncated)' : value
+    // A string can itself be a serialized body: axios puts the ALREADY-STRINGIFIED
+    // JSON in config.data, so `requestData` arrives here as text, not an object.
+    // Truncating it alone let "matKhau":"123" reach the server log in the clear
+    // (seen in logs/bshoes-log-20260807-1509.json, POST /nhan-vien). Re-redact the
+    // JSON if it parses, and fall back to a textual substitution if it does not
+    // (truncated or malformed bodies still must not leak).
+    const trimmed = value.trim()
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      try {
+        return cap(JSON.stringify(redact(JSON.parse(trimmed), seenSet)))
+      } catch (e) { /* not valid JSON — fall through to the regex scrub */ }
+    }
+    // NB: replace() unconditionally — never guard with SENSITIVE_TEXT_RE.test().
+    // A /g regex carries `lastIndex` between calls, so a .test() that matched once
+    // would resume mid-string on the NEXT call, miss a match at position 0, and
+    // wave a real password straight through.
+    return cap(value.replace(SENSITIVE_TEXT_RE, '$1"***"'))
   }
 
   if (Array.isArray(value)) {

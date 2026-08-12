@@ -14,13 +14,19 @@ import { khachHangApi } from '../api/khachHang'
 import { printReceipt as printReceiptDoc } from '../utils/receipt'
 import { downloadJson, stamp } from '../utils/csv'
 
+// The "Thuộc tính sản phẩm" tab has no panel behind it yet — flip to true once one
+// exists (the button is hidden, `leftTab` stays wired up).
+const SHOW_THUOC_TINH_TAB = false
+
 const {
   sanPham, khachHangOptions, voucherOptions, hinhThucOptions, isDemo, load,
+  loadKhachHang, chonKhachHang, chonKhachVangLai, chonHoiVien,
   keyword, ketQua, orderTab, leftTab,
   hoaDons, activeId, active, createHoaDon, switchHoaDon, removeHoaDon,
   tongHoaDonHomNay, tongTienHomNay,
   gio, selectedLineId, selectedLine, selectLine,
   addLine, removeLine, inc, dec, clampLine, hoanTra, scanAdd,
+  bienTheOptions, doiBienThe, locTheoTen, xoaLoc,
   soLuong, tamTinh, giamGia, phiShip, phaiTra, tienThua,
   thanhToan, checkout,
 } = useHoaDon()
@@ -114,6 +120,17 @@ async function timHoiVien() {
   }
 }
 
+// Customer dropdown — options carry the khach_hang row id, so selecting a name
+// binds id + tên + SĐT together (AppSelect emits the raw string value).
+const khachHangSelectOptions = computed(() => [
+  { value: 0, label: khachHangOptions.value.length ? '— Chọn khách hàng —' : '— Không tải được danh sách —' },
+  ...khachHangOptions.value.map(k => ({ value: k.value, label: k.label })),
+])
+const khachHangModel = computed({
+  get: () => active.value.idKhachHang || 0,
+  set: v => { Number(v) ? chonKhachHang(v) : (active.value.idKhachHang = null) },
+})
+
 const voucherSelectOptions = computed(() =>
   voucherOptions.value.map(v => ({ value: v.value, label: v.label }))
 )
@@ -121,6 +138,26 @@ const voucherModel = computed({
   get: () => active.value.voucher,
   set: v => { active.value.voucher = Number(v) },
 })
+
+// Adding a product narrows DANH SÁCH SẢN PHẨM to that product's name, so every
+// other biến thể (màu / kích thước) of the same shoe is on screen ready to add too.
+async function themVaLoc(p) {
+  try {
+    await addLine(p)
+    locTheoTen(p.ten)
+  } catch (e) {
+    notify(e?.response?.data?.message || e?.message || 'Không thêm được sản phẩm', 'danger')
+  }
+}
+
+// Swap a cart line to another available variant of the same product.
+async function onDoiBienThe(l, ev) {
+  const r = await doiBienThe(l, ev.target.value)
+  if (!r.ok) {
+    notify(r.message || 'Không đổi được biến thể', 'warning')
+    ev.target.value = l.spId          // put the select back on the line's real variant
+  }
+}
 
 function needLine(action) {
   if (!selectedLine.value) { notify('Chọn một dòng trong giỏ hàng trước', 'warning'); return false }
@@ -225,7 +262,9 @@ async function saveKH() {
     const kh = await khachHangApi.create({ ...newKH.value })
     active.value.khachHang = kh?.ten || newKH.value.ten
     active.value.idKhachHang = kh?.id || null
+    active.value.khachType = 'hoivien'
     if (kh?.sdt || newKH.value.sdt) active.value.sdt = kh?.sdt || newKH.value.sdt
+    await loadKhachHang()          // the new row must appear in the dropdown too
     notify('Đã thêm khách hàng: ' + (kh?.ten || newKH.value.ten), 'success')
   } catch (e) {
     active.value.khachHang = newKH.value.ten
@@ -278,7 +317,9 @@ function taoHoaDon() {
         <!-- left content tabs -->
         <div class="pos-toptabs">
           <button class="pos-toptab" :class="{ active: leftTab === 'chitiet' }" @click="leftTab = 'chitiet'">Thông tin chi tiết</button>
-          <button class="pos-toptab" :class="{ active: leftTab === 'thuoctinh' }" @click="leftTab = 'thuoctinh'">Thuộc tính sản phẩm</button>
+          <!-- "Thuộc tính sản phẩm" hidden until it has a panel to switch to — it
+               currently only flips `leftTab`, which nothing renders on. -->
+          <button v-if="SHOW_THUOC_TINH_TAB" class="pos-toptab" :class="{ active: leftTab === 'thuoctinh' }" @click="leftTab = 'thuoctinh'">Thuộc tính sản phẩm</button>
         </div>
 
         <!-- Danh sách sản phẩm -->
@@ -288,7 +329,10 @@ function taoHoaDon() {
             <div class="d-flex align-items-center gap-2">
               <div class="input-group input-group-sm pos-search">
                 <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                <input class="form-control" v-model="keyword" placeholder="Tìm kiếm sản phẩm" />
+                <input class="form-control" v-model="keyword" placeholder="Tìm theo tên / mã / màu" />
+                <button v-if="keyword" class="btn btn-outline-secondary" title="Bỏ lọc — xem lại toàn bộ sản phẩm" @click="xoaLoc">
+                  <i class="bi bi-x-lg"></i>
+                </button>
               </div>
               <AppButton size="sm" variant="primary" icon="qr-code-scan" @click="showScanner = true">Quét QR</AppButton>
             </div>
@@ -302,7 +346,7 @@ function taoHoaDon() {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(p, i) in ketQua" :key="p.id" @dblclick="addLine(p)">
+                <tr v-for="(p, i) in ketQua" :key="p.id" @dblclick="themVaLoc(p)">
                   <td class="text-center">{{ i + 1 }}</td>
                   <td>{{ p.ma }}</td>
                   <td class="fw-medium">
@@ -315,7 +359,7 @@ function taoHoaDon() {
                   <td>{{ p.size }}</td>
                   <td class="text-end">{{ p.ton }}</td>
                   <td class="text-end">
-                    <button class="btn btn-sm btn-success py-0 px-2" :disabled="p.ton === 0" title="Thêm vào giỏ" @click="addLine(p)">
+                    <button class="btn btn-sm btn-success py-0 px-2" :disabled="p.ton === 0" title="Thêm vào giỏ" @click="themVaLoc(p)">
                       <i class="bi bi-plus-lg"></i>
                     </button>
                   </td>
@@ -336,7 +380,7 @@ function taoHoaDon() {
             <table class="table table-sm align-middle pos-table mb-0">
               <thead>
                 <tr>
-                  <th class="text-center">STT</th><th>Mã SP</th><th>Tên sp</th>
+                  <th class="text-center">STT</th><th>Mã SP</th><th>Tên sp</th><th>Biến thể</th>
                   <th class="text-center">Số lượng</th><th class="text-end">Đơn giá</th>
                   <th class="text-end">Giảm giá</th><th class="text-end">Thành tiền</th><th>Trạng thái</th><th></th>
                 </tr>
@@ -348,6 +392,14 @@ function taoHoaDon() {
                   <td class="text-center">{{ i + 1 }}</td>
                   <td>{{ l.ma }}</td>
                   <td class="fw-medium">{{ l.ten }}</td>
+                  <td>
+                    <!-- Quick variant swap: only biến thể of the SAME sản phẩm that
+                         are still in stock (plus this line's own, always shown). -->
+                    <select class="form-select form-select-sm bien-the"
+                            :value="l.spId" @click.stop @change="onDoiBienThe(l, $event)">
+                      <option v-for="o in bienTheOptions(l)" :key="o.value" :value="o.value">{{ o.label }}</option>
+                    </select>
+                  </td>
                   <td>
                     <div class="stepper">
                       <button class="btn btn-sm btn-outline-danger" @click.stop="bumpQty(dec, l)">−</button>
@@ -362,7 +414,7 @@ function taoHoaDon() {
                   <td>{{ l.trangThai }}</td>
                   <td class="text-end"><button class="btn btn-sm btn-outline-danger py-0 px-1" title="Xoá" @click.stop="removeLine(l)"><i class="bi bi-x"></i></button></td>
                 </tr>
-                <tr v-if="gio.length === 0"><td colspan="9" class="text-center text-muted py-4">Giỏ hàng trống — chọn sản phẩm bên trên</td></tr>
+                <tr v-if="gio.length === 0"><td colspan="10" class="text-center text-muted py-4">Giỏ hàng trống — chọn sản phẩm bên trên</td></tr>
               </tbody>
             </table>
           </div>
@@ -421,22 +473,34 @@ function taoHoaDon() {
           <!-- ---------- HÓA ĐƠN tab ---------- -->
           <template v-if="orderTab === 'hoadon'">
             <h5 class="green-title">Hóa đơn</h5>
-            <div class="green-box">
+
+            <!-- Loại khách: hội viên (a real khach_hang row) vs khách vãng lai
+                 (anonymous walk-in). Only "Hội viên" needs customer fields. -->
+            <div class="chip-group" role="tablist" aria-label="Loại khách hàng">
+              <button class="chip" role="tab" :aria-selected="active.khachType === 'hoivien'"
+                      :class="{ active: active.khachType === 'hoivien' }" @click="chonHoiVien">Hội viên</button>
+              <button class="chip" role="tab" :aria-selected="active.khachType === 'vanglai'"
+                      :class="{ active: active.khachType === 'vanglai' }" @click="chonKhachVangLai">Khách vãng lai</button>
+            </div>
+
+            <div v-if="active.khachType === 'hoivien'" class="green-box">
               <div class="input-group input-group-sm mb-2">
                 <span class="input-group-text">Mã hội viên</span>
-                <input class="form-control" v-model="active.memberCode" placeholder="" />
-                <button class="btn btn-success" @click="timHoiVien">Nhập sdt</button>
+                <input class="form-control" v-model="active.memberCode" placeholder="Nhập SĐT hội viên" @keyup.enter="timHoiVien" />
+                <button class="btn btn-white" @click="timHoiVien">Tra cứu</button>
               </div>
-              <button class="btn btn-success btn-sm w-100 mb-1" @click="openAddKH">Thêm khách hàng mới</button>
-              <button class="btn btn-success btn-sm w-100" @click="active.khachHang = 'Khách lẻ'">Khách vãng lai</button>
+              <button class="btn btn-white btn-sm w-100" @click="openAddKH">Thêm khách hàng mới</button>
             </div>
+            <div v-else class="green-note">Bán cho khách vãng lai — không gắn thông tin khách hàng.</div>
 
             <h6 class="green-sub">Thông tin đơn hàng</h6>
             <dl class="green-fields">
-              <div class="gf"><dt>SDT</dt><dd>{{ active.sdt || '—' }}</dd></div>
-              <div class="gf"><dt>Tên khách hàng</dt><dd>
-                <AppSelect v-model="active.khachHang" :options="khachHangOptions" />
-              </dd></div>
+              <template v-if="active.khachType === 'hoivien'">
+                <div class="gf"><dt>Tên khách hàng</dt><dd>
+                  <AppSelect v-model="khachHangModel" :options="khachHangSelectOptions" />
+                </dd></div>
+                <div class="gf"><dt>SDT</dt><dd class="val">{{ active.sdt || '—' }}</dd></div>
+              </template>
               <div class="gf"><dt>Tổng tiền hàng</dt><dd class="val">{{ vnd(tamTinh) }}</dd></div>
               <div class="gf"><dt>Mã giảm giá</dt><dd><AppSelect v-model="voucherModel" :options="voucherSelectOptions" /></dd></div>
               <div class="gf"><dt>Thành tiền</dt><dd class="val strong">{{ vnd(phaiTra) }}</dd></div>
@@ -461,11 +525,11 @@ function taoHoaDon() {
           <template v-else>
             <h5 class="green-title">Đặt hàng</h5>
             <div class="green-box">
-              <button class="btn btn-success btn-sm w-100 mb-2" @click="openAddKH">Thêm khách hàng mới</button>
+              <button class="btn btn-white btn-sm w-100 mb-2" @click="openAddKH">Thêm khách hàng mới</button>
               <div class="input-group input-group-sm">
                 <span class="input-group-text">Mã hội viên</span>
-                <input class="form-control" v-model="active.memberCode" />
-                <button class="btn btn-success" @click="timHoiVien">Nhập sdt</button>
+                <input class="form-control" v-model="active.memberCode" placeholder="Nhập SĐT hội viên" @keyup.enter="timHoiVien" />
+                <button class="btn btn-white" @click="timHoiVien">Tra cứu</button>
               </div>
             </div>
 
@@ -600,6 +664,7 @@ function taoHoaDon() {
 /* stepper inside cart */
 .stepper { display: inline-flex; align-items: center; gap: 4px; }
 .stepper input { width: 52px; }
+.bien-the { min-width: 130px; font-size: 12.5px; }
 .stepper .btn { line-height: 1; padding: 0 7px; }
 
 .pos-cart-actions, .pos-queue-foot { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
@@ -617,6 +682,39 @@ function taoHoaDon() {
 .green-sub { font-weight: 600; margin: 12px 0 8px; opacity: .95; }
 .green-box { background: rgba(255,255,255,.12); border-radius: var(--radius-sm); padding: 10px; }
 .green-box .input-group-text { background: #fff; }
+
+/* Actions inside the green panel: white on green. `btn-success` here was the same
+   green as the panel behind it, so "Thêm khách hàng mới" / "Khách vãng lai" /
+   "Nhập sdt" read as flat text with no visible button edge. */
+.btn-white {
+  background: #fff;
+  color: var(--c-primary);
+  border-color: #fff;
+  font-weight: 600;
+}
+.btn-white:hover:not(:disabled) { background: #f0f0f0; color: var(--c-primary); }
+.btn-white:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+/* inside an input-group both the field and the button are white — keep a visible seam */
+.green-box .input-group .btn-white { border-left: 1px solid var(--c-border); }
+
+.green-note { font-size: 12.5px; opacity: .9; padding: 8px 10px; background: rgba(255,255,255,.12); border-radius: var(--radius-sm); }
+
+/* ---- loại khách chips (Hội viên / Khách vãng lai) ---- */
+.chip-group { display: flex; gap: 6px; margin-bottom: 10px; }
+.chip {
+  flex: 1;
+  padding: 5px 10px;
+  border: 1px solid rgba(255,255,255,.6);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.chip:hover:not(.active) { background: rgba(255,255,255,.15); }
+.chip.active { background: #fff; color: var(--c-primary); border-color: #fff; }
+.chip:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
 .green-fields { display: flex; flex-direction: column; gap: 6px; margin: 0; }
 .gf { display: grid; grid-template-columns: 130px 1fr; align-items: center; gap: 8px; }
